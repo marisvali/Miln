@@ -171,8 +171,8 @@ func TestInt_Sqrt(t *testing.T) {
 	// confidence.
 	for i := int64(0); i < 20; i++ {
 		nr := math.MaxInt64 - i
-		res1 := I(nr).Sqrt()
-		res2 := I(int64(math.Sqrt(float64(nr))))
+		res1 := I64(nr).Sqrt()
+		res2 := I64(int64(math.Sqrt(float64(nr))))
 		// we have to allow for a difference of 1 because the float sqrt has
 		// some rounding errors and sometimes reports the integer above instead
 		// of the one below
@@ -180,8 +180,8 @@ func TestInt_Sqrt(t *testing.T) {
 	}
 	for i := int64(0); i < 100; i++ {
 		nr := math.MaxInt64 - i*1000000
-		res1 := I(nr).Sqrt()
-		res2 := I(int64(math.Sqrt(float64(nr))))
+		res1 := I64(nr).Sqrt()
+		res2 := I64(int64(math.Sqrt(float64(nr))))
 		assert.True(t, res1.Minus(res2).Abs().Lt(I(1)))
 	}
 }
@@ -219,13 +219,13 @@ func TestInt_Times(t *testing.T) {
 	assert.Panics(t, func() { I(math.MaxInt64).Times(I(math.MaxInt64)) })
 	assert.Panics(t, func() { I(math.MaxInt64 / 2).Times(I(math.MaxInt64 / 2)) })
 	edgeVal := int64(math.Sqrt(math.MaxInt64))
-	assert.Equal(t, I(edgeVal).Times(I(edgeVal)), I(edgeVal*edgeVal))
-	assert.Panics(t, func() { I(edgeVal + 100).Times(I(edgeVal + 102)) })
-	assert.Panics(t, func() { I(edgeVal - 100).Times(I(edgeVal + 10023)) })
-	assert.Equal(t, I(-edgeVal).Times(I(edgeVal)), I(-edgeVal*edgeVal))
-	assert.Equal(t, I(-edgeVal).Times(I(-edgeVal)), I(edgeVal*edgeVal))
-	assert.Panics(t, func() { I(-edgeVal).Times(I(edgeVal + 1340)) })
-	assert.Panics(t, func() { I(-edgeVal).Times(I(-edgeVal - 1340)) })
+	assert.Equal(t, I64(edgeVal).Times(I64(edgeVal)), I64(edgeVal*edgeVal))
+	assert.Panics(t, func() { I64(edgeVal + 100).Times(I64(edgeVal + 102)) })
+	assert.Panics(t, func() { I64(edgeVal - 100).Times(I64(edgeVal + 10023)) })
+	assert.Equal(t, I64(-edgeVal).Times(I64(edgeVal)), I64(-edgeVal*edgeVal))
+	assert.Equal(t, I64(-edgeVal).Times(I64(-edgeVal)), I64(edgeVal*edgeVal))
+	assert.Panics(t, func() { I64(-edgeVal).Times(I64(edgeVal + 1340)) })
+	assert.Panics(t, func() { I64(-edgeVal).Times(I64(-edgeVal - 1340)) })
 }
 
 func TestInt_ToFloat64(t *testing.T) {
