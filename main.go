@@ -32,10 +32,12 @@ type World struct {
 type Gui struct {
 	defaultFont font.Face
 	imgGround   *ebiten.Image
+	imgTree     *ebiten.Image
 	imgPlayer   *ebiten.Image
 	imgEnemy    *ebiten.Image
 	world       World
 	frameIdx    Int
+	pathfinding Pathfinding
 }
 
 func Check(e error) {
@@ -50,47 +52,69 @@ func (g *Gui) Update() error {
 		return nil // skip update
 	}
 
+	g.world.TimeStep.Inc()
+	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
+		// Damn.
+		Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
+	}
+
 	// Get keyboard input.
 	var pressedKeys []ebiten.Key
 	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
 
-	// Choose which is the active player based on Alt being pressed.
+	// Move the player.
 	if g.world.TimeStep.Mod(I(2)).Eq(ZERO) {
 		moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
 		moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
 		moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
 		moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
 
+		newPos := g.world.Player.Pos
 		if moveLeft {
 			if g.world.Player.Pos.X.Gt(ZERO) {
-				g.world.Player.Pos.X.Dec()
+				newPos.X.Dec()
+			}
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
 			}
 		}
 
 		if moveRight {
 			if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
-				g.world.Player.Pos.X.Inc()
+				newPos.X.Inc()
+			}
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
 			}
 		}
 
 		if moveUp {
 			if g.world.Player.Pos.Y.Gt(ZERO) {
-				g.world.Player.Pos.Y.Dec()
+				newPos.Y.Dec()
+			}
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
 			}
 		}
 
 		if moveDown {
 			if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
-				g.world.Player.Pos.Y.Inc()
+				newPos.Y.Inc()
+			}
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
 			}
 		}
 	}
 
-	g.world.TimeStep.Inc()
-	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
-		// Damn.
-		Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
+	// Move the enemy.
+	if g.world.TimeStep.Mod(I(4)).Eq(ZERO) {
+		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
+		if len(path) > 1 {
+			g.world.Enemy.Pos = path[1]
+		}
 	}
+
 	return nil
 }
 
@@ -122,16 +146,19 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
+	// Draw background.
 	screen.Fill(color.RGBA{0, 0, 0, 0})
-	//message := "PAUSED"
-	//text.Draw(screen, message, g.defaultFont, 60, 60, colorHex(0xee005a))
 
-	// Draw ground.
-	numX := g.world.Obstacles.NCols().ToInt()
-	numY := g.world.Obstacles.NRows().ToInt()
-	for y := 0; y < numY; y++ {
-		for x := 0; x < numX; x++ {
-			g.DrawTile(screen, g.imgGround, IPt(x, y))
+	// Draw ground and trees.
+	rows := g.world.Obstacles.NRows()
+	cols := g.world.Obstacles.NCols()
+	for y := ZERO; y.Lt(rows); y.Inc() {
+		for x := ZERO; x.Lt(cols); x.Inc() {
+			if g.world.Obstacles.Get(y, x).Eq(ZERO) {
+				g.DrawTile(screen, g.imgGround, Pt{x, y})
+			} else {
+				g.DrawTile(screen, g.imgTree, Pt{x, y})
+			}
 		}
 	}
 
@@ -242,6 +269,66 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	screen.DrawImage(img, op)
 }
 
+func Level1() string {
+	return `
+xxxxxxxxxxxxx
+x           x
+x  x  1  x  x
+x           x
+x           x
+x    xxxx   x
+x           x
+xxxxxx      x
+x           x
+x   xxx   xxx
+x     x     x
+x     xxxx  x
+x       2   x
+x           x
+xxxxxxxxxxxxx
+`
+}
+
+func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
+	row := -1
+	col := 0
+	maxCol := 0
+	for i := 0; i < len(level); i++ {
+		c := level[i]
+		if c == '\n' {
+			maxCol = col
+			col = 0
+			row++
+			continue
+		}
+		col++
+	}
+	// If the string does not end with an empty line, count the last row.
+	if col > 0 {
+		row++
+	}
+	m.Init(I(row), I(maxCol))
+
+	row = -1
+	col = 0
+	for i := 0; i < len(level); i++ {
+		c := level[i]
+		if c == '\n' {
+			col = 0
+			row++
+			continue
+		} else if c == 'x' {
+			m.Set(I(row), I(col), I(1))
+		} else if c == '1' {
+			pos1 = append(pos1, IPt(col, row))
+		} else if c == '2' {
+			pos2 = append(pos2, IPt(col, row))
+		}
+		col++
+	}
+	return
+}
+
 func main() {
 	ebiten.SetWindowSize(400, 400)
 	ebiten.SetWindowTitle("Miln")
@@ -250,10 +337,12 @@ func main() {
 	var g Gui
 	g.imgGround = ebiten.NewImage(20, 20)
 	g.imgGround.Fill(intToCol(0))
+	g.imgTree = ebiten.NewImage(20, 20)
+	g.imgTree.Fill(intToCol(1))
 	g.imgPlayer = ebiten.NewImage(20, 20)
-	g.imgPlayer.Fill(intToCol(1))
+	g.imgPlayer.Fill(intToCol(2))
 	g.imgEnemy = ebiten.NewImage(20, 20)
-	g.imgEnemy.Fill(intToCol(2))
+	g.imgEnemy.Fill(intToCol(3))
 
 	var err error
 	// Load the Arial font
@@ -268,8 +357,16 @@ func main() {
 	Check(err)
 
 	//g.world.Obstacles.Init(I(15), I(15))
-	g.world.Obstacles.Init(I(15), I(15))
-	g.world.Enemy.Pos = IPt(5, 3)
+	pos1 := []Pt{}
+	pos2 := []Pt{}
+	g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
+	if len(pos1) > 0 {
+		g.world.Player.Pos = pos1[0]
+	}
+	if len(pos2) > 0 {
+		g.world.Enemy.Pos = pos2[0]
+	}
+	g.pathfinding.Initialize(g.world.Obstacles)
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
