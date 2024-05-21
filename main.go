@@ -17,8 +17,13 @@ type Player struct {
 	Pos Pt
 }
 
+type Enemy struct {
+	Pos Pt
+}
+
 type World struct {
 	Player    Player
+	Enemy     Enemy
 	Obstacles Matrix
 }
 
@@ -26,6 +31,7 @@ type Gui struct {
 	defaultFont font.Face
 	imgGround   *ebiten.Image
 	imgPlayer   *ebiten.Image
+	imgEnemy    *ebiten.Image
 	world       World
 }
 
@@ -88,30 +94,37 @@ func colorHex(hexVal int) color.Color {
 	}
 }
 
-func (g *Gui) Draw(screen *ebiten.Image) {
-	screen.Fill(color.RGBA{0, 0, 0, 0})
-	//message := "PAUSED"
-	//text.Draw(screen, message, g.defaultFont, 60, 60, colorHex(0xee005a))
-
-	// Draw ground.
+func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	sz := screen.Bounds().Size()
 	numX := g.world.Obstacles.NCols().ToInt()
 	numY := g.world.Obstacles.NRows().ToInt()
 	blockWidth := float64(sz.X) / float64(numX)
 	blockHeight := float64(sz.Y) / float64(numY)
 	margin := float64(1)
-	for iy := 0; iy < numX; iy++ {
-		for ix := 0; ix < numX; ix++ {
-			posX := float64(ix) * blockWidth
-			posY := float64(iy) * blockHeight
-			DrawSprite(screen, g.imgGround, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+	posX := pos.X.ToFloat64() * blockWidth
+	posY := pos.Y.ToFloat64() * blockHeight
+	DrawSprite(screen, img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+}
+
+func (g *Gui) Draw(screen *ebiten.Image) {
+	screen.Fill(color.RGBA{0, 0, 0, 0})
+	//message := "PAUSED"
+	//text.Draw(screen, message, g.defaultFont, 60, 60, colorHex(0xee005a))
+
+	// Draw ground.
+	numX := g.world.Obstacles.NCols().ToInt()
+	numY := g.world.Obstacles.NRows().ToInt()
+	for y := 0; y < numY; y++ {
+		for x := 0; x < numX; x++ {
+			g.DrawTile(screen, g.imgGround, IPt(x, y))
 		}
 	}
 
 	// Draw player.
-	posX := g.world.Player.Pos.X.ToFloat64() * blockWidth
-	posY := g.world.Player.Pos.Y.ToFloat64() * blockHeight
-	DrawSprite(screen, g.imgPlayer, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
+
+	// Draw enemy.
+	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
 
 	// Output TPS (ticks per second, which is like frames per second).
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
@@ -224,6 +237,8 @@ func main() {
 	g.imgGround.Fill(intToCol(0))
 	g.imgPlayer = ebiten.NewImage(20, 20)
 	g.imgPlayer.Fill(intToCol(1))
+	g.imgEnemy = ebiten.NewImage(20, 20)
+	g.imgEnemy.Fill(intToCol(2))
 
 	var err error
 	// Load the Arial font
@@ -238,7 +253,8 @@ func main() {
 	Check(err)
 
 	//g.world.Obstacles.Init(I(15), I(15))
-	g.world.Obstacles.Init(I(5), I(5))
+	g.world.Obstacles.Init(I(15), I(15))
+	g.world.Enemy.Pos = IPt(5, 3)
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
