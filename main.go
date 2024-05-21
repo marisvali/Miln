@@ -9,6 +9,7 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	"image/color"
+	"math"
 	. "playful-patterns.com/miln/ints"
 	"slices"
 )
@@ -25,6 +26,7 @@ type World struct {
 	Player    Player
 	Enemy     Enemy
 	Obstacles Matrix
+	TimeStep  Int
 }
 
 type Gui struct {
@@ -33,6 +35,7 @@ type Gui struct {
 	imgPlayer   *ebiten.Image
 	imgEnemy    *ebiten.Image
 	world       World
+	frameIdx    Int
 }
 
 func Check(e error) {
@@ -42,40 +45,52 @@ func Check(e error) {
 }
 
 func (g *Gui) Update() error {
+	g.frameIdx.Inc()
+	if g.frameIdx.Mod(I(5)).Neq(ZERO) {
+		return nil // skip update
+	}
+
 	// Get keyboard input.
 	var pressedKeys []ebiten.Key
 	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
 
 	// Choose which is the active player based on Alt being pressed.
-	moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
-	moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
-	moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
-	moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
+	if g.world.TimeStep.Mod(I(2)).Eq(ZERO) {
+		moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
+		moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
+		moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
+		moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
 
-	if moveLeft {
-		if g.world.Player.Pos.X.Gt(ZERO) {
-			g.world.Player.Pos.X.Dec()
+		if moveLeft {
+			if g.world.Player.Pos.X.Gt(ZERO) {
+				g.world.Player.Pos.X.Dec()
+			}
+		}
+
+		if moveRight {
+			if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
+				g.world.Player.Pos.X.Inc()
+			}
+		}
+
+		if moveUp {
+			if g.world.Player.Pos.Y.Gt(ZERO) {
+				g.world.Player.Pos.Y.Dec()
+			}
+		}
+
+		if moveDown {
+			if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
+				g.world.Player.Pos.Y.Inc()
+			}
 		}
 	}
 
-	if moveRight {
-		if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
-			g.world.Player.Pos.X.Inc()
-		}
+	g.world.TimeStep.Inc()
+	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
+		// Damn.
+		Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
 	}
-
-	if moveUp {
-		if g.world.Player.Pos.Y.Gt(ZERO) {
-			g.world.Player.Pos.Y.Dec()
-		}
-	}
-
-	if moveDown {
-		if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
-			g.world.Player.Pos.Y.Inc()
-		}
-	}
-
 	return nil
 }
 
