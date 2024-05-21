@@ -69,8 +69,8 @@ func (g *Gui) Update() error {
 		moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
 		moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
 
-		newPos := g.world.Player.Pos
 		if moveLeft {
+			newPos := g.world.Player.Pos
 			if g.world.Player.Pos.X.Gt(ZERO) {
 				newPos.X.Dec()
 			}
@@ -80,6 +80,7 @@ func (g *Gui) Update() error {
 		}
 
 		if moveRight {
+			newPos := g.world.Player.Pos
 			if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
 				newPos.X.Inc()
 			}
@@ -89,6 +90,7 @@ func (g *Gui) Update() error {
 		}
 
 		if moveUp {
+			newPos := g.world.Player.Pos
 			if g.world.Player.Pos.Y.Gt(ZERO) {
 				newPos.Y.Dec()
 			}
@@ -98,6 +100,7 @@ func (g *Gui) Update() error {
 		}
 
 		if moveDown {
+			newPos := g.world.Player.Pos
 			if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
 				newPos.Y.Inc()
 			}
@@ -271,21 +274,21 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 
 func Level1() string {
 	return `
-xxxxxxxxxxxxx
-x           x
-x  x  1  x  x
-x           x
-x           x
-x    xxxx   x
-x           x
-xxxxxx      x
-x           x
-x   xxx   xxx
-x     x     x
-x     xxxx  x
-x       2   x
-x           x
-xxxxxxxxxxxxx
+xxxxxxxxxxxxxxx
+x           x x
+x  x  1  x  x x
+x             x
+xxxx          x
+x  x xxxx     x
+x             x
+x xxxx        x
+x             x
+x   xxx   xxx x
+x     x       x
+x     xxxx    x
+x xx    2  xx x
+x  x          x
+xxxxxxxxxxxxxxx
 `
 }
 
