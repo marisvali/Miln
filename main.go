@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	"image/color"
-	"math/rand"
-	"strconv"
+	. "playful-patterns.com/miln/ints"
+	"slices"
 )
 
 type Player struct {
@@ -22,7 +24,8 @@ type World struct {
 
 type Gui struct {
 	defaultFont font.Face
-	img         *ebiten.Image
+	imgGround   *ebiten.Image
+	imgPlayer   *ebiten.Image
 	world       World
 }
 
@@ -33,6 +36,40 @@ func Check(e error) {
 }
 
 func (g *Gui) Update() error {
+	// Get keyboard input.
+	var pressedKeys []ebiten.Key
+	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
+
+	// Choose which is the active player based on Alt being pressed.
+	moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
+	moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
+	moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
+	moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
+
+	if moveLeft {
+		if g.world.Player.Pos.X.Gt(ZERO) {
+			g.world.Player.Pos.X.Dec()
+		}
+	}
+
+	if moveRight {
+		if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
+			g.world.Player.Pos.X.Inc()
+		}
+	}
+
+	if moveUp {
+		if g.world.Player.Pos.Y.Gt(ZERO) {
+			g.world.Player.Pos.Y.Dec()
+		}
+	}
+
+	if moveDown {
+		if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
+			g.world.Player.Pos.Y.Inc()
+		}
+	}
+
 	return nil
 }
 
@@ -55,11 +92,11 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 0, 0, 0})
 	//message := "PAUSED"
 	//text.Draw(screen, message, g.defaultFont, 60, 60, colorHex(0xee005a))
-	g.img.Fill(intToCol(3))
 
+	// Draw ground.
 	sz := screen.Bounds().Size()
-	numX := 15
-	numY := 15
+	numX := g.world.Obstacles.NCols().ToInt()
+	numY := g.world.Obstacles.NRows().ToInt()
 	blockWidth := float64(sz.X) / float64(numX)
 	blockHeight := float64(sz.Y) / float64(numY)
 	margin := float64(1)
@@ -67,10 +104,17 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		for ix := 0; ix < numX; ix++ {
 			posX := float64(ix) * blockWidth
 			posY := float64(iy) * blockHeight
-			DrawSprite(screen, g.img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+			DrawSprite(screen, g.imgGround, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
 		}
 	}
 
+	// Draw player.
+	posX := g.world.Player.Pos.X.ToFloat64() * blockWidth
+	posY := g.world.Player.Pos.Y.ToFloat64() * blockHeight
+	DrawSprite(screen, g.imgPlayer, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+
+	// Output TPS (ticks per second, which is like frames per second).
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -171,25 +215,15 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 }
 
 func main() {
-	for j := 1; j < 10; j++ {
-		for i := 1; i < 10; i++ {
-			num := 10 + rand.Int()%90
-			if (i+j+num)%2 == 0 {
-				print("\x1B[0;35m")
-			} else {
-				print("\x1B[0;33m")
-			}
-			print(strconv.Itoa(num), " ")
-		}
-		println()
-	}
-
 	ebiten.SetWindowSize(400, 400)
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(700, 100)
 
 	var g Gui
-	g.img = ebiten.NewImage(20, 20)
+	g.imgGround = ebiten.NewImage(20, 20)
+	g.imgGround.Fill(intToCol(0))
+	g.imgPlayer = ebiten.NewImage(20, 20)
+	g.imgPlayer.Fill(intToCol(1))
 
 	var err error
 	// Load the Arial font
@@ -202,6 +236,9 @@ func main() {
 		Hinting: font.HintingVertical,
 	})
 	Check(err)
+
+	//g.world.Obstacles.Init(I(15), I(15))
+	g.world.Obstacles.Init(I(5), I(5))
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
