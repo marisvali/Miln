@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
@@ -11,7 +10,6 @@ import (
 	"image/color"
 	"math"
 	. "playful-patterns.com/miln/ints"
-	"slices"
 )
 
 type Player struct {
@@ -30,14 +28,19 @@ type World struct {
 }
 
 type Gui struct {
-	defaultFont font.Face
-	imgGround   *ebiten.Image
-	imgTree     *ebiten.Image
-	imgPlayer   *ebiten.Image
-	imgEnemy    *ebiten.Image
-	world       World
-	frameIdx    Int
-	pathfinding Pathfinding
+	defaultFont   font.Face
+	imgGround     *ebiten.Image
+	imgTree       *ebiten.Image
+	imgPlayer     *ebiten.Image
+	imgEnemy      *ebiten.Image
+	world         World
+	frameIdx      Int
+	pathfinding   Pathfinding
+	screenSize    Pt
+	leftClick     bool
+	rightClick    bool
+	leftClickPos  Pt
+	rightClickPos Pt
 }
 
 func Check(e error) {
@@ -47,6 +50,12 @@ func Check(e error) {
 }
 
 func (g *Gui) Update() error {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		x, y := ebiten.CursorPosition()
+		g.leftClick = true
+		g.leftClickPos = IPt(x, y)
+	}
+
 	g.frameIdx.Inc()
 	if g.frameIdx.Mod(I(5)).Neq(ZERO) {
 		return nil // skip update
@@ -63,50 +72,71 @@ func (g *Gui) Update() error {
 	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
 
 	// Move the player.
-	if g.world.TimeStep.Mod(I(2)).Eq(ZERO) {
-		moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
-		moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
-		moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
-		moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
+	//if g.world.TimeStep.Mod(I(3)).Eq(ZERO) {
+	//	moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
+	//	moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
+	//	moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
+	//	moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
+	//
+	//	if moveLeft {
+	//		newPos := g.world.Player.Pos
+	//		if g.world.Player.Pos.X.Gt(ZERO) {
+	//			newPos.X.Dec()
+	//		}
+	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+	//			g.world.Player.Pos = newPos
+	//		}
+	//	}
+	//
+	//	if moveRight {
+	//		newPos := g.world.Player.Pos
+	//		if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
+	//			newPos.X.Inc()
+	//		}
+	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+	//			g.world.Player.Pos = newPos
+	//		}
+	//	}
+	//
+	//	if moveUp {
+	//		newPos := g.world.Player.Pos
+	//		if g.world.Player.Pos.Y.Gt(ZERO) {
+	//			newPos.Y.Dec()
+	//		}
+	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+	//			g.world.Player.Pos = newPos
+	//		}
+	//	}
+	//
+	//	if moveDown {
+	//		newPos := g.world.Player.Pos
+	//		if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
+	//			newPos.Y.Inc()
+	//		}
+	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+	//			g.world.Player.Pos = newPos
+	//		}
+	//	}
+	//}
 
-		if moveLeft {
-			newPos := g.world.Player.Pos
-			if g.world.Player.Pos.X.Gt(ZERO) {
-				newPos.X.Dec()
-			}
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
-		}
+	if g.leftClick {
+		g.leftClick = false
 
-		if moveRight {
-			newPos := g.world.Player.Pos
-			if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
-				newPos.X.Inc()
-			}
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
-		}
+		// Translate from screen coordinates to grid coordinates.
+		sz := g.screenSize
+		numX := g.world.Obstacles.NCols().ToInt()
+		numY := g.world.Obstacles.NRows().ToInt()
+		blockWidth := sz.X.ToFloat64() / float64(numX)
+		blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-		if moveUp {
-			newPos := g.world.Player.Pos
-			if g.world.Player.Pos.Y.Gt(ZERO) {
-				newPos.Y.Dec()
-			}
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
-		}
+		g.screenSize.X.DivBy(g.world.Obstacles.NCols())
+		g.screenSize.Y.DivBy(g.world.Obstacles.NRows())
 
-		if moveDown {
-			newPos := g.world.Player.Pos
-			if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
-				newPos.Y.Inc()
-			}
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
+		newPos := IPt(
+			int(g.leftClickPos.X.ToFloat64()/blockWidth),
+			int(g.leftClickPos.Y.ToFloat64()/blockHeight))
+		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+			g.world.Player.Pos = newPos
 		}
 	}
 
@@ -172,10 +202,11 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
 
 	// Output TPS (ticks per second, which is like frames per second).
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
+	g.screenSize = IPt(outsideWidth, outsideHeight)
 	return outsideWidth, outsideHeight
 }
 
@@ -273,22 +304,51 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 }
 
 func Level1() string {
+	//	return `
+	//xxxxxxxxxxxxxxx
+	//x           x x
+	//x xx  1  x xx x
+	//x x    xxx x  x
+	//xxxx          x
+	//x  x xxxx     x
+	//x         x   x
+	//x xxx   xxx   x
+	//x     x   x   x
+	//x   xxx   xxx x
+	//x     x       x
+	//x     xxxx    x
+	//x xx   x2  xx x
+	//x  x          x
+	//xxxxxxxxxxxxxxx
+	//`
+	//	return `
+	//xxxxxxxxxxxxxxx
+	//x             x
+	//x     1       x
+	//x        x    x
+	//x        x    x
+	//x   xxxxxx    x
+	//x             x
+	//x      xx     x
+	//x       x     x
+	//x       x     x
+	//x       xx    x
+	//x xxx         x
+	//x   x   2     x
+	//x             x
+	//xxxxxxxxxxxxxxx
+	//`
 	return `
-xxxxxxxxxxxxxxx
-x           x x
-x  x  1  x  x x
-x             x
-xxxx          x
-x  x xxxx     x
-x             x
-x xxxx        x
-x             x
-x   xxx   xxx x
-x     x       x
-x     xxxx    x
-x xx    2  xx x
-x  x          x
-xxxxxxxxxxxxxxx
+          
+     1    
+        x 
+        x 
+   xxxxxx 
+          
+      xx  
+       x  
+      2x  
+       xx 
 `
 }
 
@@ -333,7 +393,7 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 }
 
 func main() {
-	ebiten.SetWindowSize(400, 400)
+	ebiten.SetWindowSize(800, 800)
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(700, 100)
 
