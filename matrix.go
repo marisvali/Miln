@@ -46,6 +46,10 @@ func (m *Matrix) NCols() Int {
 	return m.nCols
 }
 
+func (m *Matrix) Size() Pt {
+	return Pt{m.nCols, m.nRows}
+}
+
 func (m *Matrix) PtToIndex(p Pt) Int {
 	return p.Y.Times(m.nCols).Plus(p.X)
 }

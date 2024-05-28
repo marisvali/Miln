@@ -41,6 +41,7 @@ type Gui struct {
 	rightClick    bool
 	leftClickPos  Pt
 	rightClickPos Pt
+	beamIdx       Int
 }
 
 func Check(e error) {
@@ -122,21 +123,28 @@ func (g *Gui) Update() error {
 	if g.leftClick {
 		g.leftClick = false
 
-		// Translate from screen coordinates to grid coordinates.
 		sz := g.screenSize
 		numX := g.world.Obstacles.NCols().ToInt()
 		numY := g.world.Obstacles.NRows().ToInt()
 		blockWidth := sz.X.ToFloat64() / float64(numX)
 		blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-		g.screenSize.X.DivBy(g.world.Obstacles.NCols())
-		g.screenSize.Y.DivBy(g.world.Obstacles.NRows())
-
-		newPos := IPt(
-			int(g.leftClickPos.X.ToFloat64()/blockWidth),
-			int(g.leftClickPos.Y.ToFloat64()/blockHeight))
-		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-			g.world.Player.Pos = newPos
+		enemyX := g.world.Enemy.Pos.X.ToFloat64() * blockWidth
+		enemyY := g.world.Enemy.Pos.Y.ToFloat64() * blockHeight
+		dx := enemyX - g.leftClickPos.X.ToFloat64()
+		dy := enemyY - g.leftClickPos.Y.ToFloat64()
+		dist := math.Sqrt(dx*dx + dy*dy)
+		if dist < 200 {
+			// Hit enemy.
+			g.beamIdx = I(15)
+		} else {
+			// Translate from screen coordinates to grid coordinates.
+			newPos := IPt(
+				int(g.leftClickPos.X.ToFloat64()/blockWidth),
+				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
+			}
 		}
 	}
 
@@ -166,6 +174,61 @@ func colorHex(hexVal int) color.Color {
 	}
 }
 
+func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
+	size := I(2)
+	for ax := pt.X.Minus(size); ax.Leq(pt.X.Plus(size)); ax.Inc() {
+		for ay := pt.Y.Minus(size); ay.Leq(pt.Y.Plus(size)); ay.Inc() {
+			screen.Set(ax.ToInt(), ay.ToInt(), color)
+		}
+	}
+}
+
+type Line struct {
+	Start Pt
+	End   Pt
+}
+
+type Circle struct {
+	Center   Pt
+	Diameter Int
+}
+
+type Square struct {
+	Center Pt
+	Size   Int
+}
+
+func DrawLine(screen *ebiten.Image, l Line, color color.Color) {
+	x1 := l.Start.X
+	y1 := l.Start.Y
+	x2 := l.End.X
+	y2 := l.End.Y
+	if x1.Gt(x2) {
+		x1, x2 = x2, x1
+		y1, y2 = y2, y1
+	}
+
+	dx := x2.Minus(x1)
+	dy := y2.Minus(y1)
+	if dx.IsZero() && dy.IsZero() {
+		return // No line to draw.
+	}
+
+	if dx.Abs().Gt(dy.Abs()) {
+		inc := dx.DivBy(dx.Abs())
+		for x := x1; x.Neq(x2); x.Add(inc) {
+			y := y1.Plus(x.Minus(x1).Times(dy).DivBy(dx))
+			DrawPixel(screen, Pt{x, y}, color)
+		}
+	} else {
+		inc := dy.DivBy(dy.Abs())
+		for y := y1; y.Neq(y2); y.Add(inc) {
+			x := x1.Plus(y.Minus(y1).Times(dx).DivBy(dy))
+			DrawPixel(screen, Pt{x, y}, color)
+		}
+	}
+}
+
 func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	sz := screen.Bounds().Size()
 	numX := g.world.Obstacles.NCols().ToInt()
@@ -176,6 +239,17 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	posX := pos.X.ToFloat64() * blockWidth
 	posY := pos.Y.ToFloat64() * blockHeight
 	DrawSprite(screen, img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+}
+
+func (g *Gui) TileToScreen(pos Pt) Pt {
+	sz := g.screenSize
+	numX := g.world.Obstacles.NCols()
+	numY := g.world.Obstacles.NRows()
+	blockWidth := sz.X.DivBy(numX)
+	blockHeight := sz.Y.DivBy(numY)
+	x := pos.X.Times(blockWidth).Plus(blockWidth.DivBy(TWO))
+	y := pos.Y.Times(blockHeight).Plus(blockHeight.DivBy(TWO))
+	return Pt{x, y}
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
@@ -200,6 +274,12 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	// Draw enemy.
 	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
+
+	// Draw beam.
+	if g.beamIdx.Gt(ZERO) {
+		DrawLine(screen, Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}, intToCol(4))
+		g.beamIdx.Dec()
+	}
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
