@@ -130,12 +130,9 @@ func (g *Gui) Update() error {
 		blockWidth := sz.X.ToFloat64() / float64(numX)
 		blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-		enemyX := g.world.Enemy.Pos.X.ToFloat64() * blockWidth
-		enemyY := g.world.Enemy.Pos.Y.ToFloat64() * blockHeight
-		dx := enemyX - g.leftClickPos.X.ToFloat64()
-		dy := enemyY - g.leftClickPos.Y.ToFloat64()
-		dist := math.Sqrt(dx*dx + dy*dy)
-		if dist < 200 {
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(g.leftClickPos).Len()
+		if dist.Lt(I(100)) {
 			// Hit enemy.
 			g.beamIdx = I(15)
 			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
