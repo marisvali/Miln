@@ -58,6 +58,12 @@ func (g *Gui) Update() error {
 		g.leftClickPos = IPt(x, y)
 	}
 
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+		x, y := ebiten.CursorPosition()
+		g.rightClick = true
+		g.rightClickPos = IPt(x, y)
+	}
+
 	g.frameIdx.Inc()
 	if g.frameIdx.Mod(I(5)).Neq(ZERO) {
 		return nil // skip update
@@ -121,6 +127,21 @@ func (g *Gui) Update() error {
 	//	}
 	//}
 
+	if g.rightClick {
+		g.rightClick = false
+
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(g.rightClickPos).Len()
+		if dist.Lt(I(100)) {
+			// Hit enemy.
+			g.beamIdx = I(15)
+			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+			if intersects, pt := g.LineObstaclesIntersection(g.beam); intersects {
+				g.beam.End = pt
+			}
+		}
+	}
+
 	if g.leftClick {
 		g.leftClick = false
 
@@ -130,23 +151,12 @@ func (g *Gui) Update() error {
 		blockWidth := sz.X.ToFloat64() / float64(numX)
 		blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(g.leftClickPos).Len()
-		if dist.Lt(I(100)) {
-			// Hit enemy.
-			g.beamIdx = I(15)
-			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
-			if intersects, pt := g.LineObstaclesIntersection(g.beam); intersects {
-				g.beam.End = pt
-			}
-		} else {
-			// Translate from screen coordinates to grid coordinates.
-			newPos := IPt(
-				int(g.leftClickPos.X.ToFloat64()/blockWidth),
-				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
+		// Translate from screen coordinates to grid coordinates.
+		newPos := IPt(
+			int(g.leftClickPos.X.ToFloat64()/blockWidth),
+			int(g.leftClickPos.Y.ToFloat64()/blockHeight))
+		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+			g.world.Player.Pos = newPos
 		}
 	}
 
@@ -377,7 +387,7 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 				if !EqualFloats(blockWidth, blockHeight) {
 					panic(fmt.Errorf("blocks are not squares"))
 				}
-				s := Square{g.TileToScreen(Pt{x, y}), I(int(blockWidth))}
+				s := Square{g.TileToScreen(Pt{x, y}), I(int(blockWidth * 0.9))}
 				if intersects, ipt := LineSquareIntersection(l, s); intersects {
 					ipts = append(ipts, ipt)
 				}
@@ -608,17 +618,25 @@ func Level1() string {
 	//x             x
 	//xxxxxxxxxxxxxxx
 	//`
+	//	return `
+	//
+	//     1
+	//        x
+	//        x
+	//   xxxxxx
+	//
+	//      xx
+	//       x
+	//      2x
+	//       xx
+	//`
 	return `
-          
-     1    
-        x 
-        x 
-   xxxxxx 
-          
-      xx  
-       x  
-      2x  
-       xx 
+   1  
+ xxxxx
+      
+    xx
+     x
+    2x
 `
 }
 
