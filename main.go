@@ -145,18 +145,22 @@ func (g *Gui) Update() error {
 	if g.leftClick {
 		g.leftClick = false
 
-		sz := g.screenSize
-		numX := g.world.Obstacles.NCols().ToInt()
-		numY := g.world.Obstacles.NRows().ToInt()
-		blockWidth := sz.X.ToFloat64() / float64(numX)
-		blockHeight := sz.Y.ToFloat64() / float64(numY)
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(g.leftClickPos).Len()
+		if dist.Geq(I(100)) {
+			sz := g.screenSize
+			numX := g.world.Obstacles.NCols().ToInt()
+			numY := g.world.Obstacles.NRows().ToInt()
+			blockWidth := sz.X.ToFloat64() / float64(numX)
+			blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-		// Translate from screen coordinates to grid coordinates.
-		newPos := IPt(
-			int(g.leftClickPos.X.ToFloat64()/blockWidth),
-			int(g.leftClickPos.Y.ToFloat64()/blockHeight))
-		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-			g.world.Player.Pos = newPos
+			// Translate from screen coordinates to grid coordinates.
+			newPos := IPt(
+				int(g.leftClickPos.X.ToFloat64()/blockWidth),
+				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
+			}
 		}
 	}
 
