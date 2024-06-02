@@ -17,7 +17,8 @@ type Player struct {
 }
 
 type Enemy struct {
-	Pos Pt
+	Pos       Pt
+	FuturePos Pt
 }
 
 type World struct {
@@ -28,21 +29,22 @@ type World struct {
 }
 
 type Gui struct {
-	defaultFont   font.Face
-	imgGround     *ebiten.Image
-	imgTree       *ebiten.Image
-	imgPlayer     *ebiten.Image
-	imgEnemy      *ebiten.Image
-	world         World
-	frameIdx      Int
-	pathfinding   Pathfinding
-	screenSize    Pt
-	leftClick     bool
-	rightClick    bool
-	leftClickPos  Pt
-	rightClickPos Pt
-	beamIdx       Int
-	beam          Line
+	defaultFont    font.Face
+	imgGround      *ebiten.Image
+	imgTree        *ebiten.Image
+	imgPlayer      *ebiten.Image
+	imgEnemy       *ebiten.Image
+	imgEnemyShadow *ebiten.Image
+	world          World
+	frameIdx       Int
+	pathfinding    Pathfinding
+	screenSize     Pt
+	leftClick      bool
+	rightClick     bool
+	leftClickPos   Pt
+	rightClickPos  Pt
+	beamIdx        Int
+	beam           Line
 }
 
 func Check(e error) {
@@ -169,6 +171,11 @@ func (g *Gui) Update() error {
 		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
 		if len(path) > 1 {
 			g.world.Enemy.Pos = path[1]
+		}
+	} else {
+		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
+		if len(path) > 1 {
+			g.world.Enemy.FuturePos = path[1]
 		}
 	}
 
@@ -477,6 +484,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
+	g.DrawTile(screen, g.imgEnemyShadow, g.world.Enemy.FuturePos)
 	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
 
 	// Draw beam.
@@ -497,21 +505,21 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 func intToCol(ival int64) color.Color {
 	switch ival {
 	case 0:
-		return color.RGBA{25, 25, 25, 0}
+		return color.RGBA{25, 25, 25, 255}
 	case 1:
-		return color.RGBA{150, 0, 0, 0}
+		return color.RGBA{150, 0, 0, 255}
 	case 2:
-		return color.RGBA{0, 150, 0, 0}
+		return color.RGBA{0, 150, 0, 255}
 	case 3:
-		return color.RGBA{0, 0, 150, 0}
+		return color.RGBA{0, 0, 150, 255}
 	case 4:
-		return color.RGBA{150, 150, 0, 0}
+		return color.RGBA{150, 150, 0, 255}
 	case 5:
-		return color.RGBA{0, 150, 150, 0}
+		return color.RGBA{0, 150, 150, 255}
 	case 6:
-		return color.RGBA{150, 0, 150, 0}
+		return color.RGBA{150, 0, 150, 255}
 	case 7:
-		return color.RGBA{100, 150, 100, 0}
+		return color.RGBA{100, 150, 100, 255}
 	}
 	return color.Black
 }
@@ -576,10 +584,10 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	newDy := targetHeight / float64(imgSize.Y)
 	op.GeoM.Scale(newDx, newDy)
 
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorOne
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorOne
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorZero
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorZero
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
 	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
 	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
 
@@ -698,6 +706,9 @@ func main() {
 	g.imgPlayer.Fill(intToCol(2))
 	g.imgEnemy = ebiten.NewImage(20, 20)
 	g.imgEnemy.Fill(intToCol(3))
+	g.imgEnemyShadow = ebiten.NewImage(20, 20)
+	c := color.RGBA{0, 0, 150, 30}
+	g.imgEnemyShadow.Fill(c)
 
 	var err error
 	// Load the Arial font
