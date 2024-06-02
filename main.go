@@ -13,7 +13,8 @@ import (
 )
 
 type Player struct {
-	Pos Pt
+	Pos       Pt
+	FuturePos Pt
 }
 
 type Enemy struct {
@@ -29,22 +30,23 @@ type World struct {
 }
 
 type Gui struct {
-	defaultFont    font.Face
-	imgGround      *ebiten.Image
-	imgTree        *ebiten.Image
-	imgPlayer      *ebiten.Image
-	imgEnemy       *ebiten.Image
-	imgEnemyShadow *ebiten.Image
-	world          World
-	frameIdx       Int
-	pathfinding    Pathfinding
-	screenSize     Pt
-	leftClick      bool
-	rightClick     bool
-	leftClickPos   Pt
-	rightClickPos  Pt
-	beamIdx        Int
-	beam           Line
+	defaultFont     font.Face
+	imgGround       *ebiten.Image
+	imgTree         *ebiten.Image
+	imgPlayer       *ebiten.Image
+	imgPlayerShadow *ebiten.Image
+	imgEnemy        *ebiten.Image
+	imgEnemyShadow  *ebiten.Image
+	world           World
+	frameIdx        Int
+	pathfinding     Pathfinding
+	screenSize      Pt
+	leftClick       bool
+	rightClick      bool
+	leftClickPos    Pt
+	rightClickPos   Pt
+	beamIdx         Int
+	beam            Line
 }
 
 func Check(e error) {
@@ -58,6 +60,24 @@ func (g *Gui) Update() error {
 		x, y := ebiten.CursorPosition()
 		g.leftClick = true
 		g.leftClickPos = IPt(x, y)
+
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(g.leftClickPos).Len()
+		if dist.Geq(I(100)) {
+			sz := g.screenSize
+			numX := g.world.Obstacles.NCols().ToInt()
+			numY := g.world.Obstacles.NRows().ToInt()
+			blockWidth := sz.X.ToFloat64() / float64(numX)
+			blockHeight := sz.Y.ToFloat64() / float64(numY)
+
+			// Translate from screen coordinates to grid coordinates.
+			newPos := IPt(
+				int(g.leftClickPos.X.ToFloat64()/blockWidth),
+				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.FuturePos = newPos
+			}
+		}
 	}
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
@@ -67,7 +87,7 @@ func (g *Gui) Update() error {
 	}
 
 	g.frameIdx.Inc()
-	if g.frameIdx.Mod(I(5)).Neq(ZERO) {
+	if g.frameIdx.Mod(I(25)).Neq(ZERO) {
 		return nil // skip update
 	}
 
@@ -147,23 +167,7 @@ func (g *Gui) Update() error {
 	if g.leftClick {
 		g.leftClick = false
 
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(g.leftClickPos).Len()
-		if dist.Geq(I(100)) {
-			sz := g.screenSize
-			numX := g.world.Obstacles.NCols().ToInt()
-			numY := g.world.Obstacles.NRows().ToInt()
-			blockWidth := sz.X.ToFloat64() / float64(numX)
-			blockHeight := sz.Y.ToFloat64() / float64(numY)
-
-			// Translate from screen coordinates to grid coordinates.
-			newPos := IPt(
-				int(g.leftClickPos.X.ToFloat64()/blockWidth),
-				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
-		}
+		g.world.Player.Pos = g.world.Player.FuturePos
 	}
 
 	// Move the enemy.
@@ -481,6 +485,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw player.
+	g.DrawTile(screen, g.imgPlayerShadow, g.world.Player.FuturePos)
 	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
@@ -704,10 +709,13 @@ func main() {
 	g.imgTree.Fill(intToCol(1))
 	g.imgPlayer = ebiten.NewImage(20, 20)
 	g.imgPlayer.Fill(intToCol(2))
+	g.imgPlayerShadow = ebiten.NewImage(20, 20)
+	c := color.RGBA{0, 150, 0, 30}
+	g.imgPlayerShadow.Fill(c)
 	g.imgEnemy = ebiten.NewImage(20, 20)
 	g.imgEnemy.Fill(intToCol(3))
 	g.imgEnemyShadow = ebiten.NewImage(20, 20)
-	c := color.RGBA{0, 0, 150, 30}
+	c = color.RGBA{0, 0, 150, 30}
 	g.imgEnemyShadow.Fill(c)
 
 	var err error
