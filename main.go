@@ -87,7 +87,7 @@ func (g *Gui) Update() error {
 	}
 
 	g.frameIdx.Inc()
-	if g.frameIdx.Mod(I(25)).Neq(ZERO) {
+	if g.frameIdx.Mod(I(90)).Neq(ZERO) {
 		return nil // skip update
 	}
 
@@ -171,7 +171,7 @@ func (g *Gui) Update() error {
 	}
 
 	// Move the enemy.
-	if g.world.TimeStep.Mod(I(40)).Eq(ZERO) {
+	if g.world.TimeStep.Mod(I(1)).Eq(ZERO) {
 		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
 		if len(path) > 1 {
 			g.world.Enemy.Pos = path[1]
