@@ -12,8 +12,12 @@ import (
 	. "playful-patterns.com/miln/ints"
 )
 
+var EnemyCooldown Int = I(40)
+var PlayerCooldown Int = I(15)
+
 type Player struct {
-	Pos Pt
+	Pos        Pt
+	TimeoutIdx Int
 }
 
 type Enemy struct {
@@ -52,22 +56,54 @@ func Check(e error) {
 }
 
 func (g *Gui) Update() error {
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		x, y := ebiten.CursorPosition()
-		g.leftClick = true
-		g.leftClickPos = IPt(x, y)
+	if g.world.Player.TimeoutIdx.Gt(ZERO) {
+		g.world.Player.TimeoutIdx.Dec()
 	}
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) && g.world.Player.TimeoutIdx.Eq(ZERO) {
 		x, y := ebiten.CursorPosition()
-		g.rightClick = true
-		g.rightClickPos = IPt(x, y)
+
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(IPt(x, y)).Len()
+		if dist.Geq(I(100)) {
+			sz := g.screenSize
+			numX := g.world.Obstacles.NCols().ToInt()
+			numY := g.world.Obstacles.NRows().ToInt()
+			blockWidth := sz.X.ToFloat64() / float64(numX)
+			blockHeight := sz.Y.ToFloat64() / float64(numY)
+
+			// Translate from screen coordinates to grid coordinates.
+			newPos := IPt(
+				int(float64(x)/blockWidth),
+				int(float64(y)/blockHeight))
+			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
+				g.world.Player.Pos = newPos
+				g.world.Player.TimeoutIdx = PlayerCooldown
+			}
+		}
+	}
+
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) && g.world.Player.TimeoutIdx.Eq(ZERO) {
+		x, y := ebiten.CursorPosition()
+
+		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		dist := enemyPos.Minus(IPt(x, y)).Len()
+		if dist.Lt(I(200)) {
+			// Hit enemy.
+			g.beamIdx = I(15)
+			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+			if intersects, pt := g.LineObstaclesIntersection(g.beam); intersects {
+				g.beam.End = pt
+			} else {
+				g.world.Player.TimeoutIdx = PlayerCooldown
+			}
+		}
 	}
 
 	g.frameIdx.Inc()
-	if g.frameIdx.Mod(I(5)).Neq(ZERO) {
-		return nil // skip update
-	}
+	//if g.frameIdx.Mod(I(5)).Neq(ZERO) {
+	//	return nil // skip update
+	//}
 
 	g.world.TimeStep.Inc()
 	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
@@ -127,45 +163,8 @@ func (g *Gui) Update() error {
 	//	}
 	//}
 
-	if g.rightClick {
-		g.rightClick = false
-
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(g.rightClickPos).Len()
-		if dist.Lt(I(100)) {
-			// Hit enemy.
-			g.beamIdx = I(15)
-			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
-			if intersects, pt := g.LineObstaclesIntersection(g.beam); intersects {
-				g.beam.End = pt
-			}
-		}
-	}
-
-	if g.leftClick {
-		g.leftClick = false
-
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(g.leftClickPos).Len()
-		if dist.Geq(I(100)) {
-			sz := g.screenSize
-			numX := g.world.Obstacles.NCols().ToInt()
-			numY := g.world.Obstacles.NRows().ToInt()
-			blockWidth := sz.X.ToFloat64() / float64(numX)
-			blockHeight := sz.Y.ToFloat64() / float64(numY)
-
-			// Translate from screen coordinates to grid coordinates.
-			newPos := IPt(
-				int(g.leftClickPos.X.ToFloat64()/blockWidth),
-				int(g.leftClickPos.Y.ToFloat64()/blockHeight))
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-			}
-		}
-	}
-
 	// Move the enemy.
-	if g.world.TimeStep.Mod(I(40)).Eq(ZERO) {
+	if g.world.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
 		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
 		if len(path) > 1 {
 			g.world.Enemy.Pos = path[1]
@@ -474,7 +473,15 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw player.
-	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
+	imgClone := ebiten.NewImageFromImage(g.imgPlayer)
+	{
+		totalWidth := I(imgClone.Bounds().Size().X)
+		lineWidth := g.world.Player.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
+		l := Line{IPt(0, 10), Pt{lineWidth, I(10)}}
+		DrawLine(imgClone, l, color.RGBA{255, 0, 0, 255})
+	}
+	g.DrawTile(screen, imgClone, g.world.Player.Pos)
+	//g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
 	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
