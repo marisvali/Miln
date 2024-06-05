@@ -14,6 +14,14 @@ import (
 
 var EnemyCooldown Int = I(40)
 var PlayerCooldown Int = I(15)
+var BlockSize Int = I(80)
+
+func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
+	m.Init(I(10), I(20))
+	pos1 = append(pos1, IPt(0, 0))
+	pos2 = append(pos2, IPt(2, 2))
+	return
+}
 
 type Player struct {
 	Pos        Pt
@@ -63,10 +71,21 @@ func (g *Gui) Update() error {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) && g.world.Player.TimeoutIdx.Eq(ZERO) {
 		x, y := ebiten.CursorPosition()
 
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(IPt(x, y)).Len()
-		if dist.Geq(I(100)) {
+		//enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+		//dist := enemyPos.Minus(IPt(x, y)).Len()
+		//if dist.Geq(I(100)) {
+		{
 			sz := g.screenSize
+			// The adjustments below are necessary because we can get x or y
+			// larger than the screen size when the user clicks around the
+			// bottom right corner of the window.
+			if x >= sz.X.ToInt() {
+				x = sz.X.ToInt() - 1
+			}
+			if y >= sz.Y.ToInt() {
+				y = sz.Y.ToInt() - 1
+			}
+
 			numX := g.world.Obstacles.NCols().ToInt()
 			numY := g.world.Obstacles.NRows().ToInt()
 			blockWidth := sz.X.ToFloat64() / float64(numX)
@@ -692,11 +711,30 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 }
 
 func main() {
-	ebiten.SetWindowSize(800, 800)
-	ebiten.SetWindowTitle("Miln")
-	ebiten.SetWindowPosition(700, 100)
-
 	var g Gui
+
+	// Obstacles
+	//g.world.Obstacles.Init(I(15), I(15))
+	pos1 := []Pt{}
+	pos2 := []Pt{}
+	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
+	g.world.Obstacles, pos1, pos2 = RandomLevel1()
+	if len(pos1) > 0 {
+		g.world.Player.Pos = pos1[0]
+	}
+	if len(pos2) > 0 {
+		g.world.Enemy.Pos = pos2[0]
+	}
+	g.pathfinding.Initialize(g.world.Obstacles)
+
+	// screen size
+	g.screenSize.X = BlockSize.Times(g.world.Obstacles.NCols())
+	g.screenSize.Y = BlockSize.Times(g.world.Obstacles.NRows())
+
+	ebiten.SetWindowSize(g.screenSize.X.ToInt(), g.screenSize.Y.ToInt())
+	ebiten.SetWindowTitle("Miln")
+	ebiten.SetWindowPosition(100, 100)
+
 	g.imgGround = ebiten.NewImage(20, 20)
 	g.imgGround.Fill(intToCol(0))
 	g.imgTree = ebiten.NewImage(20, 20)
@@ -706,6 +744,7 @@ func main() {
 	g.imgEnemy = ebiten.NewImage(20, 20)
 	g.imgEnemy.Fill(intToCol(3))
 
+	// font
 	var err error
 	// Load the Arial font
 	fontData, err := opentype.Parse(goregular.TTF)
@@ -717,18 +756,6 @@ func main() {
 		Hinting: font.HintingVertical,
 	})
 	Check(err)
-
-	//g.world.Obstacles.Init(I(15), I(15))
-	pos1 := []Pt{}
-	pos2 := []Pt{}
-	g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	if len(pos1) > 0 {
-		g.world.Player.Pos = pos1[0]
-	}
-	if len(pos2) > 0 {
-		g.world.Enemy.Pos = pos2[0]
-	}
-	g.pathfinding.Initialize(g.world.Obstacles)
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
