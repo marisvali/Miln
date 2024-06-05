@@ -7,8 +7,11 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
+	"image"
 	"image/color"
+	_ "image/png"
 	"math"
+	"os"
 	. "playful-patterns.com/miln/ints"
 )
 
@@ -59,12 +62,6 @@ type Gui struct {
 	beamIdx       Int
 	beamHitsEnemy bool
 	beamEnd       Pt
-}
-
-func Check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func (g *Gui) Update() error {
@@ -722,6 +719,20 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 	return
 }
 
+func loadImage(str string) *ebiten.Image {
+	file, err := os.Open(str)
+	defer file.Close()
+	Check(err)
+
+	img, _, err := image.Decode(file)
+	Check(err)
+	if err != nil {
+		return nil
+	}
+
+	return ebiten.NewImageFromImage(img)
+}
+
 func main() {
 	var g Gui
 
@@ -747,14 +758,11 @@ func main() {
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
-	g.imgGround = ebiten.NewImage(20, 20)
-	g.imgGround.Fill(intToCol(0))
-	g.imgTree = ebiten.NewImage(20, 20)
-	g.imgTree.Fill(intToCol(1))
-	g.imgPlayer = ebiten.NewImage(20, 20)
-	g.imgPlayer.Fill(intToCol(2))
-	g.imgEnemy = ebiten.NewImage(20, 20)
-	g.imgEnemy.Fill(intToCol(3))
+	g.imgGround = loadImage("data/ground.png")
+	g.imgTree = loadImage("data/tree.png")
+	g.imgPlayer = loadImage("data/player.png")
+	g.imgEnemy = loadImage("data/enemy.png")
+	//g.imgEnemy.Fill(intToCol(3))
 
 	// font
 	var err error
