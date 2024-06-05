@@ -18,6 +18,9 @@ var BlockSize Int = I(80)
 
 func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 	m.Init(I(10), I(20))
+	for i := 0; i < 10; i++ {
+		m.Set(RInt(ZERO, m.NRows().Minus(ONE)), RInt(ZERO, m.NCols().Minus(ONE)), ONE)
+	}
 	pos1 = append(pos1, IPt(0, 0))
 	pos2 = append(pos2, IPt(2, 2))
 	return
@@ -54,7 +57,8 @@ type Gui struct {
 	leftClickPos  Pt
 	rightClickPos Pt
 	beamIdx       Int
-	beam          Line
+	beamHitsEnemy bool
+	beamEnd       Pt
 }
 
 func Check(e error) {
@@ -110,10 +114,12 @@ func (g *Gui) Update() error {
 		if dist.Lt(I(200)) {
 			// Hit enemy.
 			g.beamIdx = I(15)
-			g.beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
-			if intersects, pt := g.LineObstaclesIntersection(g.beam); intersects {
-				g.beam.End = pt
+			l := Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+			if intersects, pt := g.LineObstaclesIntersection(l); intersects {
+				g.beamHitsEnemy = false
+				g.beamEnd = pt
 			} else {
+				g.beamHitsEnemy = true
 				g.world.Player.TimeoutIdx = PlayerCooldown
 			}
 		}
@@ -507,7 +513,13 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	// Draw beam.
 	if g.beamIdx.Gt(ZERO) {
-		DrawLine(screen, g.beam, intToCol(4))
+		var beam Line
+		if g.beamHitsEnemy {
+			beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+		} else {
+			beam = Line{g.TileToScreen(g.world.Player.Pos), g.beamEnd}
+		}
+		DrawLine(screen, beam, intToCol(4))
 		g.beamIdx.Dec()
 	}
 
