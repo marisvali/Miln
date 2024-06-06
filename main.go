@@ -486,9 +486,8 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	cols := g.world.Obstacles.NCols()
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
-			if g.world.Obstacles.Get(y, x).Eq(ZERO) {
-				g.DrawTile(screen, g.imgGround, Pt{x, y})
-			} else {
+			g.DrawTile(screen, g.imgGround, Pt{x, y})
+			if g.world.Obstacles.Get(y, x).Eq(ONE) {
 				g.DrawTile(screen, g.imgTree, Pt{x, y})
 			}
 		}
@@ -532,21 +531,21 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 func intToCol(ival int64) color.Color {
 	switch ival {
 	case 0:
-		return color.RGBA{25, 25, 25, 0}
+		return color.RGBA{25, 25, 25, 255}
 	case 1:
-		return color.RGBA{150, 0, 0, 0}
+		return color.RGBA{250, 0, 0, 255}
 	case 2:
-		return color.RGBA{0, 150, 0, 0}
+		return color.RGBA{0, 250, 0, 255}
 	case 3:
-		return color.RGBA{0, 0, 150, 0}
+		return color.RGBA{0, 0, 150, 255}
 	case 4:
-		return color.RGBA{150, 150, 0, 0}
+		return color.RGBA{250, 250, 0, 255}
 	case 5:
-		return color.RGBA{0, 150, 150, 0}
+		return color.RGBA{0, 250, 250, 255}
 	case 6:
-		return color.RGBA{150, 0, 150, 0}
+		return color.RGBA{250, 0, 250, 255}
 	case 7:
-		return color.RGBA{100, 150, 100, 0}
+		return color.RGBA{200, 250, 200, 255}
 	}
 	return color.Black
 }
@@ -611,10 +610,10 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	newDy := targetHeight / float64(imgSize.Y)
 	op.GeoM.Scale(newDx, newDy)
 
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorOne
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorOne
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorZero
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorZero
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
 	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
 	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
 
