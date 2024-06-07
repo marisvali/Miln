@@ -20,7 +20,7 @@ var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
 func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
-	m.Init(I(10), I(20))
+	m.Init(I(10), I(10))
 	for i := 0; i < 10; i++ {
 		m.Set(RInt(ZERO, m.NRows().Minus(ONE)), RInt(ZERO, m.NCols().Minus(ONE)), ONE)
 	}
@@ -62,9 +62,14 @@ type Gui struct {
 	beamIdx       Int
 	beamHitsEnemy bool
 	beamEnd       Pt
+	folderWatcher FolderWatcher
 }
 
 func (g *Gui) Update() error {
+	if g.folderWatcher.FolderContentsChanged() {
+		g.loadGuiData()
+	}
+
 	if g.world.Player.TimeoutIdx.Gt(ZERO) {
 		g.world.Player.TimeoutIdx.Dec()
 	}
@@ -732,6 +737,25 @@ func loadImage(str string) *ebiten.Image {
 	return ebiten.NewImageFromImage(img)
 }
 
+func (g *Gui) loadGuiData() {
+	// Read from the disk over and over until a full read is possible.
+	// This repetition is meant to avoid crashes due to reading files
+	// while they are still being written.
+	// It's a hack but possibly a quick and very useful one.
+	CheckCrashes = false
+	for {
+		CheckFailed = nil
+		g.imgGround = loadImage("data/ground.png")
+		g.imgTree = loadImage("data/tree.png")
+		g.imgPlayer = loadImage("data/player.png")
+		g.imgEnemy = loadImage("data/enemy.png")
+		if CheckFailed == nil {
+			break
+		}
+	}
+	CheckCrashes = true
+}
+
 func main() {
 	var g Gui
 
@@ -757,10 +781,8 @@ func main() {
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
-	g.imgGround = loadImage("data/ground.png")
-	g.imgTree = loadImage("data/tree.png")
-	g.imgPlayer = loadImage("data/player.png")
-	g.imgEnemy = loadImage("data/enemy.png")
+	g.folderWatcher.Folder = "data"
+	g.loadGuiData()
 	//g.imgEnemy.Fill(intToCol(3))
 
 	// font
