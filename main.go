@@ -51,6 +51,7 @@ type Gui struct {
 	imgTree       *ebiten.Image
 	imgPlayer     *ebiten.Image
 	imgEnemy      *ebiten.Image
+	imgBeam       *ebiten.Image
 	world         World
 	frameIdx      Int
 	pathfinding   Pathfinding
@@ -60,6 +61,7 @@ type Gui struct {
 	leftClickPos  Pt
 	rightClickPos Pt
 	beamIdx       Int
+	beamMax       Int
 	beamHitsEnemy bool
 	beamEnd       Pt
 	folderWatcher FolderWatcher
@@ -115,7 +117,7 @@ func (g *Gui) Update() error {
 		dist := enemyPos.Minus(IPt(x, y)).Len()
 		if dist.Lt(I(200)) {
 			// Hit enemy.
-			g.beamIdx = I(15)
+			g.beamIdx = g.beamMax
 			l := Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
 			if intersects, pt := g.LineObstaclesIntersection(l); intersects {
 				g.beamHitsEnemy = false
@@ -499,20 +501,40 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw player.
-	imgClone := ebiten.NewImageFromImage(g.imgPlayer)
+	mask := ebiten.NewImageFromImage(g.imgPlayer)
 	{
-		totalWidth := I(imgClone.Bounds().Size().X)
+		percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+		var alpha Int
+		if percent.Gt(ZERO) {
+			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+		} else {
+			alpha = ZERO
+		}
+
+		sz := mask.Bounds().Size()
+		for y := 0; y < sz.Y; y++ {
+			for x := 0; x < sz.X; x++ {
+				_, _, _, a := mask.At(x, y).RGBA()
+				if a > 0 {
+					mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+				}
+			}
+		}
+
+		totalWidth := I(mask.Bounds().Size().X)
 		lineWidth := g.world.Player.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
-		l := Line{IPt(0, 10), Pt{lineWidth, I(10)}}
-		DrawLine(imgClone, l, color.RGBA{255, 0, 0, 255})
+		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
+		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	}
-	g.DrawTile(screen, imgClone, g.world.Player.Pos)
+	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
+	g.DrawTile(screen, mask, g.world.Player.Pos)
 	//g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
 	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
 
 	// Draw beam.
+	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
 	if g.beamIdx.Gt(ZERO) {
 		var beam Line
 		if g.beamHitsEnemy {
@@ -520,9 +542,15 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		} else {
 			beam = Line{g.TileToScreen(g.world.Player.Pos), g.beamEnd}
 		}
-		DrawLine(screen, beam, intToCol(4))
+
+		alpha := uint8(g.beamIdx.Times(I(255)).DivBy(g.beamMax).ToInt())
+		//alpha = uint8(0)
+		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
+		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
+		DrawLine(beamScreen, beam, beamCol)
 		g.beamIdx.Dec()
 	}
+	DrawSprite(screen, beamScreen, 0, 0, float64(beamScreen.Bounds().Dx()), float64(beamScreen.Bounds().Dy()))
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
@@ -749,6 +777,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTree = loadImage("data/tree.png")
 		g.imgPlayer = loadImage("data/player.png")
 		g.imgEnemy = loadImage("data/enemy.png")
+		g.imgBeam = loadImage("data/beam.png")
 		if CheckFailed == nil {
 			break
 		}
@@ -758,6 +787,7 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
+	g.beamMax = I(15)
 
 	// Obstacles
 	//g.world.Obstacles.Init(I(15), I(15))
