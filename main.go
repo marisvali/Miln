@@ -46,25 +46,27 @@ type World struct {
 }
 
 type Gui struct {
-	defaultFont   font.Face
-	imgGround     *ebiten.Image
-	imgTree       *ebiten.Image
-	imgPlayer     *ebiten.Image
-	imgEnemy      *ebiten.Image
-	imgBeam       *ebiten.Image
-	world         World
-	frameIdx      Int
-	pathfinding   Pathfinding
-	screenSize    Pt
-	leftClick     bool
-	rightClick    bool
-	leftClickPos  Pt
-	rightClickPos Pt
-	beamIdx       Int
-	beamMax       Int
-	beamHitsEnemy bool
-	beamEnd       Pt
-	folderWatcher FolderWatcher
+	defaultFont     font.Face
+	imgGround       *ebiten.Image
+	imgTree         *ebiten.Image
+	imgPlayer       *ebiten.Image
+	imgEnemy        *ebiten.Image
+	imgBeam         *ebiten.Image
+	imgShadow       *ebiten.Image
+	world           World
+	frameIdx        Int
+	pathfinding     Pathfinding
+	screenSize      Pt
+	leftClick       bool
+	rightClick      bool
+	leftClickPos    Pt
+	rightClickPos   Pt
+	beamIdx         Int
+	beamMax         Int
+	beamHitsEnemy   bool
+	beamEnd         Pt
+	folderWatcher   FolderWatcher
+	attackableTiles []Pt
 }
 
 func (g *Gui) Update() error {
@@ -197,6 +199,22 @@ func (g *Gui) Update() error {
 		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
 		if len(path) > 1 {
 			g.world.Enemy.Pos = path[1]
+		}
+	}
+
+	// Compute which tiles are attackableTiles.
+	g.attackableTiles = []Pt{}
+	rows := g.world.Obstacles.NRows()
+	cols := g.world.Obstacles.NCols()
+	for y := ZERO; y.Lt(rows); y.Inc() {
+		for x := ZERO; x.Lt(cols); x.Inc() {
+			// Check if tile can be attacked.
+			pt := Pt{x, y}
+			screenPt := g.TileToScreen(pt)
+			l := Line{g.TileToScreen(g.world.Player.Pos), screenPt}
+			if intersects, _ := g.LineObstaclesIntersection(l); !intersects {
+				g.attackableTiles = append(g.attackableTiles, pt)
+			}
 		}
 	}
 
@@ -552,6 +570,10 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 	DrawSprite(screen, beamScreen, 0, 0, float64(beamScreen.Bounds().Dx()), float64(beamScreen.Bounds().Dy()))
 
+	// Mark attackable tiles.
+	for _, pt := range g.attackableTiles {
+		g.DrawTile(screen, g.imgShadow, pt)
+	}
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
@@ -778,6 +800,8 @@ func (g *Gui) loadGuiData() {
 		g.imgPlayer = loadImage("data/player.png")
 		g.imgEnemy = loadImage("data/enemy.png")
 		g.imgBeam = loadImage("data/beam.png")
+		g.imgShadow = loadImage("data/shadow.png")
+		g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
 		if CheckFailed == nil {
 			break
 		}
