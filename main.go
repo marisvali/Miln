@@ -12,37 +12,26 @@ import (
 	_ "image/png"
 	"math"
 	"os"
+	. "playful-patterns.com/miln/geometry"
 	. "playful-patterns.com/miln/ints"
+	pathfinding2 "playful-patterns.com/miln/pathfinding"
+	"playful-patterns.com/miln/point"
+	"playful-patterns.com/miln/utils"
+	. "playful-patterns.com/miln/world"
 )
 
 var EnemyCooldown Int = I(40)
 var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
-func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
+func RandomLevel1() (m utils.Matrix, pos1 []point.Pt, pos2 []point.Pt) {
 	m.Init(I(10), I(10))
 	for i := 0; i < 10; i++ {
 		m.Set(RInt(ZERO, m.NRows().Minus(ONE)), RInt(ZERO, m.NCols().Minus(ONE)), ONE)
 	}
-	pos1 = append(pos1, IPt(0, 0))
-	pos2 = append(pos2, IPt(2, 2))
+	pos1 = append(pos1, point.IPt(0, 0))
+	pos2 = append(pos2, point.IPt(2, 2))
 	return
-}
-
-type Player struct {
-	Pos        Pt
-	TimeoutIdx Int
-}
-
-type Enemy struct {
-	Pos Pt
-}
-
-type World struct {
-	Player    Player
-	Enemy     Enemy
-	Obstacles Matrix
-	TimeStep  Int
 }
 
 type Gui struct {
@@ -55,18 +44,18 @@ type Gui struct {
 	imgShadow       *ebiten.Image
 	world           World
 	frameIdx        Int
-	pathfinding     Pathfinding
-	screenSize      Pt
+	pathfinding     pathfinding2.Pathfinding
+	screenSize      point.Pt
 	leftClick       bool
 	rightClick      bool
-	leftClickPos    Pt
-	rightClickPos   Pt
+	leftClickPos    point.Pt
+	rightClickPos   point.Pt
 	beamIdx         Int
 	beamMax         Int
 	beamHitsEnemy   bool
-	beamEnd         Pt
-	folderWatcher   FolderWatcher
-	attackableTiles []Pt
+	beamEnd         point.Pt
+	folderWatcher   utils.FolderWatcher
+	attackableTiles []point.Pt
 }
 
 func (g *Gui) Update() error {
@@ -102,7 +91,7 @@ func (g *Gui) Update() error {
 			blockHeight := sz.Y.ToFloat64() / float64(numY)
 
 			// Translate from screen coordinates to grid coordinates.
-			newPos := IPt(
+			newPos := point.IPt(
 				int(float64(x)/blockWidth),
 				int(float64(y)/blockHeight))
 			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
@@ -116,7 +105,7 @@ func (g *Gui) Update() error {
 		x, y := ebiten.CursorPosition()
 
 		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(IPt(x, y)).Len()
+		dist := enemyPos.Minus(point.IPt(x, y)).Len()
 		if dist.Lt(I(200)) {
 			// Hit enemy.
 			g.beamIdx = g.beamMax
@@ -139,60 +128,12 @@ func (g *Gui) Update() error {
 	g.world.TimeStep.Inc()
 	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
 		// Damn.
-		Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
+		utils.Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
 	}
 
 	// Get keyboard input.
 	var pressedKeys []ebiten.Key
 	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
-
-	// Move the player.
-	//if g.world.TimeStep.Mod(I(3)).Eq(ZERO) {
-	//	moveLeft := slices.Contains(pressedKeys, ebiten.KeyA)
-	//	moveUp := slices.Contains(pressedKeys, ebiten.KeyW)
-	//	moveDown := slices.Contains(pressedKeys, ebiten.KeyS)
-	//	moveRight := slices.Contains(pressedKeys, ebiten.KeyD)
-	//
-	//	if moveLeft {
-	//		newPos := g.world.Player.Pos
-	//		if g.world.Player.Pos.X.Gt(ZERO) {
-	//			newPos.X.Dec()
-	//		}
-	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-	//			g.world.Player.Pos = newPos
-	//		}
-	//	}
-	//
-	//	if moveRight {
-	//		newPos := g.world.Player.Pos
-	//		if g.world.Player.Pos.X.Lt(g.world.Obstacles.NCols().Minus(I(1))) {
-	//			newPos.X.Inc()
-	//		}
-	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-	//			g.world.Player.Pos = newPos
-	//		}
-	//	}
-	//
-	//	if moveUp {
-	//		newPos := g.world.Player.Pos
-	//		if g.world.Player.Pos.Y.Gt(ZERO) {
-	//			newPos.Y.Dec()
-	//		}
-	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-	//			g.world.Player.Pos = newPos
-	//		}
-	//	}
-	//
-	//	if moveDown {
-	//		newPos := g.world.Player.Pos
-	//		if g.world.Player.Pos.Y.Lt(g.world.Obstacles.NRows().Minus(I(1))) {
-	//			newPos.Y.Inc()
-	//		}
-	//		if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-	//			g.world.Player.Pos = newPos
-	//		}
-	//	}
-	//}
 
 	// Move the enemy.
 	if g.world.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
@@ -203,13 +144,13 @@ func (g *Gui) Update() error {
 	}
 
 	// Compute which tiles are attackableTiles.
-	g.attackableTiles = []Pt{}
+	g.attackableTiles = []point.Pt{}
 	rows := g.world.Obstacles.NRows()
 	cols := g.world.Obstacles.NCols()
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
 			// Check if tile can be attacked.
-			pt := Pt{x, y}
+			pt := point.Pt{x, y}
 			screenPt := g.TileToScreen(pt)
 			l := Line{g.TileToScreen(g.world.Player.Pos), screenPt}
 			if intersects, _ := g.LineObstaclesIntersection(l); !intersects {
@@ -219,116 +160,6 @@ func (g *Gui) Update() error {
 	}
 
 	return nil
-}
-
-func LineVerticalLineIntersection(l, vert Line) (bool, Pt) {
-	// Check if the Lines even intersect.
-
-	// Check if l's min X is at the right of vertX.
-	minX, maxX := MinMax(l.Start.X, l.End.X)
-	vertX := vert.Start.X // we assume vert.Start.X == vert.End.X
-
-	if minX.Gt(vertX) {
-		return false, Pt{}
-	}
-
-	// Or if l's max X is at the left of vertX.
-	if maxX.Lt(vertX) {
-		return false, Pt{}
-	}
-
-	//// Check if l's minY is under the vertMaxY.
-	//minY, maxY := MinMax(l.Start.Y, l.End.Y)
-	//vertMinY, vertMaxY := MinMax(vert.Start.Y, vert.End.Y)
-	//
-	//if minY.Gt(vertMaxY) {
-	//	return false, Pt{}
-	//}
-	//
-	//// Or if l's max Y is above vertMinY.
-	//if maxY.Lt(vertMinY) {
-	//	return false, Pt{}
-	//}
-
-	vertMinY, vertMaxY := MinMax(vert.Start.Y, vert.End.Y)
-
-	// We know the intersection point will have the X coordinate equal to vertX.
-	// We just need to compute the Y coordinate.
-	// We have to move along the Y axis the same proportion that we moved along
-	// the X axis in order to get to the intersection point.
-
-	//factor := (vertX - l.Start.X) / (l.End.X - l.Start.X) // will always be positive
-	//y := l.Start.Y + factor * (l.End.Y - l.Start.Y) // l.End.Y - l.Start.Y will
-	// have the proper sign so that Y gets updated in the right direction
-	//y := l.Start.Y + (vertX - l.Start.X) / (l.End.X - l.Start.X) * (l.End.Y - l.Start.Y)
-	//y := l.Start.Y + (vertX - l.Start.X) * (l.End.Y - l.Start.Y) / (l.End.X - l.Start.X)
-	var y Int
-	if l.End.X.Eq(l.Start.X) {
-		y = l.Start.Y
-	} else {
-		y = l.Start.Y.Plus((vertX.Minus(l.Start.X)).Times(l.End.Y.Minus(l.Start.Y)).DivBy(l.End.X.Minus(l.Start.X)))
-	}
-
-	if y.Lt(vertMinY) || y.Gt(vertMaxY) {
-		return false, Pt{}
-	} else {
-		return true, Pt{vertX, y}
-	}
-}
-
-func LineHorizontalLineIntersection(l, horiz Line) (bool, Pt) {
-	// Check if the Lines even intersect.
-
-	// Check if l's minY is under the vertY.
-	minY, maxY := MinMax(l.Start.Y, l.End.Y)
-	vertY := horiz.Start.Y // we assume vert.Start.Y == vert.End.Y
-
-	if minY.Gt(vertY) {
-		return false, Pt{}
-	}
-
-	// Or if l's max Y is above vertY.
-	if maxY.Lt(vertY) {
-		return false, Pt{}
-	}
-
-	//// Check if l's min X is at the right of vertMaxX.
-	//minX, maxX := MinMax(l.Start.X, l.End.X)
-	//vertMinX, vertMaxX := MinMax(horiz.Start.X, horiz.End.X)
-	//
-	//if minX.Gt(vertMaxX) {
-	//	return false, Pt{}
-	//}
-	//
-	//// Or if l's max X is at the left of vertMinX.
-	//if maxX.Lt(vertMinX) {
-	//	return false, Pt{}
-	//}
-
-	vertMinX, vertMaxX := MinMax(horiz.Start.X, horiz.End.X)
-
-	// We know the intersection point will have the Y coordinate equal to vertY.
-	// We just need to compute the X coordinate.
-	// We have to move along the X axis the same proportion that we moved along
-	// the Y axis in order to get to the intersection point.
-
-	//factor := (vertY - l.Start.Y) / (l.End.Y - l.Start.Y) // will always be positive
-	//x := l.Start.X + factor * (l.End.X - l.Start.X) // l.End.X - l.Start.X will
-	// have the proper sign so that Y gets updated in the right direction
-	//x := l.Start.X + (vertY - l.Start.Y) / (l.End.Y - l.Start.Y) * (l.End.X - l.Start.X)
-	//x := l.Start.X + (vertY - l.Start.Y) * (l.End.X - l.Start.X) / (l.End.Y - l.Start.Y)
-	var x Int
-	if l.End.Y.Eq(l.Start.Y) {
-		x = l.Start.X
-	} else {
-		x = l.Start.X.Plus((vertY.Minus(l.Start.Y)).Times(l.End.X.Minus(l.Start.X)).DivBy(l.End.Y.Minus(l.Start.Y)))
-	}
-
-	if x.Lt(vertMinX) || x.Gt(vertMaxX) {
-		return false, Pt{}
-	} else {
-		return true, Pt{x, vertY}
-	}
 }
 
 func colorHex(hexVal int) color.Color {
@@ -346,7 +177,7 @@ func colorHex(hexVal int) color.Color {
 	}
 }
 
-func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
+func DrawPixel(screen *ebiten.Image, pt point.Pt, color color.Color) {
 	size := I(2)
 	for ax := pt.X.Minus(size); ax.Leq(pt.X.Plus(size)); ax.Inc() {
 		for ay := pt.Y.Minus(size); ay.Leq(pt.Y.Plus(size)); ay.Inc() {
@@ -355,73 +186,11 @@ func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
 	}
 }
 
-type Line struct {
-	Start Pt
-	End   Pt
-}
-
-type Circle struct {
-	Center   Pt
-	Diameter Int
-}
-
-type Square struct {
-	Center Pt
-	Size   Int
-}
-
-func GetClosestPoint(pts []Pt, refPt Pt) (bool, Pt) {
-	if len(pts) == 0 {
-		return false, Pt{}
-	}
-
-	// Find the point closest to the reference point.
-	minDist := refPt.SquaredDistTo(pts[0])
-	minIdx := 0
-	for idx := 1; idx < len(pts); idx++ {
-		dist := refPt.SquaredDistTo(pts[idx])
-		if dist.Lt(minDist) {
-			minDist = dist
-			minIdx = idx
-		}
-	}
-	return true, pts[minIdx]
-}
-
-func LineSquareIntersection(l Line, s Square) (bool, Pt) {
-	half := s.Size.DivBy(TWO)
-	p1 := Pt{s.Center.X.Minus(half), s.Center.Y.Minus(half)}
-	p2 := Pt{s.Center.X.Plus(half), s.Center.Y.Minus(half)}
-	p3 := Pt{s.Center.X.Plus(half), s.Center.Y.Plus(half)}
-	p4 := Pt{s.Center.X.Minus(half), s.Center.Y.Plus(half)}
-
-	l1 := Line{p1, p2}
-	l2 := Line{p2, p3}
-	l3 := Line{p3, p4}
-	l4 := Line{p4, p1}
-
-	ipts := []Pt{}
-	if intersects, ipt := LineHorizontalLineIntersection(l, l1); intersects {
-		ipts = append(ipts, ipt)
-	}
-	if intersects, ipt := LineVerticalLineIntersection(l, l2); intersects {
-		ipts = append(ipts, ipt)
-	}
-	if intersects, ipt := LineHorizontalLineIntersection(l, l3); intersects {
-		ipts = append(ipts, ipt)
-	}
-	if intersects, ipt := LineVerticalLineIntersection(l, l4); intersects {
-		ipts = append(ipts, ipt)
-	}
-
-	return GetClosestPoint(ipts, l.Start)
-}
-
 func EqualFloats(f1, f2 float64) bool {
 	return math.Abs(f1-f2) < 0.000001
 }
 
-func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
+func (g *Gui) LineObstaclesIntersection(l Line) (bool, point.Pt) {
 	sz := g.screenSize
 	numX := g.world.Obstacles.NCols().ToInt()
 	numY := g.world.Obstacles.NRows().ToInt()
@@ -430,14 +199,14 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 
 	rows := g.world.Obstacles.NRows()
 	cols := g.world.Obstacles.NCols()
-	ipts := []Pt{}
+	ipts := []point.Pt{}
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
 			if !g.world.Obstacles.Get(y, x).IsZero() {
 				if !EqualFloats(blockWidth, blockHeight) {
 					panic(fmt.Errorf("blocks are not squares"))
 				}
-				s := Square{g.TileToScreen(Pt{x, y}), I(int(blockWidth * 0.9))}
+				s := Square{g.TileToScreen(point.Pt{x, y}), I(int(blockWidth * 0.9))}
 				if intersects, ipt := LineSquareIntersection(l, s); intersects {
 					ipts = append(ipts, ipt)
 				}
@@ -468,18 +237,18 @@ func DrawLine(screen *ebiten.Image, l Line, color color.Color) {
 		inc := dx.DivBy(dx.Abs())
 		for x := x1; x.Neq(x2); x.Add(inc) {
 			y := y1.Plus(x.Minus(x1).Times(dy).DivBy(dx))
-			DrawPixel(screen, Pt{x, y}, color)
+			DrawPixel(screen, point.Pt{x, y}, color)
 		}
 	} else {
 		inc := dy.DivBy(dy.Abs())
 		for y := y1; y.Neq(y2); y.Add(inc) {
 			x := x1.Plus(y.Minus(y1).Times(dx).DivBy(dy))
-			DrawPixel(screen, Pt{x, y}, color)
+			DrawPixel(screen, point.Pt{x, y}, color)
 		}
 	}
 }
 
-func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
+func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos point.Pt) {
 	sz := screen.Bounds().Size()
 	numX := g.world.Obstacles.NCols().ToInt()
 	numY := g.world.Obstacles.NRows().ToInt()
@@ -491,7 +260,7 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	DrawSprite(screen, img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
 }
 
-func (g *Gui) TileToScreen(pos Pt) Pt {
+func (g *Gui) TileToScreen(pos point.Pt) point.Pt {
 	sz := g.screenSize
 	numX := g.world.Obstacles.NCols()
 	numY := g.world.Obstacles.NRows()
@@ -499,7 +268,7 @@ func (g *Gui) TileToScreen(pos Pt) Pt {
 	blockHeight := sz.Y.DivBy(numY)
 	x := pos.X.Times(blockWidth).Plus(blockWidth.DivBy(TWO))
 	y := pos.Y.Times(blockHeight).Plus(blockHeight.DivBy(TWO))
-	return Pt{x, y}
+	return point.Pt{x, y}
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
@@ -511,9 +280,9 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	cols := g.world.Obstacles.NCols()
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
-			g.DrawTile(screen, g.imgGround, Pt{x, y})
+			g.DrawTile(screen, g.imgGround, point.Pt{x, y})
 			if g.world.Obstacles.Get(y, x).Eq(ONE) {
-				g.DrawTile(screen, g.imgTree, Pt{x, y})
+				g.DrawTile(screen, g.imgTree, point.Pt{x, y})
 			}
 		}
 	}
@@ -541,7 +310,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 		totalWidth := I(mask.Bounds().Size().X)
 		lineWidth := g.world.Player.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
-		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
+		l := Line{point.IPt(0, 0), point.Pt{lineWidth, I(0)}}
 		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	}
 	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
@@ -579,7 +348,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	g.screenSize = IPt(outsideWidth, outsideHeight)
+	g.screenSize = point.IPt(outsideWidth, outsideHeight)
 	return outsideWidth, outsideHeight
 }
 
@@ -733,7 +502,7 @@ func Level1() string {
 `
 }
 
-func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
+func LevelFromString(level string) (m utils.Matrix, pos1 []point.Pt, pos2 []point.Pt) {
 	row := -1
 	col := 0
 	maxCol := 0
@@ -764,9 +533,9 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 		} else if c == 'x' {
 			m.Set(I(row), I(col), I(1))
 		} else if c == '1' {
-			pos1 = append(pos1, IPt(col, row))
+			pos1 = append(pos1, point.IPt(col, row))
 		} else if c == '2' {
-			pos2 = append(pos2, IPt(col, row))
+			pos2 = append(pos2, point.IPt(col, row))
 		}
 		col++
 	}
@@ -776,10 +545,10 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 func loadImage(str string) *ebiten.Image {
 	file, err := os.Open(str)
 	defer file.Close()
-	Check(err)
+	utils.Check(err)
 
 	img, _, err := image.Decode(file)
-	Check(err)
+	utils.Check(err)
 	if err != nil {
 		return nil
 	}
@@ -792,21 +561,21 @@ func (g *Gui) loadGuiData() {
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
 	// It's a hack but possibly a quick and very useful one.
-	CheckCrashes = false
+	utils.CheckCrashes = false
 	for {
-		CheckFailed = nil
+		utils.CheckFailed = nil
 		g.imgGround = loadImage("data/ground.png")
 		g.imgTree = loadImage("data/tree.png")
 		g.imgPlayer = loadImage("data/player.png")
 		g.imgEnemy = loadImage("data/enemy.png")
 		g.imgBeam = loadImage("data/beam.png")
 		g.imgShadow = loadImage("data/shadow.png")
-		g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
-		if CheckFailed == nil {
+		//g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
+		if utils.CheckFailed == nil {
 			break
 		}
 	}
-	CheckCrashes = true
+	utils.CheckCrashes = true
 }
 
 func main() {
@@ -815,8 +584,8 @@ func main() {
 
 	// Obstacles
 	//g.world.Obstacles.Init(I(15), I(15))
-	pos1 := []Pt{}
-	pos2 := []Pt{}
+	pos1 := []point.Pt{}
+	pos2 := []point.Pt{}
 	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
 	g.world.Obstacles, pos1, pos2 = RandomLevel1()
 	if len(pos1) > 0 {
@@ -843,16 +612,16 @@ func main() {
 	var err error
 	// Load the Arial font
 	fontData, err := opentype.Parse(goregular.TTF)
-	Check(err)
+	utils.Check(err)
 
 	g.defaultFont, err = opentype.NewFace(fontData, &opentype.FaceOptions{
 		Size:    24,
 		DPI:     72,
 		Hinting: font.HintingVertical,
 	})
-	Check(err)
+	utils.Check(err)
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
-	Check(err)
+	utils.Check(err)
 }

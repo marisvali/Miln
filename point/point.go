@@ -1,4 +1,4 @@
-package main
+package point
 
 import (
 	. "playful-patterns.com/miln/ints"

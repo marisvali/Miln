@@ -1,7 +1,9 @@
-package main
+package pathfinding
 
 import (
 	. "playful-patterns.com/miln/ints"
+	. "playful-patterns.com/miln/point"
+	. "playful-patterns.com/miln/utils"
 	"slices"
 )
 
@@ -53,15 +55,15 @@ func (p *Pathfinding) Initialize(m Matrix) {
 	// At neighbors[i] we will find the 8 neighbors of node with index i.
 	// Each neighbor is another index. If the index is -1, the neighbor is
 	// invalid.
-	p.neighbors = make([]int, m.NRows().Times(m.NCols()).ToInt()*len(dirs))
-	for y := I(0); y.Lt(m.NRows()); y.Inc() {
-		for x := I(0); x.Lt(m.NCols()); x.Inc() {
+	p.neighbors = make([]int, m.Size().X.Times(m.Size().Y).ToInt()*len(dirs))
+	for y := I(0); y.Lt(m.Size().Y); y.Inc() {
+		for x := I(0); x.Lt(m.Size().X); x.Inc() {
 			pt := Pt{x, y}
 			index := m.PtToIndex(pt).ToInt() * p.nDirs
 			ns := p.neighbors[index : index+p.nDirs]
 			for i := range dirs {
 				neighbor := pt.Plus(dirs[i])
-				if m.InBounds(neighbor) && m.Get(neighbor.Y, neighbor.X).Eq(I(0)) {
+				if m.InBounds(neighbor) && m.Get(neighbor).Eq(I(0)) {
 					ns[i] = m.PtToIndex(neighbor).ToInt()
 				} else {
 					ns[i] = -1
@@ -71,7 +73,7 @@ func (p *Pathfinding) Initialize(m Matrix) {
 	}
 
 	// This slice should never be re-allocated.
-	p.queue = make([]int, 0, m.NRows().Times(m.NCols()).ToInt())
+	p.queue = make([]int, 0, m.Size().X.Times(m.Size().Y).ToInt())
 	// These slices will never be resized.
 	p.visited = make([]bool, len(p.neighbors)/p.nDirs)
 	p.parents = make([]int, len(p.neighbors)/p.nDirs)
