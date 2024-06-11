@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"golang.org/x/image/font"
@@ -13,7 +12,6 @@ import (
 	. "playful-patterns.com/miln/world"
 )
 
-var EnemyCooldown Int = I(40)
 var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
@@ -50,12 +48,6 @@ func (g *Gui) Update() error {
 }
 
 func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
-	sz := g.screenSize
-	numX := g.world.Obstacles.Size().X.ToInt()
-	numY := g.world.Obstacles.Size().Y.ToInt()
-	blockWidth := sz.X.ToFloat64() / float64(numX)
-	blockHeight := sz.Y.ToFloat64() / float64(numY)
-
 	rows := g.world.Obstacles.Size().Y
 	cols := g.world.Obstacles.Size().X
 	ipts := []Pt{}
@@ -63,10 +55,7 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
 			if !g.world.Obstacles.Get(pt).IsZero() {
-				if !EqualFloats(blockWidth, blockHeight) {
-					panic(fmt.Errorf("blocks are not squares"))
-				}
-				s := Square{g.TileToScreen(pt), I(int(blockWidth * 0.9))}
+				s := Square{g.TileToScreen(pt), BlockSize.Times(I(90)).DivBy(I(100))}
 				if intersects, ipt := LineSquareIntersection(l, s); intersects {
 					ipts = append(ipts, ipt)
 				}
@@ -78,38 +67,21 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 }
 
 func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
-	sz := screen.Bounds().Size()
-	numX := g.world.Obstacles.Size().X.ToInt()
-	numY := g.world.Obstacles.Size().Y.ToInt()
-	blockWidth := float64(sz.X) / float64(numX)
-	blockHeight := float64(sz.Y) / float64(numY)
 	margin := float64(1)
-	posX := pos.X.ToFloat64() * blockWidth
-	posY := pos.Y.ToFloat64() * blockHeight
-	DrawSprite(screen, img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
+	pos = pos.Times(BlockSize)
+	x := pos.X.ToFloat64()
+	y := pos.Y.ToFloat64()
+	tileSize := BlockSize.ToFloat64() - 2*margin
+	DrawSprite(screen, img, x+margin, y+margin, tileSize, tileSize)
 }
 
 func (g *Gui) TileToScreen(pos Pt) Pt {
-	sz := g.screenSize
-	numX := g.world.Obstacles.Size().X
-	numY := g.world.Obstacles.Size().Y
-	blockWidth := sz.X.DivBy(numX)
-	blockHeight := sz.Y.DivBy(numY)
-	x := pos.X.Times(blockWidth).Plus(blockWidth.DivBy(TWO))
-	y := pos.Y.Times(blockHeight).Plus(blockHeight.DivBy(TWO))
-	return Pt{x, y}
+	half := BlockSize.DivBy(TWO)
+	return pos.Times(BlockSize).Plus(Pt{half, half})
 }
 
 func (g *Gui) WorldToGuiPos(pt Pt) Pt {
-	sz := g.screenSize
-	numX := g.world.Obstacles.Size().X
-	numY := g.world.Obstacles.Size().Y
-	blockWidth := sz.X.DivBy(numX)
-	blockHeight := sz.Y.DivBy(numY)
-	if blockWidth.Neq(blockHeight) {
-		panic(fmt.Errorf("blocks are not squares"))
-	}
-	return pt.Times(blockWidth).DivBy(g.world.BlockSize)
+	return pt.Times(BlockSize).DivBy(g.world.BlockSize)
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
