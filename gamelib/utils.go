@@ -7,7 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hajimehoshi/ebiten/v2"
+	"image"
+	"image/color"
 	"io"
+	"math"
 	"os"
 	"path"
 	"path/filepath"
@@ -241,4 +245,37 @@ func Zip(filename string, data []byte) {
 
 	// Actually write the zip to disk.
 	WriteFile(filename, buf.Bytes())
+}
+
+func LoadImage(str string) *ebiten.Image {
+	file, err := os.Open(str)
+	defer file.Close()
+	Check(err)
+
+	img, _, err := image.Decode(file)
+	Check(err)
+	if err != nil {
+		return nil
+	}
+
+	return ebiten.NewImageFromImage(img)
+}
+
+func EqualFloats(f1, f2 float64) bool {
+	return math.Abs(f1-f2) < 0.000001
+}
+
+func HexToColor(hexVal int) color.Color {
+	if hexVal < 0x000000 || hexVal > 0xFFFFFF {
+		panic(fmt.Sprintf("Invalid HEX value for color: %d", hexVal))
+	}
+	r := uint8(hexVal & 0xFF0000 >> 16)
+	g := uint8(hexVal & 0x00FF00 >> 8)
+	b := uint8(hexVal & 0x0000FF)
+	return color.RGBA{
+		R: r,
+		G: g,
+		B: b,
+		A: 255,
+	}
 }

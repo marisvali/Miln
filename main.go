@@ -7,11 +7,8 @@ import (
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
-	"image"
 	"image/color"
 	_ "image/png"
-	"math"
-	"os"
 	. "playful-patterns.com/miln/gamelib"
 	. "playful-patterns.com/miln/world"
 )
@@ -21,22 +18,17 @@ var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
 type Gui struct {
-	defaultFont     font.Face
-	imgGround       *ebiten.Image
-	imgTree         *ebiten.Image
-	imgPlayer       *ebiten.Image
-	imgEnemy        *ebiten.Image
-	imgBeam         *ebiten.Image
-	imgShadow       *ebiten.Image
-	world           World
-	frameIdx        Int
-	screenSize      Pt
-	leftClick       bool
-	rightClick      bool
-	leftClickPos    Pt
-	rightClickPos   Pt
-	folderWatcher   FolderWatcher
-	attackableTiles []Pt
+	defaultFont   font.Face
+	imgGround     *ebiten.Image
+	imgTree       *ebiten.Image
+	imgPlayer     *ebiten.Image
+	imgEnemy      *ebiten.Image
+	imgBeam       *ebiten.Image
+	imgShadow     *ebiten.Image
+	world         World
+	frameIdx      Int
+	screenSize    Pt
+	folderWatcher FolderWatcher
 }
 
 func (g *Gui) Update() error {
@@ -54,131 +46,7 @@ func (g *Gui) Update() error {
 		g.loadGuiData()
 	}
 
-	//if g.world.Player.TimeoutIdx.Gt(ZERO) {
-	//	g.world.Player.TimeoutIdx.Dec()
-	//}
-	//
-	//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) && g.world.Player.TimeoutIdx.Eq(ZERO) {
-	//	x, y := ebiten.CursorPosition()
-	//
-	//	//enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-	//	//dist := enemyPos.Minus(IPt(x, y)).Len()
-	//	//if dist.Geq(I(100)) {
-	//	{
-	//		sz := g.screenSize
-	//		// The adjustments below are necessary because we can get x or y
-	//		// larger than the screen size when the user clicks around the
-	//		// bottom right corner of the window.
-	//		if x >= sz.X.ToInt() {
-	//			x = sz.X.ToInt() - 1
-	//		}
-	//		if y >= sz.Y.ToInt() {
-	//			y = sz.Y.ToInt() - 1
-	//		}
-	//
-	//		numX := g.world.Obstacles.Size().X.ToInt()
-	//		numY := g.world.Obstacles.Size().Y.ToInt()
-	//		blockWidth := sz.X.ToFloat64() / float64(numX)
-	//		blockHeight := sz.Y.ToFloat64() / float64(numY)
-	//
-	//		// Translate from screen coordinates to grid coordinates.
-	//		newPos := IPt(
-	//			int(float64(x)/blockWidth),
-	//			int(float64(y)/blockHeight))
-	//		if g.world.Obstacles.Get(newPos).Eq(ZERO) {
-	//			g.world.Player.Pos = newPos
-	//			g.world.Player.TimeoutIdx = PlayerCooldown
-	//		}
-	//	}
-	//}
-	//
-	//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) && g.world.Player.TimeoutIdx.Eq(ZERO) {
-	//	x, y := ebiten.CursorPosition()
-	//
-	//	enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-	//	dist := enemyPos.Minus(IPt(x, y)).Len()
-	//	if dist.Lt(I(200)) {
-	//		// Hit enemy.
-	//		g.beamIdx = g.beamMax
-	//		l := Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
-	//		if intersects, pt := g.LineObstaclesIntersection(l); intersects {
-	//			g.beamHitsEnemy = false
-	//			g.beamEnd = pt
-	//		} else {
-	//			g.beamHitsEnemy = true
-	//			g.world.Player.TimeoutIdx = PlayerCooldown
-	//		}
-	//	}
-	//}
-	//
-	//g.frameIdx.Inc()
-	////if g.frameIdx.Mod(I(5)).Neq(ZERO) {
-	////	return nil // skip update
-	////}
-	//
-	//g.world.TimeStep.Inc()
-	//if g.world.TimeStep.Eq(I(math.MaxInt64)) {
-	//	// Damn.
-	//	Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
-	//}
-	//
-	//// Get keyboard input.
-	//var pressedKeys []ebiten.Key
-	//pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
-	//
-	//// Move the enemy.
-	//if g.world.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
-	//	path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
-	//	if len(path) > 1 {
-	//		g.world.Enemy.Pos = path[1]
-	//	}
-	//}
-	//
-	//// Compute which tiles are attackable.
-	//g.attackableTiles = []Pt{}
-	//rows := g.world.Obstacles.Size().Y
-	//cols := g.world.Obstacles.Size().X
-	//for y := ZERO; y.Lt(rows); y.Inc() {
-	//	for x := ZERO; x.Lt(cols); x.Inc() {
-	//		// Check if tile can be attacked.
-	//		pt := Pt{x, y}
-	//		screenPt := g.TileToScreen(pt)
-	//		l := Line{g.TileToScreen(g.world.Player.Pos), screenPt}
-	//		if intersects, _ := g.LineObstaclesIntersection(l); !intersects {
-	//			g.attackableTiles = append(g.attackableTiles, pt)
-	//		}
-	//	}
-	//}
-
 	return nil
-}
-
-func colorHex(hexVal int) color.Color {
-	if hexVal < 0x000000 || hexVal > 0xFFFFFF {
-		panic(fmt.Sprintf("Invalid HEX value for color: %d", hexVal))
-	}
-	r := uint8(hexVal & 0xFF0000 >> 16)
-	g := uint8(hexVal & 0x00FF00 >> 8)
-	b := uint8(hexVal & 0x0000FF)
-	return color.RGBA{
-		R: r,
-		G: g,
-		B: b,
-		A: 255,
-	}
-}
-
-func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
-	size := I(2)
-	for ax := pt.X.Minus(size); ax.Leq(pt.X.Plus(size)); ax.Inc() {
-		for ay := pt.Y.Minus(size); ay.Leq(pt.Y.Plus(size)); ay.Inc() {
-			screen.Set(ax.ToInt(), ay.ToInt(), color)
-		}
-	}
-}
-
-func EqualFloats(f1, f2 float64) bool {
-	return math.Abs(f1-f2) < 0.000001
 }
 
 func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
@@ -207,37 +75,6 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	}
 
 	return GetClosestPoint(ipts, l.Start)
-}
-
-func DrawLine(screen *ebiten.Image, l Line, color color.Color) {
-	x1 := l.Start.X
-	y1 := l.Start.Y
-	x2 := l.End.X
-	y2 := l.End.Y
-	if x1.Gt(x2) {
-		x1, x2 = x2, x1
-		y1, y2 = y2, y1
-	}
-
-	dx := x2.Minus(x1)
-	dy := y2.Minus(y1)
-	if dx.IsZero() && dy.IsZero() {
-		return // No line to draw.
-	}
-
-	if dx.Abs().Gt(dy.Abs()) {
-		inc := dx.DivBy(dx.Abs())
-		for x := x1; x.Neq(x2); x.Add(inc) {
-			y := y1.Plus(x.Minus(x1).Times(dy).DivBy(dx))
-			DrawPixel(screen, Pt{x, y}, color)
-		}
-	} else {
-		inc := dy.DivBy(dy.Abs())
-		for y := y1; y.Neq(y2); y.Add(inc) {
-			x := x1.Plus(y.Minus(y1).Times(dx).DivBy(dy))
-			DrawPixel(screen, Pt{x, y}, color)
-		}
-	}
 }
 
 func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
@@ -360,28 +197,6 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 	return outsideWidth, outsideHeight
 }
 
-func intToCol(ival int64) color.Color {
-	switch ival {
-	case 0:
-		return color.RGBA{25, 25, 25, 255}
-	case 1:
-		return color.RGBA{250, 0, 0, 255}
-	case 2:
-		return color.RGBA{0, 250, 0, 255}
-	case 3:
-		return color.RGBA{0, 0, 150, 255}
-	case 4:
-		return color.RGBA{250, 250, 0, 255}
-	case 5:
-		return color.RGBA{0, 250, 250, 255}
-	case 6:
-		return color.RGBA{250, 0, 250, 255}
-	case 7:
-		return color.RGBA{200, 250, 200, 255}
-	}
-	return color.Black
-}
-
 //func (g *Game) DrawFilledSquare(screen *ebiten.Image, s Square, col color.Color) {
 //	size := WorldToScreen(s.Size)
 //	x := WorldToScreen(s.Center.X) - size/2
@@ -429,141 +244,6 @@ func intToCol(ival int64) color.Color {
 //	}
 //}
 
-func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
-	x float64, y float64, targetWidth float64, targetHeight float64) {
-	op := &ebiten.DrawImageOptions{}
-
-	// Resize image to fit the target size we want to draw.
-	// This kind of scaling is very useful during development when the final
-	// sizes are not decided, and thus it's impossible to have final sprites.
-	// For an actual release, scaling should be avoided.
-	imgSize := img.Bounds().Size()
-	newDx := targetWidth / float64(imgSize.X)
-	newDy := targetHeight / float64(imgSize.Y)
-	op.GeoM.Scale(newDx, newDy)
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
-	op.GeoM.Translate(x, y)
-	screen.DrawImage(img, op)
-}
-
-func Level1() string {
-	//	return `
-	//xxxxxxxxxxxxxxx
-	//x           x x
-	//x xx  1  x xx x
-	//x x    xxx x  x
-	//xxxx          x
-	//x  x xxxx     x
-	//x         x   x
-	//x xxx   xxx   x
-	//x     x   x   x
-	//x   xxx   xxx x
-	//x     x       x
-	//x     xxxx    x
-	//x xx   x2  xx x
-	//x  x          x
-	//xxxxxxxxxxxxxxx
-	//`
-	//	return `
-	//xxxxxxxxxxxxxxx
-	//x             x
-	//x     1       x
-	//x        x    x
-	//x        x    x
-	//x   xxxxxx    x
-	//x             x
-	//x      xx     x
-	//x       x     x
-	//x       x     x
-	//x       xx    x
-	//x xxx         x
-	//x   x   2     x
-	//x             x
-	//xxxxxxxxxxxxxxx
-	//`
-	//	return `
-	//
-	//     1
-	//        x
-	//        x
-	//   xxxxxx
-	//
-	//      xx
-	//       x
-	//      2x
-	//       xx
-	//`
-	return `
-   1  
- xxxxx
-      
-    xx
-     x
-    2x
-`
-}
-
-func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
-	row := -1
-	col := 0
-	maxCol := 0
-	for i := 0; i < len(level); i++ {
-		c := level[i]
-		if c == '\n' {
-			maxCol = col
-			col = 0
-			row++
-			continue
-		}
-		col++
-	}
-	// If the string does not end with an empty line, count the last row.
-	if col > 0 {
-		row++
-	}
-	m.Init(IPt(row, maxCol))
-
-	row = -1
-	col = 0
-	for i := 0; i < len(level); i++ {
-		c := level[i]
-		if c == '\n' {
-			col = 0
-			row++
-			continue
-		} else if c == 'x' {
-			m.Set(IPt(row, col), I(1))
-		} else if c == '1' {
-			pos1 = append(pos1, IPt(col, row))
-		} else if c == '2' {
-			pos2 = append(pos2, IPt(col, row))
-		}
-		col++
-	}
-	return
-}
-
-func loadImage(str string) *ebiten.Image {
-	file, err := os.Open(str)
-	defer file.Close()
-	Check(err)
-
-	img, _, err := image.Decode(file)
-	Check(err)
-	if err != nil {
-		return nil
-	}
-
-	return ebiten.NewImageFromImage(img)
-}
-
 func (g *Gui) loadGuiData() {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
@@ -572,12 +252,12 @@ func (g *Gui) loadGuiData() {
 	CheckCrashes = false
 	for {
 		CheckFailed = nil
-		g.imgGround = loadImage("data/ground.png")
-		g.imgTree = loadImage("data/tree.png")
-		g.imgPlayer = loadImage("data/player.png")
-		g.imgEnemy = loadImage("data/enemy.png")
-		g.imgBeam = loadImage("data/beam.png")
-		g.imgShadow = loadImage("data/shadow.png")
+		g.imgGround = LoadImage("data/ground.png")
+		g.imgTree = LoadImage("data/tree.png")
+		g.imgPlayer = LoadImage("data/player.png")
+		g.imgEnemy = LoadImage("data/enemy.png")
+		g.imgBeam = LoadImage("data/beam.png")
+		g.imgShadow = LoadImage("data/shadow.png")
 		//g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
 		if CheckFailed == nil {
 			break
