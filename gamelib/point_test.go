@@ -1,10 +1,8 @@
-package point
+package gamelib
 
 import (
 	"github.com/stretchr/testify/assert"
 	"math"
-	. "playful-patterns.com/miln/ints"
-	"playful-patterns.com/miln/utils"
 	"slices"
 	"testing"
 )
@@ -101,9 +99,9 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 	// between 1000 and 10000 (random samples)
 	{
 		var diffs []float64
-		utils.RSeed(I(0))
+		RSeed(I(0))
 		for i := 1; i < 1000000; i++ {
-			randomPt := Pt{utils.RInt(I(1000), I(9999)), utils.RInt(I(1000), I(9999))}
+			randomPt := Pt{RInt(I(1000), I(9999)), RInt(I(1000), I(9999))}
 			diff := AddLenGetDif(randomPt, extraLen)
 			diffs = append(diffs, diff)
 		}
@@ -217,9 +215,9 @@ func TestPt_SetLen(t *testing.T) {
 	// between 1000 and 10000 (random samples)
 	{
 		var diffs []float64
-		utils.RSeed(I(0))
+		RSeed(I(0))
 		for i := 1; i < 1000000; i++ {
-			randomPt := Pt{utils.RInt(I(1000), I(9999)), utils.RInt(I(1000), I(9999))}
+			randomPt := Pt{RInt(I(1000), I(9999)), RInt(I(1000), I(9999))}
 			diff := SetLenGetDif(randomPt, targetLen)
 			diffs = append(diffs, diff)
 		}

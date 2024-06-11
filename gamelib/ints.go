@@ -91,7 +91,7 @@ insight. So now you are spying on a lot of people so that you get a little bit
 of insight from each one, instead of deeply analyzing a few people and getting
 most of your insight that way.
 */
-package ints
+package gamelib
 
 import (
 	"fmt"

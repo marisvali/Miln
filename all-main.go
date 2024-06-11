@@ -4,12 +4,12 @@ package main
 //import (
 //	"github.com/hajimehoshi/ebiten/v2"
 //	"os"
-//	"playful-patterns.com/miln/utils"
+//	"playful-patterns.com/miln/gamelib"
 //)
 //
 //func main() {
 //	if len(os.Args) == 1 {
-//		RunGuiFusedPlay(utils.GetNewRecordingFile())
+//		RunGuiFusedPlay(gamelib.GetNewRecordingFile())
 //	} else {
 //		RunGuiFusedPlayback(os.Args[1])
 //		//RunGuiFusedPlayback("d:/gms/bakoko/recordings/recorded-inputs-2024-03-20-000000")
@@ -26,7 +26,7 @@ package main
 //
 //	// Start the game.
 //	err := ebiten.RunGame(&g)
-//	utils.Check(err)
+//	gamelib.Check(err)
 //}
 //
 //func RunGuiFusedPlayback(recordingFile string) {
@@ -39,5 +39,5 @@ package main
 //
 //	// Start the game.
 //	err := ebiten.RunGame(&g)
-//	utils.Check(err)
+//	gamelib.Check(err)
 //}

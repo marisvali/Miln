@@ -6,11 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	_ "image/png"
 	"math"
-	. "playful-patterns.com/miln/geometry"
-	. "playful-patterns.com/miln/ints"
-	. "playful-patterns.com/miln/pathfinding"
-	. "playful-patterns.com/miln/point"
-	. "playful-patterns.com/miln/utils"
+	. "playful-patterns.com/miln/gamelib"
 )
 
 type Player struct {

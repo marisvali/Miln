@@ -1,10 +1,23 @@
-package geometry
+package gamelib
 
 import (
 	_ "image/png"
-	. "playful-patterns.com/miln/ints"
-	. "playful-patterns.com/miln/point"
 )
+
+type Line struct {
+	Start Pt
+	End   Pt
+}
+
+type Circle struct {
+	Center   Pt
+	Diameter Int
+}
+
+type Square struct {
+	Center Pt
+	Size   Int
+}
 
 func LineVerticalLineIntersection(l, vert Line) (bool, Pt) {
 	// Check if the Lines even intersect.

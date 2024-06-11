@@ -1,9 +1,6 @@
-package pathfinding
+package gamelib
 
 import (
-	. "playful-patterns.com/miln/ints"
-	. "playful-patterns.com/miln/point"
-	. "playful-patterns.com/miln/utils"
 	"slices"
 )
 

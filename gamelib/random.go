@@ -1,9 +1,8 @@
-package utils
+package gamelib
 
 import (
 	"fmt"
 	"math/rand"
-	. "playful-patterns.com/miln/ints"
 )
 
 var randomGenerator *rand.Rand

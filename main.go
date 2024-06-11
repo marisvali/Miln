@@ -12,10 +12,7 @@ import (
 	_ "image/png"
 	"math"
 	"os"
-	. "playful-patterns.com/miln/geometry"
-	. "playful-patterns.com/miln/ints"
-	. "playful-patterns.com/miln/point"
-	. "playful-patterns.com/miln/utils"
+	. "playful-patterns.com/miln/gamelib"
 	. "playful-patterns.com/miln/world"
 )
 

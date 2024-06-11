@@ -1,4 +1,4 @@
-package ints
+package gamelib
 
 import (
 	"github.com/stretchr/testify/assert"

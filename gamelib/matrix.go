@@ -1,9 +1,4 @@
-package utils
-
-import (
-	. "playful-patterns.com/miln/ints"
-	. "playful-patterns.com/miln/point"
-)
+package gamelib
 
 type Matrix struct {
 	cells []Int

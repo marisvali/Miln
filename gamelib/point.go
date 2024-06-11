@@ -1,8 +1,4 @@
-package point
-
-import (
-	. "playful-patterns.com/miln/ints"
-)
+package gamelib
 
 type Pt struct {
 	X, Y Int
