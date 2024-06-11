@@ -1,37 +1,37 @@
-package main
+package point
 
 import (
 	"github.com/stretchr/testify/assert"
 	"math"
 	. "playful-patterns.com/miln/ints"
-	"playful-patterns.com/miln/point"
+	"playful-patterns.com/miln/utils"
 	"slices"
 	"testing"
 )
 
 func TestPt_Add(t *testing.T) {
-	p := point.IPt(1, 2)
-	p.Add(point.IPt(3, 4))
-	assert.Equal(t, p, point.IPt(4, 6))
-	p = point.IPt(1, 2)
-	p.Add(point.IPt(-3, -4))
-	assert.Equal(t, p, point.IPt(-2, -2))
+	p := IPt(1, 2)
+	p.Add(IPt(3, 4))
+	assert.Equal(t, p, IPt(4, 6))
+	p = IPt(1, 2)
+	p.Add(IPt(-3, -4))
+	assert.Equal(t, p, IPt(-2, -2))
 }
 
 func TestPt_AddLenSimple(t *testing.T) {
-	p := point.IPt(1, 1)
+	p := IPt(1, 1)
 	p.AddLen(I(1))
-	assert.Equal(t, point.IPt(2, 2), p)
+	assert.Equal(t, IPt(2, 2), p)
 
-	p = point.IPt(100, 0)
+	p = IPt(100, 0)
 	p.AddLen(I(20))
-	assert.Equal(t, point.IPt(120, 0), p)
+	assert.Equal(t, IPt(120, 0), p)
 
-	p = point.IPt(0, 13)
+	p = IPt(0, 13)
 	p.AddLen(I(20))
-	assert.Equal(t, point.IPt(0, 33), p)
+	assert.Equal(t, IPt(0, 33), p)
 
-	p = point.IPt(800, 130)
+	p = IPt(800, 130)
 	oldLen := p.Len()
 	extraLen := I(54)
 	p.AddLen(extraLen)
@@ -39,7 +39,7 @@ func TestPt_AddLenSimple(t *testing.T) {
 }
 
 func TestPt_AddLen_TooSmallToHaveEffect(t *testing.T) {
-	p := point.IPt(800, 130)
+	p := IPt(800, 130)
 	oldLen := p.Len()
 	extraLen := I(1)
 	p.AddLen(extraLen)
@@ -73,7 +73,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 		var diffs []float64
 		for x := 10; x < 100; x++ {
 			for y := 10; y < 100; y++ {
-				diff := AddLenGetDif(point.Pt{I(x), I(y)}, extraLen)
+				diff := AddLenGetDif(Pt{I(x), I(y)}, extraLen)
 				diffs = append(diffs, diff)
 			}
 		}
@@ -88,7 +88,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 		var diffs []float64
 		for x := 100; x < 1000; x++ {
 			for y := 100; y < 1000; y++ {
-				diff := AddLenGetDif(point.Pt{I(x), I(y)}, extraLen)
+				diff := AddLenGetDif(Pt{I(x), I(y)}, extraLen)
 				diffs = append(diffs, diff)
 			}
 		}
@@ -101,9 +101,9 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 	// between 1000 and 10000 (random samples)
 	{
 		var diffs []float64
-		RSeed(I(0))
+		utils.RSeed(I(0))
 		for i := 1; i < 1000000; i++ {
-			randomPt := point.Pt{RInt(I(1000), I(9999)), RInt(I(1000), I(9999))}
+			randomPt := Pt{utils.RInt(I(1000), I(9999)), utils.RInt(I(1000), I(9999))}
 			diff := AddLenGetDif(randomPt, extraLen)
 			diffs = append(diffs, diff)
 		}
@@ -113,7 +113,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 	}
 }
 
-func AddLenGetDif(a point.Pt, extraLen Int) float64 {
+func AddLenGetDif(a Pt, extraLen Int) float64 {
 	oldLen := a.Len()
 	a.AddLen(extraLen)
 	newLen := a.Len()
@@ -126,40 +126,40 @@ func AddLenGetDif(a point.Pt, extraLen Int) float64 {
 }
 
 func TestPt_Len(t *testing.T) {
-	assert.Equal(t, point.IPt(0, 0).Len(), I(0))                    // real length: 0.000..
-	assert.Equal(t, point.IPt(1, 0).Len(), I(1))                    // real length: 1.000..
-	assert.Equal(t, point.IPt(1, 1).Len(), I(1))                    // real length: 1.414..
-	assert.Equal(t, point.IPt(5, 5).Len(), I(7))                    // real length: 7.071..
-	assert.Equal(t, point.IPt(-13, -5).Len(), I(13))                // real length: 13.928..
-	assert.Equal(t, point.IPt(-13, 5).Len(), I(13))                 // real length: 13.928..
-	assert.Equal(t, point.IPt(13, -5).Len(), I(13))                 // real length: 13.928..
-	assert.Equal(t, point.IPt(130034, 23458883).Len(), I(23459243)) // real length: 23,459,243.390..
-	assert.Panics(t, func() { point.IPt(math.MaxInt64, math.MaxInt64).Len() })
-	assert.Panics(t, func() { point.IPt(math.MinInt64, 34).Len() })
+	assert.Equal(t, IPt(0, 0).Len(), I(0))                    // real length: 0.000..
+	assert.Equal(t, IPt(1, 0).Len(), I(1))                    // real length: 1.000..
+	assert.Equal(t, IPt(1, 1).Len(), I(1))                    // real length: 1.414..
+	assert.Equal(t, IPt(5, 5).Len(), I(7))                    // real length: 7.071..
+	assert.Equal(t, IPt(-13, -5).Len(), I(13))                // real length: 13.928..
+	assert.Equal(t, IPt(-13, 5).Len(), I(13))                 // real length: 13.928..
+	assert.Equal(t, IPt(13, -5).Len(), I(13))                 // real length: 13.928..
+	assert.Equal(t, IPt(130034, 23458883).Len(), I(23459243)) // real length: 23,459,243.390..
+	assert.Panics(t, func() { IPt(math.MaxInt64, math.MaxInt64).Len() })
+	assert.Panics(t, func() { IPt(math.MinInt64, 34).Len() })
 }
 
 func TestPt_Scale(t *testing.T) {
-	a := point.IPt(-13, 5)
+	a := IPt(-13, 5)
 	a.Scale(I(2), I(1))
-	assert.Equal(t, a, point.IPt(-26, 10))
+	assert.Equal(t, a, IPt(-26, 10))
 
-	a = point.IPt(-100, 25)
+	a = IPt(-100, 25)
 	a.Scale(I(1), I(2))
-	assert.Equal(t, a, point.IPt(-50, 12))
+	assert.Equal(t, a, IPt(-50, 12))
 
-	a = point.IPt(14037623, -3212809)
+	a = IPt(14037623, -3212809)
 	a.Scale(I(9), I(4))
-	assert.Equal(t, a, point.IPt(31584651, -7228820))
+	assert.Equal(t, a, IPt(31584651, -7228820))
 
-	a = point.IPt(1, 5)
+	a = IPt(1, 5)
 	a.Scale(I(2), I(11))
-	assert.Equal(t, a, point.IPt(0, 0))
+	assert.Equal(t, a, IPt(0, 0))
 
-	a = point.IPt(0, 0)
+	a = IPt(0, 0)
 	a.Scale(I(10), I(1))
-	assert.Equal(t, a, point.IPt(0, 0))
+	assert.Equal(t, a, IPt(0, 0))
 
-	a = point.IPt(14037623, -3212809)
+	a = IPt(14037623, -3212809)
 	assert.Panics(t, func() { a.Scale(I(math.MaxInt64), I(math.MaxInt64)) })
 }
 
@@ -189,7 +189,7 @@ func TestPt_SetLen(t *testing.T) {
 		var diffs []float64
 		for x := 10; x < 100; x++ {
 			for y := 10; y < 100; y++ {
-				diff := SetLenGetDif(point.Pt{I(x), I(y)}, targetLen)
+				diff := SetLenGetDif(Pt{I(x), I(y)}, targetLen)
 				diffs = append(diffs, diff)
 			}
 		}
@@ -204,7 +204,7 @@ func TestPt_SetLen(t *testing.T) {
 		var diffs []float64
 		for x := 100; x < 1000; x++ {
 			for y := 100; y < 1000; y++ {
-				diff := SetLenGetDif(point.Pt{I(x), I(y)}, targetLen)
+				diff := SetLenGetDif(Pt{I(x), I(y)}, targetLen)
 				diffs = append(diffs, diff)
 			}
 		}
@@ -217,9 +217,9 @@ func TestPt_SetLen(t *testing.T) {
 	// between 1000 and 10000 (random samples)
 	{
 		var diffs []float64
-		RSeed(I(0))
+		utils.RSeed(I(0))
 		for i := 1; i < 1000000; i++ {
-			randomPt := point.Pt{RInt(I(1000), I(9999)), RInt(I(1000), I(9999))}
+			randomPt := Pt{utils.RInt(I(1000), I(9999)), utils.RInt(I(1000), I(9999))}
 			diff := SetLenGetDif(randomPt, targetLen)
 			diffs = append(diffs, diff)
 		}
@@ -229,7 +229,7 @@ func TestPt_SetLen(t *testing.T) {
 	}
 }
 
-func SetLenGetDif(a point.Pt, targetLen Int) float64 {
+func SetLenGetDif(a Pt, targetLen Int) float64 {
 	a.SetLen(targetLen)
 	dif := a.Len().Minus(targetLen).Abs()
 	difPercent := dif.ToFloat64() / targetLen.ToFloat64() * 100
@@ -239,32 +239,32 @@ func SetLenGetDif(a point.Pt, targetLen Int) float64 {
 }
 
 func TestPt_SquaredDistTo(t *testing.T) {
-	assert.Equal(t, point.IPt(0, 0).SquaredDistTo(point.IPt(1, 1)), I(2))
-	assert.Equal(t, point.IPt(1, 1).SquaredDistTo(point.IPt(0, 0)), I(2))
-	assert.Equal(t, point.IPt(6, -8).SquaredDistTo(point.IPt(4, 77)), I(7229))
-	assert.Equal(t, point.IPt(130034, 23458883).SquaredDistTo(point.IPt(0, 0)), I(550336100448845))
-	assert.Panics(t, func() { point.IPt(3424543543, -943242123433).SquaredDistTo(point.IPt(-3424543543, 943242123433)) })
+	assert.Equal(t, IPt(0, 0).SquaredDistTo(IPt(1, 1)), I(2))
+	assert.Equal(t, IPt(1, 1).SquaredDistTo(IPt(0, 0)), I(2))
+	assert.Equal(t, IPt(6, -8).SquaredDistTo(IPt(4, 77)), I(7229))
+	assert.Equal(t, IPt(130034, 23458883).SquaredDistTo(IPt(0, 0)), I(550336100448845))
+	assert.Panics(t, func() { IPt(3424543543, -943242123433).SquaredDistTo(IPt(-3424543543, 943242123433)) })
 }
 
 func TestPt_SquaredLen(t *testing.T) {
-	assert.Equal(t, point.IPt(0, 0).SquaredLen(), I(0))
-	assert.Equal(t, point.IPt(1, 0).SquaredLen(), I(1))
-	assert.Equal(t, point.IPt(1, 1).SquaredLen(), I(2))
-	assert.Equal(t, point.IPt(5, 5).SquaredLen(), I(50))
-	assert.Equal(t, point.IPt(-13, -5).SquaredLen(), I(194))
-	assert.Equal(t, point.IPt(-13, 5).SquaredLen(), I(194))
-	assert.Equal(t, point.IPt(13, -5).SquaredLen(), I(194))
-	assert.Equal(t, point.IPt(130034, 23458883).SquaredLen(), I(550336100448845))
-	assert.Panics(t, func() { point.IPt(math.MaxInt64, math.MaxInt64).SquaredLen() })
-	assert.Panics(t, func() { point.IPt(math.MinInt64, 34).SquaredLen() })
+	assert.Equal(t, IPt(0, 0).SquaredLen(), I(0))
+	assert.Equal(t, IPt(1, 0).SquaredLen(), I(1))
+	assert.Equal(t, IPt(1, 1).SquaredLen(), I(2))
+	assert.Equal(t, IPt(5, 5).SquaredLen(), I(50))
+	assert.Equal(t, IPt(-13, -5).SquaredLen(), I(194))
+	assert.Equal(t, IPt(-13, 5).SquaredLen(), I(194))
+	assert.Equal(t, IPt(13, -5).SquaredLen(), I(194))
+	assert.Equal(t, IPt(130034, 23458883).SquaredLen(), I(550336100448845))
+	assert.Panics(t, func() { IPt(math.MaxInt64, math.MaxInt64).SquaredLen() })
+	assert.Panics(t, func() { IPt(math.MinInt64, 34).SquaredLen() })
 }
 
 func TestPt_To(t *testing.T) {
-	assert.Equal(t, point.IPt(0, 0).To(point.IPt(1, 1)), point.IPt(1, 1))
-	assert.Equal(t, point.IPt(1, 1).To(point.IPt(0, 0)), point.IPt(-1, -1))
-	assert.Equal(t, point.IPt(6, -8).To(point.IPt(4, 77)), point.IPt(-2, 85))
-	assert.Equal(t, point.IPt(123, 0).To(point.IPt(122, 1)), point.IPt(-1, 1))
-	assert.Equal(t, point.IPt(3424543543, -943242123433).To(point.IPt(-3424543543, 943242123433)), point.IPt(-6849087086, 1886484246866))
-	assert.Panics(t, func() { point.IPt(math.MinInt64, math.MinInt64).To(point.IPt(math.MaxInt64, math.MaxInt64)) })
-	assert.Panics(t, func() { point.IPt(math.MaxInt64, math.MaxInt64).To(point.IPt(math.MinInt64, math.MinInt64)) })
+	assert.Equal(t, IPt(0, 0).To(IPt(1, 1)), IPt(1, 1))
+	assert.Equal(t, IPt(1, 1).To(IPt(0, 0)), IPt(-1, -1))
+	assert.Equal(t, IPt(6, -8).To(IPt(4, 77)), IPt(-2, 85))
+	assert.Equal(t, IPt(123, 0).To(IPt(122, 1)), IPt(-1, 1))
+	assert.Equal(t, IPt(3424543543, -943242123433).To(IPt(-3424543543, 943242123433)), IPt(-6849087086, 1886484246866))
+	assert.Panics(t, func() { IPt(math.MinInt64, math.MinInt64).To(IPt(math.MaxInt64, math.MaxInt64)) })
+	assert.Panics(t, func() { IPt(math.MaxInt64, math.MaxInt64).To(IPt(math.MinInt64, math.MinInt64)) })
 }

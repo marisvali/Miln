@@ -14,25 +14,14 @@ import (
 	"os"
 	. "playful-patterns.com/miln/geometry"
 	. "playful-patterns.com/miln/ints"
-	pathfinding2 "playful-patterns.com/miln/pathfinding"
-	"playful-patterns.com/miln/point"
-	"playful-patterns.com/miln/utils"
+	. "playful-patterns.com/miln/point"
+	. "playful-patterns.com/miln/utils"
 	. "playful-patterns.com/miln/world"
 )
 
 var EnemyCooldown Int = I(40)
 var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
-
-func RandomLevel1() (m utils.Matrix, pos1 []point.Pt, pos2 []point.Pt) {
-	m.Init(I(10), I(10))
-	for i := 0; i < 10; i++ {
-		m.Set(RInt(ZERO, m.NRows().Minus(ONE)), RInt(ZERO, m.NCols().Minus(ONE)), ONE)
-	}
-	pos1 = append(pos1, point.IPt(0, 0))
-	pos2 = append(pos2, point.IPt(2, 2))
-	return
-}
 
 type Gui struct {
 	defaultFont     font.Face
@@ -44,120 +33,125 @@ type Gui struct {
 	imgShadow       *ebiten.Image
 	world           World
 	frameIdx        Int
-	pathfinding     pathfinding2.Pathfinding
-	screenSize      point.Pt
+	screenSize      Pt
 	leftClick       bool
 	rightClick      bool
-	leftClickPos    point.Pt
-	rightClickPos   point.Pt
-	beamIdx         Int
-	beamMax         Int
-	beamHitsEnemy   bool
-	beamEnd         point.Pt
-	folderWatcher   utils.FolderWatcher
-	attackableTiles []point.Pt
+	leftClickPos    Pt
+	rightClickPos   Pt
+	folderWatcher   FolderWatcher
+	attackableTiles []Pt
 }
 
 func (g *Gui) Update() error {
+	x, y := ebiten.CursorPosition()
+	mousePt := IPt(x, y).DivBy(BlockSize)
+
+	var input PlayerInput
+	input.Move = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0)
+	input.MovePt = mousePt
+	input.Shoot = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2)
+	input.ShootPt = mousePt
+	g.world.Step(&input)
+
 	if g.folderWatcher.FolderContentsChanged() {
 		g.loadGuiData()
 	}
 
-	if g.world.Player.TimeoutIdx.Gt(ZERO) {
-		g.world.Player.TimeoutIdx.Dec()
-	}
-
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) && g.world.Player.TimeoutIdx.Eq(ZERO) {
-		x, y := ebiten.CursorPosition()
-
-		//enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		//dist := enemyPos.Minus(IPt(x, y)).Len()
-		//if dist.Geq(I(100)) {
-		{
-			sz := g.screenSize
-			// The adjustments below are necessary because we can get x or y
-			// larger than the screen size when the user clicks around the
-			// bottom right corner of the window.
-			if x >= sz.X.ToInt() {
-				x = sz.X.ToInt() - 1
-			}
-			if y >= sz.Y.ToInt() {
-				y = sz.Y.ToInt() - 1
-			}
-
-			numX := g.world.Obstacles.NCols().ToInt()
-			numY := g.world.Obstacles.NRows().ToInt()
-			blockWidth := sz.X.ToFloat64() / float64(numX)
-			blockHeight := sz.Y.ToFloat64() / float64(numY)
-
-			// Translate from screen coordinates to grid coordinates.
-			newPos := point.IPt(
-				int(float64(x)/blockWidth),
-				int(float64(y)/blockHeight))
-			if g.world.Obstacles.Get(newPos.Y, newPos.X).Eq(ZERO) {
-				g.world.Player.Pos = newPos
-				g.world.Player.TimeoutIdx = PlayerCooldown
-			}
-		}
-	}
-
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) && g.world.Player.TimeoutIdx.Eq(ZERO) {
-		x, y := ebiten.CursorPosition()
-
-		enemyPos := g.TileToScreen(g.world.Enemy.Pos)
-		dist := enemyPos.Minus(point.IPt(x, y)).Len()
-		if dist.Lt(I(200)) {
-			// Hit enemy.
-			g.beamIdx = g.beamMax
-			l := Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
-			if intersects, pt := g.LineObstaclesIntersection(l); intersects {
-				g.beamHitsEnemy = false
-				g.beamEnd = pt
-			} else {
-				g.beamHitsEnemy = true
-				g.world.Player.TimeoutIdx = PlayerCooldown
-			}
-		}
-	}
-
-	g.frameIdx.Inc()
-	//if g.frameIdx.Mod(I(5)).Neq(ZERO) {
-	//	return nil // skip update
+	//if g.world.Player.TimeoutIdx.Gt(ZERO) {
+	//	g.world.Player.TimeoutIdx.Dec()
 	//}
-
-	g.world.TimeStep.Inc()
-	if g.world.TimeStep.Eq(I(math.MaxInt64)) {
-		// Damn.
-		utils.Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
-	}
-
-	// Get keyboard input.
-	var pressedKeys []ebiten.Key
-	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
-
-	// Move the enemy.
-	if g.world.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
-		path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
-		if len(path) > 1 {
-			g.world.Enemy.Pos = path[1]
-		}
-	}
-
-	// Compute which tiles are attackableTiles.
-	g.attackableTiles = []point.Pt{}
-	rows := g.world.Obstacles.NRows()
-	cols := g.world.Obstacles.NCols()
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			// Check if tile can be attacked.
-			pt := point.Pt{x, y}
-			screenPt := g.TileToScreen(pt)
-			l := Line{g.TileToScreen(g.world.Player.Pos), screenPt}
-			if intersects, _ := g.LineObstaclesIntersection(l); !intersects {
-				g.attackableTiles = append(g.attackableTiles, pt)
-			}
-		}
-	}
+	//
+	//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) && g.world.Player.TimeoutIdx.Eq(ZERO) {
+	//	x, y := ebiten.CursorPosition()
+	//
+	//	//enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+	//	//dist := enemyPos.Minus(IPt(x, y)).Len()
+	//	//if dist.Geq(I(100)) {
+	//	{
+	//		sz := g.screenSize
+	//		// The adjustments below are necessary because we can get x or y
+	//		// larger than the screen size when the user clicks around the
+	//		// bottom right corner of the window.
+	//		if x >= sz.X.ToInt() {
+	//			x = sz.X.ToInt() - 1
+	//		}
+	//		if y >= sz.Y.ToInt() {
+	//			y = sz.Y.ToInt() - 1
+	//		}
+	//
+	//		numX := g.world.Obstacles.Size().X.ToInt()
+	//		numY := g.world.Obstacles.Size().Y.ToInt()
+	//		blockWidth := sz.X.ToFloat64() / float64(numX)
+	//		blockHeight := sz.Y.ToFloat64() / float64(numY)
+	//
+	//		// Translate from screen coordinates to grid coordinates.
+	//		newPos := IPt(
+	//			int(float64(x)/blockWidth),
+	//			int(float64(y)/blockHeight))
+	//		if g.world.Obstacles.Get(newPos).Eq(ZERO) {
+	//			g.world.Player.Pos = newPos
+	//			g.world.Player.TimeoutIdx = PlayerCooldown
+	//		}
+	//	}
+	//}
+	//
+	//if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) && g.world.Player.TimeoutIdx.Eq(ZERO) {
+	//	x, y := ebiten.CursorPosition()
+	//
+	//	enemyPos := g.TileToScreen(g.world.Enemy.Pos)
+	//	dist := enemyPos.Minus(IPt(x, y)).Len()
+	//	if dist.Lt(I(200)) {
+	//		// Hit enemy.
+	//		g.beamIdx = g.beamMax
+	//		l := Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+	//		if intersects, pt := g.LineObstaclesIntersection(l); intersects {
+	//			g.beamHitsEnemy = false
+	//			g.beamEnd = pt
+	//		} else {
+	//			g.beamHitsEnemy = true
+	//			g.world.Player.TimeoutIdx = PlayerCooldown
+	//		}
+	//	}
+	//}
+	//
+	//g.frameIdx.Inc()
+	////if g.frameIdx.Mod(I(5)).Neq(ZERO) {
+	////	return nil // skip update
+	////}
+	//
+	//g.world.TimeStep.Inc()
+	//if g.world.TimeStep.Eq(I(math.MaxInt64)) {
+	//	// Damn.
+	//	Check(fmt.Errorf("got to an unusually large time step: %d", g.world.TimeStep.ToInt64()))
+	//}
+	//
+	//// Get keyboard input.
+	//var pressedKeys []ebiten.Key
+	//pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
+	//
+	//// Move the enemy.
+	//if g.world.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
+	//	path := g.pathfinding.FindPath(g.world.Enemy.Pos, g.world.Player.Pos)
+	//	if len(path) > 1 {
+	//		g.world.Enemy.Pos = path[1]
+	//	}
+	//}
+	//
+	//// Compute which tiles are attackable.
+	//g.attackableTiles = []Pt{}
+	//rows := g.world.Obstacles.Size().Y
+	//cols := g.world.Obstacles.Size().X
+	//for y := ZERO; y.Lt(rows); y.Inc() {
+	//	for x := ZERO; x.Lt(cols); x.Inc() {
+	//		// Check if tile can be attacked.
+	//		pt := Pt{x, y}
+	//		screenPt := g.TileToScreen(pt)
+	//		l := Line{g.TileToScreen(g.world.Player.Pos), screenPt}
+	//		if intersects, _ := g.LineObstaclesIntersection(l); !intersects {
+	//			g.attackableTiles = append(g.attackableTiles, pt)
+	//		}
+	//	}
+	//}
 
 	return nil
 }
@@ -177,7 +171,7 @@ func colorHex(hexVal int) color.Color {
 	}
 }
 
-func DrawPixel(screen *ebiten.Image, pt point.Pt, color color.Color) {
+func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
 	size := I(2)
 	for ax := pt.X.Minus(size); ax.Leq(pt.X.Plus(size)); ax.Inc() {
 		for ay := pt.Y.Minus(size); ay.Leq(pt.Y.Plus(size)); ay.Inc() {
@@ -190,23 +184,24 @@ func EqualFloats(f1, f2 float64) bool {
 	return math.Abs(f1-f2) < 0.000001
 }
 
-func (g *Gui) LineObstaclesIntersection(l Line) (bool, point.Pt) {
+func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	sz := g.screenSize
-	numX := g.world.Obstacles.NCols().ToInt()
-	numY := g.world.Obstacles.NRows().ToInt()
+	numX := g.world.Obstacles.Size().X.ToInt()
+	numY := g.world.Obstacles.Size().Y.ToInt()
 	blockWidth := sz.X.ToFloat64() / float64(numX)
 	blockHeight := sz.Y.ToFloat64() / float64(numY)
 
-	rows := g.world.Obstacles.NRows()
-	cols := g.world.Obstacles.NCols()
-	ipts := []point.Pt{}
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			if !g.world.Obstacles.Get(y, x).IsZero() {
+	rows := g.world.Obstacles.Size().Y
+	cols := g.world.Obstacles.Size().X
+	ipts := []Pt{}
+	var pt Pt
+	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
+		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
+			if !g.world.Obstacles.Get(pt).IsZero() {
 				if !EqualFloats(blockWidth, blockHeight) {
 					panic(fmt.Errorf("blocks are not squares"))
 				}
-				s := Square{g.TileToScreen(point.Pt{x, y}), I(int(blockWidth * 0.9))}
+				s := Square{g.TileToScreen(pt), I(int(blockWidth * 0.9))}
 				if intersects, ipt := LineSquareIntersection(l, s); intersects {
 					ipts = append(ipts, ipt)
 				}
@@ -237,21 +232,21 @@ func DrawLine(screen *ebiten.Image, l Line, color color.Color) {
 		inc := dx.DivBy(dx.Abs())
 		for x := x1; x.Neq(x2); x.Add(inc) {
 			y := y1.Plus(x.Minus(x1).Times(dy).DivBy(dx))
-			DrawPixel(screen, point.Pt{x, y}, color)
+			DrawPixel(screen, Pt{x, y}, color)
 		}
 	} else {
 		inc := dy.DivBy(dy.Abs())
 		for y := y1; y.Neq(y2); y.Add(inc) {
 			x := x1.Plus(y.Minus(y1).Times(dx).DivBy(dy))
-			DrawPixel(screen, point.Pt{x, y}, color)
+			DrawPixel(screen, Pt{x, y}, color)
 		}
 	}
 }
 
-func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos point.Pt) {
+func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	sz := screen.Bounds().Size()
-	numX := g.world.Obstacles.NCols().ToInt()
-	numY := g.world.Obstacles.NRows().ToInt()
+	numX := g.world.Obstacles.Size().X.ToInt()
+	numY := g.world.Obstacles.Size().Y.ToInt()
 	blockWidth := float64(sz.X) / float64(numX)
 	blockHeight := float64(sz.Y) / float64(numY)
 	margin := float64(1)
@@ -260,15 +255,27 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos point.Pt) {
 	DrawSprite(screen, img, posX+margin, posY+margin, blockWidth-2*margin, blockHeight-2*margin)
 }
 
-func (g *Gui) TileToScreen(pos point.Pt) point.Pt {
+func (g *Gui) TileToScreen(pos Pt) Pt {
 	sz := g.screenSize
-	numX := g.world.Obstacles.NCols()
-	numY := g.world.Obstacles.NRows()
+	numX := g.world.Obstacles.Size().X
+	numY := g.world.Obstacles.Size().Y
 	blockWidth := sz.X.DivBy(numX)
 	blockHeight := sz.Y.DivBy(numY)
 	x := pos.X.Times(blockWidth).Plus(blockWidth.DivBy(TWO))
 	y := pos.Y.Times(blockHeight).Plus(blockHeight.DivBy(TWO))
-	return point.Pt{x, y}
+	return Pt{x, y}
+}
+
+func (g *Gui) WorldToGuiPos(pt Pt) Pt {
+	sz := g.screenSize
+	numX := g.world.Obstacles.Size().X
+	numY := g.world.Obstacles.Size().Y
+	blockWidth := sz.X.DivBy(numX)
+	blockHeight := sz.Y.DivBy(numY)
+	if blockWidth.Neq(blockHeight) {
+		panic(fmt.Errorf("blocks are not squares"))
+	}
+	return pt.Times(blockWidth).DivBy(g.world.BlockSize)
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
@@ -276,13 +283,14 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{0, 0, 0, 0})
 
 	// Draw ground and trees.
-	rows := g.world.Obstacles.NRows()
-	cols := g.world.Obstacles.NCols()
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			g.DrawTile(screen, g.imgGround, point.Pt{x, y})
-			if g.world.Obstacles.Get(y, x).Eq(ONE) {
-				g.DrawTile(screen, g.imgTree, point.Pt{x, y})
+	rows := g.world.Obstacles.Size().Y
+	cols := g.world.Obstacles.Size().X
+	var pt Pt
+	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
+		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
+			g.DrawTile(screen, g.imgGround, pt)
+			if g.world.Obstacles.Get(pt).Eq(ONE) {
+				g.DrawTile(screen, g.imgTree, pt)
 			}
 		}
 	}
@@ -310,7 +318,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 		totalWidth := I(mask.Bounds().Size().X)
 		lineWidth := g.world.Player.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
-		l := Line{point.IPt(0, 0), point.Pt{lineWidth, I(0)}}
+		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
 		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	}
 	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
@@ -322,33 +330,36 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
-	if g.beamIdx.Gt(ZERO) {
+	if g.world.Beam.Idx.Gt(ZERO) {
 		var beam Line
-		if g.beamHitsEnemy {
-			beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Enemy.Pos)}
+		if g.world.Beam.Enemy != nil {
+			beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Beam.Enemy.Pos)}
 		} else {
-			beam = Line{g.TileToScreen(g.world.Player.Pos), g.beamEnd}
+			beam = Line{g.TileToScreen(g.world.Player.Pos), g.WorldToGuiPos(g.world.Beam.End)}
 		}
 
-		alpha := uint8(g.beamIdx.Times(I(255)).DivBy(g.beamMax).ToInt())
-		//alpha = uint8(0)
+		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
 		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
 		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
 		DrawLine(beamScreen, beam, beamCol)
-		g.beamIdx.Dec()
 	}
 	DrawSprite(screen, beamScreen, 0, 0, float64(beamScreen.Bounds().Dx()), float64(beamScreen.Bounds().Dy()))
 
 	// Mark attackable tiles.
-	for _, pt := range g.attackableTiles {
-		g.DrawTile(screen, g.imgShadow, pt)
+	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
+		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
+			if g.world.AttackableTiles.Get(pt).Neq(ZERO) {
+				g.DrawTile(screen, g.imgShadow, pt)
+			}
+		}
 	}
+
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	g.screenSize = point.IPt(outsideWidth, outsideHeight)
+	g.screenSize = IPt(outsideWidth, outsideHeight)
 	return outsideWidth, outsideHeight
 }
 
@@ -502,7 +513,7 @@ func Level1() string {
 `
 }
 
-func LevelFromString(level string) (m utils.Matrix, pos1 []point.Pt, pos2 []point.Pt) {
+func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 	row := -1
 	col := 0
 	maxCol := 0
@@ -520,7 +531,7 @@ func LevelFromString(level string) (m utils.Matrix, pos1 []point.Pt, pos2 []poin
 	if col > 0 {
 		row++
 	}
-	m.Init(I(row), I(maxCol))
+	m.Init(IPt(row, maxCol))
 
 	row = -1
 	col = 0
@@ -531,11 +542,11 @@ func LevelFromString(level string) (m utils.Matrix, pos1 []point.Pt, pos2 []poin
 			row++
 			continue
 		} else if c == 'x' {
-			m.Set(I(row), I(col), I(1))
+			m.Set(IPt(row, col), I(1))
 		} else if c == '1' {
-			pos1 = append(pos1, point.IPt(col, row))
+			pos1 = append(pos1, IPt(col, row))
 		} else if c == '2' {
-			pos2 = append(pos2, point.IPt(col, row))
+			pos2 = append(pos2, IPt(col, row))
 		}
 		col++
 	}
@@ -545,10 +556,10 @@ func LevelFromString(level string) (m utils.Matrix, pos1 []point.Pt, pos2 []poin
 func loadImage(str string) *ebiten.Image {
 	file, err := os.Open(str)
 	defer file.Close()
-	utils.Check(err)
+	Check(err)
 
 	img, _, err := image.Decode(file)
-	utils.Check(err)
+	Check(err)
 	if err != nil {
 		return nil
 	}
@@ -561,9 +572,9 @@ func (g *Gui) loadGuiData() {
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
 	// It's a hack but possibly a quick and very useful one.
-	utils.CheckCrashes = false
+	CheckCrashes = false
 	for {
-		utils.CheckFailed = nil
+		CheckFailed = nil
 		g.imgGround = loadImage("data/ground.png")
 		g.imgTree = loadImage("data/tree.png")
 		g.imgPlayer = loadImage("data/player.png")
@@ -571,34 +582,20 @@ func (g *Gui) loadGuiData() {
 		g.imgBeam = loadImage("data/beam.png")
 		g.imgShadow = loadImage("data/shadow.png")
 		//g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
-		if utils.CheckFailed == nil {
+		if CheckFailed == nil {
 			break
 		}
 	}
-	utils.CheckCrashes = true
+	CheckCrashes = true
 }
 
 func main() {
 	var g Gui
-	g.beamMax = I(15)
-
-	// Obstacles
-	//g.world.Obstacles.Init(I(15), I(15))
-	pos1 := []point.Pt{}
-	pos2 := []point.Pt{}
-	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	g.world.Obstacles, pos1, pos2 = RandomLevel1()
-	if len(pos1) > 0 {
-		g.world.Player.Pos = pos1[0]
-	}
-	if len(pos2) > 0 {
-		g.world.Enemy.Pos = pos2[0]
-	}
-	g.pathfinding.Initialize(g.world.Obstacles)
+	g.world.Initialize()
 
 	// screen size
-	g.screenSize.X = BlockSize.Times(g.world.Obstacles.NCols())
-	g.screenSize.Y = BlockSize.Times(g.world.Obstacles.NRows())
+	g.screenSize.X = BlockSize.Times(g.world.Obstacles.Size().X)
+	g.screenSize.Y = BlockSize.Times(g.world.Obstacles.Size().Y)
 
 	ebiten.SetWindowSize(g.screenSize.X.ToInt(), g.screenSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")
@@ -612,16 +609,16 @@ func main() {
 	var err error
 	// Load the Arial font
 	fontData, err := opentype.Parse(goregular.TTF)
-	utils.Check(err)
+	Check(err)
 
 	g.defaultFont, err = opentype.NewFace(fontData, &opentype.FaceOptions{
 		Size:    24,
 		DPI:     72,
 		Hinting: font.HintingVertical,
 	})
-	utils.Check(err)
+	Check(err)
 
 	// Start the game.
 	err = ebiten.RunGame(&g)
-	utils.Check(err)
+	Check(err)
 }

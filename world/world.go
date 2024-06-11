@@ -24,13 +24,23 @@ type Enemy struct {
 	Health Int
 }
 
+type Beam struct {
+	Idx   Int    // if this is greater than 0 it means the beam is active for Idx time steps
+	Enemy *Enemy // this is nil if the beam doesn't hit an enemy, or set if it does
+	End   Pt     // this is the point to where the beam intersects an obstacle if Enemy is nil
+}
+
 type World struct {
 	Player          Player
 	Enemy           Enemy
+	Beam            Beam
 	Obstacles       Matrix
 	AttackableTiles Matrix
 	TimeStep        Int
+	BeamMax         Int
 	pathfinding     Pathfinding
+	beamPts         []Pt
+	BlockSize       Int
 }
 
 type PlayerInput struct {
@@ -40,39 +50,46 @@ type PlayerInput struct {
 	ShootPt Pt // tile-coordinates
 }
 
-var PlayerCooldown Int = I(15)
-var EnemyCooldown Int = I(40)
+var playerCooldown Int = I(15)
+var enemyCooldown Int = I(40)
 
 func (w *World) computeAttackableTiles() {
 	// Compute which tiles are attackable.
 	w.AttackableTiles.Init(w.Obstacles.Size())
 
-	var enlargeConstant = I(1000)
 	rows := w.Obstacles.Size().Y
 	cols := w.Obstacles.Size().X
+	w.beamPts = make([]Pt, rows.Times(cols).ToInt64())
 
 	// Get a list of squares.
 	squares := []Square{}
+	half := w.BlockSize.DivBy(TWO)
+	offset := Pt{half, half}
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
-			center := Pt{x, y}.Times(enlargeConstant)
-			size := enlargeConstant.Times(I(90)).DivBy(I(100))
-			squares = append(squares, Square{center, size})
+			pt := Pt{x, y}
+			if !w.Obstacles.Get(pt).IsZero() {
+				center := pt.Times(w.BlockSize).Plus(offset)
+				size := w.BlockSize.Times(I(90)).DivBy(I(100))
+				squares = append(squares, Square{center, size})
+			}
 		}
 	}
 
 	// Draw a line from the player's pos to each of the tiles and test if that
 	// line intersects the squares.
-	lineStart := w.Player.Pos.Times(enlargeConstant)
+	lineStart := w.Player.Pos.Times(w.BlockSize).Plus(offset)
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
 			// Check if tile can be attacked.
-			lineEnd := Pt{x, y}.Times(enlargeConstant)
+			lineEnd := Pt{x, y}.Times(w.BlockSize).Plus(offset)
 			l := Line{lineStart, lineEnd}
-			if intersects, _ := LineSquaresIntersection(l, squares); !intersects {
-				w.AttackableTiles.Set(Pt{x, y}, ONE)
-			} else {
+			if intersects, pt := LineSquaresIntersection(l, squares); intersects {
 				w.AttackableTiles.Set(Pt{x, y}, ZERO)
+				idx := w.AttackableTiles.PtToIndex(Pt{x, y}).ToInt()
+				w.beamPts[idx] = pt
+			} else {
+				w.AttackableTiles.Set(Pt{x, y}, ONE)
 			}
 		}
 	}
@@ -88,14 +105,25 @@ func (w *World) Step(input *PlayerInput) {
 	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) {
 		if w.Obstacles.Get(input.MovePt).Eq(ZERO) {
 			w.Player.Pos = input.MovePt
-			w.Player.TimeoutIdx = PlayerCooldown
+			w.Player.TimeoutIdx = playerCooldown
 		}
 	}
 
+	// See about the beam.
+	if w.Beam.Idx.Gt(ZERO) {
+		w.Beam.Idx.Dec()
+	}
 	if input.Shoot && w.Player.TimeoutIdx.Eq(ZERO) {
+		w.Beam.Idx = w.BeamMax // show beam
 		if w.AttackableTiles.Get(input.ShootPt).Neq(ZERO) {
-			w.Player.TimeoutIdx = PlayerCooldown
+			w.Player.TimeoutIdx = playerCooldown
 			w.Enemy.Health.Dec()
+			w.Beam.Enemy = &w.Enemy
+		} else {
+			idx := w.AttackableTiles.PtToIndex(input.ShootPt).ToInt()
+			w.Beam.Idx = w.BeamMax
+			w.Beam.Enemy = nil
+			w.Beam.End = w.beamPts[idx]
 		}
 	}
 
@@ -110,7 +138,7 @@ func (w *World) Step(input *PlayerInput) {
 	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
 
 	// Move the enemy.
-	if w.TimeStep.Mod(EnemyCooldown).Eq(ZERO) {
+	if w.TimeStep.Mod(enemyCooldown).Eq(ZERO) {
 		path := w.pathfinding.FindPath(w.Enemy.Pos, w.Player.Pos)
 		if len(path) > 1 {
 			w.Enemy.Pos = path[1]
@@ -118,6 +146,35 @@ func (w *World) Step(input *PlayerInput) {
 	}
 }
 
+func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
+	m.Init(IPt(10, 10))
+	for i := 0; i < 10; i++ {
+		var pt Pt
+		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
+		pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
+		m.Set(pt, ONE)
+	}
+	pos1 = append(pos1, IPt(0, 0))
+	pos2 = append(pos2, IPt(2, 2))
+	return
+}
+
 func (w *World) Initialize() {
+	// Obstacles
+	//g.world.Obstacles.Init(I(15), I(15))
+	pos1 := []Pt{}
+	pos2 := []Pt{}
+	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
+	w.Obstacles, pos1, pos2 = RandomLevel1()
+	if len(pos1) > 0 {
+		w.Player.Pos = pos1[0]
+	}
+	if len(pos2) > 0 {
+		w.Enemy.Pos = pos2[0]
+	}
 	w.pathfinding.Initialize(w.Obstacles)
+
+	// Params
+	w.BlockSize = I(1000)
+	w.BeamMax = I(15)
 }
