@@ -15,6 +15,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
+	"strings"
 	"time"
 )
 
@@ -51,13 +53,33 @@ func FileExists(name string) bool {
 func GetNewRecordingFile() string {
 	date := time.Now()
 	for i := 0; i < 1000000; i++ {
-		filename := fmt.Sprintf("recordings/recorded-inputs-%04d-%02d-%02d-%06d.bkk",
+		filename := fmt.Sprintf("recordings/recorded-inputs-%04d-%02d-%02d-%06d.mln",
 			date.Year(), date.Month(), date.Day(), i)
 		if !FileExists(filename) {
 			return filename
 		}
 	}
 	panic("Cannot record, no available filename found.")
+}
+
+func GetLatestRecordingFile() string {
+	dir := "recordings"
+	entries, err := os.ReadDir(dir)
+	Check(err)
+
+	candidates := []string{}
+	for _, e := range entries {
+		name := e.Name()
+		if strings.HasSuffix(name, ".mln") {
+			candidates = append(candidates, name)
+		}
+	}
+	if len(candidates) == 0 {
+		return ""
+	}
+
+	slices.Sort(candidates)
+	return dir + "/" + candidates[len(candidates)-1]
 }
 
 //

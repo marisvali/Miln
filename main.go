@@ -27,6 +27,9 @@ type Gui struct {
 	frameIdx      Int
 	screenSize    Pt
 	folderWatcher FolderWatcher
+	recording     bool
+	recordingFile string
+	allInputs     []PlayerInput
 }
 
 func (g *Gui) Update() error {
@@ -38,12 +41,23 @@ func (g *Gui) Update() error {
 	input.MovePt = mousePt
 	input.Shoot = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2)
 	input.ShootPt = mousePt
+
+	if g.recording {
+		g.allInputs = append(g.allInputs, input)
+		SerializeInputs(g.allInputs, g.recordingFile)
+	} else {
+		if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
+			input = g.allInputs[idx]
+		}
+	}
+
 	g.world.Step(&input)
 
 	if g.folderWatcher.FolderContentsChanged() {
 		g.loadGuiData()
 	}
 
+	g.frameIdx.Inc()
 	return nil
 }
 
@@ -243,8 +257,15 @@ func main() {
 	g.world.Initialize()
 
 	// screen size
-	g.screenSize.X = BlockSize.Times(g.world.Obstacles.Size().X)
-	g.screenSize.Y = BlockSize.Times(g.world.Obstacles.Size().Y)
+	g.screenSize = g.world.Obstacles.Size().Times(BlockSize)
+
+	g.recording = false
+	if g.recording {
+		g.recordingFile = GetNewRecordingFile()
+	} else {
+		g.recordingFile = GetLatestRecordingFile()
+		g.allInputs = DeserializeInputs(g.recordingFile)
+	}
 
 	ebiten.SetWindowSize(g.screenSize.X.ToInt(), g.screenSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")

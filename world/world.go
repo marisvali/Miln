@@ -1,6 +1,7 @@
 package world
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -44,6 +45,19 @@ type PlayerInput struct {
 	MovePt  Pt // tile-coordinates
 	Shoot   bool
 	ShootPt Pt // tile-coordinates
+}
+
+func SerializeInputs(inputs []PlayerInput, filename string) {
+	buf := new(bytes.Buffer)
+	SerializeSlice(buf, inputs)
+	Zip(filename, buf.Bytes())
+}
+
+func DeserializeInputs(filename string) []PlayerInput {
+	var inputs []PlayerInput
+	buf := bytes.NewBuffer(Unzip(filename))
+	DeserializeSlice(buf, &inputs)
+	return inputs
 }
 
 var playerCooldown Int = I(15)
