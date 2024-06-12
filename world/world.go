@@ -14,11 +14,13 @@ type Player struct {
 	Pos        Pt
 	TimeoutIdx Int
 	Health     Int
+	MaxHealth  Int
 }
 
 type Enemy struct {
-	Pos    Pt
-	Health Int
+	Pos       Pt
+	Health    Int
+	MaxHealth Int
 }
 
 type Beam struct {
@@ -152,6 +154,9 @@ func (w *World) Step(input *PlayerInput) {
 		path := w.pathfinding.FindPath(w.Enemy.Pos, w.Player.Pos)
 		if len(path) > 1 {
 			w.Enemy.Pos = path[1]
+			if w.Enemy.Pos.Eq(w.Player.Pos) {
+				w.Player.Health.Dec()
+			}
 		}
 	}
 }
@@ -187,4 +192,8 @@ func (w *World) Initialize() {
 	// Params
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
+	w.Player.MaxHealth = I(3)
+	w.Player.Health = w.Player.MaxHealth
+	w.Enemy.MaxHealth = I(5)
+	w.Enemy.Health = w.Enemy.MaxHealth
 }

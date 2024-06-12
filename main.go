@@ -16,20 +16,23 @@ var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
 type Gui struct {
-	defaultFont   font.Face
-	imgGround     *ebiten.Image
-	imgTree       *ebiten.Image
-	imgPlayer     *ebiten.Image
-	imgEnemy      *ebiten.Image
-	imgBeam       *ebiten.Image
-	imgShadow     *ebiten.Image
-	world         World
-	frameIdx      Int
-	screenSize    Pt
-	folderWatcher FolderWatcher
-	recording     bool
-	recordingFile string
-	allInputs     []PlayerInput
+	defaultFont     font.Face
+	imgGround       *ebiten.Image
+	imgTree         *ebiten.Image
+	imgPlayer       *ebiten.Image
+	imgPlayerHealth *ebiten.Image
+	imgEnemy        *ebiten.Image
+	imgEnemyHealth  *ebiten.Image
+	imgTileOverlay  *ebiten.Image
+	imgBeam         *ebiten.Image
+	imgShadow       *ebiten.Image
+	world           World
+	frameIdx        Int
+	screenSize      Pt
+	folderWatcher   FolderWatcher
+	recording       bool
+	recordingFile   string
+	allInputs       []PlayerInput
 }
 
 func (g *Gui) Update() error {
@@ -116,37 +119,11 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Draw player.
-	mask := ebiten.NewImageFromImage(g.imgPlayer)
-	{
-		percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
-		var alpha Int
-		if percent.Gt(ZERO) {
-			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-		} else {
-			alpha = ZERO
-		}
-
-		sz := mask.Bounds().Size()
-		for y := 0; y < sz.Y; y++ {
-			for x := 0; x < sz.X; x++ {
-				_, _, _, a := mask.At(x, y).RGBA()
-				if a > 0 {
-					mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
-				}
-			}
-		}
-
-		totalWidth := I(mask.Bounds().Size().X)
-		lineWidth := g.world.Player.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
-		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
-		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
-	}
-	g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
-	g.DrawTile(screen, mask, g.world.Player.Pos)
+	g.DrawPlayer(screen, g.world.Player)
 	//g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
-	g.DrawTile(screen, g.imgEnemy, g.world.Enemy.Pos)
+	g.DrawEnemy(screen, g.world.Enemy)
 
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
@@ -176,6 +153,50 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+}
+
+func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
+	g.DrawTile(screen, g.imgEnemy, e.Pos)
+	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth, e.Health, e.Pos)
+}
+
+func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
+	mask := ebiten.NewImageFromImage(g.imgPlayer)
+	{
+		percent := p.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+		var alpha Int
+		if percent.Gt(ZERO) {
+			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+		} else {
+			alpha = ZERO
+		}
+
+		sz := mask.Bounds().Size()
+		for y := 0; y < sz.Y; y++ {
+			for x := 0; x < sz.X; x++ {
+				_, _, _, a := mask.At(x, y).RGBA()
+				if a > 0 {
+					mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+				}
+			}
+		}
+
+		totalWidth := I(mask.Bounds().Size().X)
+		lineWidth := p.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
+		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
+		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
+	}
+	g.DrawTile(screen, g.imgPlayer, p.Pos)
+	g.DrawTile(screen, mask, p.Pos)
+	g.DrawHealth(screen, g.imgPlayerHealth, p.MaxHealth, p.Health, p.Pos)
+}
+
+func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, maxHealth Int, currentHealth Int, tilePos Pt) {
+	g.imgTileOverlay.Clear()
+	totalWidth := g.imgTileOverlay.Bounds().Dx()
+	width := I(totalWidth).Times(currentHealth).DivBy(maxHealth)
+	DrawSprite(g.imgTileOverlay, imgHealth, 0, 0, width.ToFloat64(), float64(g.imgEnemyHealth.Bounds().Dy()))
+	g.DrawTile(screen, g.imgTileOverlay, tilePos)
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -241,10 +262,11 @@ func (g *Gui) loadGuiData() {
 		g.imgGround = LoadImage("data/ground.png")
 		g.imgTree = LoadImage("data/tree.png")
 		g.imgPlayer = LoadImage("data/player.png")
+		g.imgPlayerHealth = LoadImage("data/player-health.png")
 		g.imgEnemy = LoadImage("data/enemy.png")
+		g.imgEnemyHealth = LoadImage("data/enemy-health.png")
 		g.imgBeam = LoadImage("data/beam.png")
 		g.imgShadow = LoadImage("data/shadow.png")
-		//g.imgShadow.Fill(color.RGBA{0, 0, 0, 100})
 		if CheckFailed == nil {
 			break
 		}
@@ -259,7 +281,7 @@ func main() {
 	// screen size
 	g.screenSize = g.world.Obstacles.Size().Times(BlockSize)
 
-	g.recording = false
+	g.recording = true
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 	} else {
@@ -273,7 +295,7 @@ func main() {
 
 	g.folderWatcher.Folder = "data"
 	g.loadGuiData()
-	//g.imgEnemy.Fill(intToCol(3))
+	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
 
 	// font
 	var err error
