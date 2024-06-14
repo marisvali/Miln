@@ -237,11 +237,13 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw instructional text.
-	//g.DrawSprite2(g.textBackground, 0,
-	//	float64(screen.Bounds().Dy())-textHeight-float64(g.data.PlaybackBarHeight),
-	//	float64(screen.Bounds().Dx()),
-	//	textHeight)
+	g.DrawInstructionalText(screen)
+
+	// Output TPS (ticks per second, which is like frames per second).
+	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+}
+
+func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
 	var message1 string
 	var message2 string
 	if g.state == GameOngoing {
@@ -262,33 +264,6 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		Check(fmt.Errorf("unhandled game state: %d", g.state))
 	}
 
-	//textSize1 := text.BoundString(g.defaultFont, message1)
-	//textSize2 := text.BoundString(g.defaultFont, message2)
-	//
-	//g.textHeight.
-	//	textSize1.Dy() + textSize2.Dy()
-	//actualTextHeight := I(textSize.Min.Y).Abs()
-
-	//var r Rectangle
-	//dx := I(screen.Bounds().Dx())
-	//dy := I(screen.Bounds().Dy())
-	//r.Corner1 = Pt{ZERO, dy.Minus(g.textHeight)}
-	//r.Corner2 = Pt{dx, dy}
-	//g.DrawFilledRect(screen, r, HexToColor(0x00FF00))
-	//
-	//var r2 Rectangle
-	//
-	//r2.Corner1 = Pt{ZERO, dy.Minus(actualTextHeight)}
-	//r2.Corner2 = Pt{dx, dy}
-	//g.DrawFilledRect(screen, r2, HexToColor(0x0000FF))
-
-	//offsetX := (screen.Bounds().Dx() - textSize.Dx()) / 2
-	//offsetY := g.textHeight.Minus(I(textSize.Dy())).DivBy(TWO).ToInt()
-	//
-	//textX := screen.Bounds().Min.X + offsetX
-	//textY := screen.Bounds().Max.Y - offsetY - textSize.Max.Y
-	//text.Draw(screen, message, g.defaultFont, textX, textY, HexToColor(0xFF0000))
-
 	DrawSprite(screen, g.imgTextBackground,
 		float64(screen.Bounds().Min.X),
 		float64(screen.Bounds().Max.Y)-g.textHeight.ToFloat64(),
@@ -305,12 +280,18 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y}
 	textBox2 := screen.SubImage(r).(*ebiten.Image)
 	g.DrawText(textBox2, message2, true, g.imgTextColor.At(0, 0))
-
-	// Output TPS (ticks per second, which is like frames per second).
-	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color color.Color) {
+	// Remember that text there is an origin point for the text.
+	// That origin point is kind of the lower-left corner of the bounds of the
+	// text. Kind of. Read the BoundString docs to understand, particularly this
+	// image:
+	// https://developer.apple.com/library/archive/documentation/TextFonts/Conceptual/CocoaTextArchitecture/Art/glyphterms_2x.png
+	// This means that if you do text.Draw at (x, y), most of the text will
+	// appear above y, and a little bit under y. If you want all the pixels in
+	// your text to be above y, you should do text.Draw at
+	// (x, y - text.BoundString().Max.Y).
 	textSize := text.BoundString(g.defaultFont, message)
 	var offsetX int
 	if centerX {
