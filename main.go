@@ -20,24 +20,26 @@ var PlayerCooldown Int = I(15)
 var BlockSize Int = I(80)
 
 type Gui struct {
-	defaultFont     font.Face
-	imgGround       *ebiten.Image
-	imgTree         *ebiten.Image
-	imgPlayer       *ebiten.Image
-	imgPlayerHealth *ebiten.Image
-	imgEnemy        *ebiten.Image
-	imgEnemyHealth  *ebiten.Image
-	imgTileOverlay  *ebiten.Image
-	imgBeam         *ebiten.Image
-	imgShadow       *ebiten.Image
-	world           World
-	frameIdx        Int
-	folderWatcher   FolderWatcher
-	recording       bool
-	recordingFile   string
-	allInputs       []PlayerInput
-	state           GameState
-	textHeight      Int
+	defaultFont       font.Face
+	imgGround         *ebiten.Image
+	imgTree           *ebiten.Image
+	imgPlayer         *ebiten.Image
+	imgPlayerHealth   *ebiten.Image
+	imgEnemy          *ebiten.Image
+	imgEnemyHealth    *ebiten.Image
+	imgTileOverlay    *ebiten.Image
+	imgBeam           *ebiten.Image
+	imgShadow         *ebiten.Image
+	imgTextBackground *ebiten.Image
+	imgTextColor      *ebiten.Image
+	world             World
+	frameIdx          Int
+	folderWatcher     FolderWatcher
+	recording         bool
+	recordingFile     string
+	allInputs         []PlayerInput
+	state             GameState
+	textHeight        Int
 }
 
 type GameState int64
@@ -287,16 +289,22 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	//textY := screen.Bounds().Max.Y - offsetY - textSize.Max.Y
 	//text.Draw(screen, message, g.defaultFont, textX, textY, HexToColor(0xFF0000))
 
+	DrawSprite(screen, g.imgTextBackground,
+		float64(screen.Bounds().Min.X),
+		float64(screen.Bounds().Max.Y)-g.textHeight.ToFloat64(),
+		float64(screen.Bounds().Dx()),
+		g.textHeight.ToFloat64())
+
 	var r image.Rectangle
 	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()}
 	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
 	textBox1 := screen.SubImage(r).(*ebiten.Image)
-	g.DrawText(textBox1, message1, true, HexToColor(0xFF0000))
+	g.DrawText(textBox1, message1, true, g.imgTextColor.At(0, 0))
 
 	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
 	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y}
 	textBox2 := screen.SubImage(r).(*ebiten.Image)
-	g.DrawText(textBox2, message2, true, HexToColor(0xFF0000))
+	g.DrawText(textBox2, message2, true, g.imgTextColor.At(0, 0))
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
@@ -450,6 +458,8 @@ func (g *Gui) loadGuiData() {
 		g.imgEnemyHealth = LoadImage("data/enemy-health.png")
 		g.imgBeam = LoadImage("data/beam.png")
 		g.imgShadow = LoadImage("data/shadow.png")
+		g.imgTextBackground = LoadImage("data/text-background.png")
+		g.imgTextColor = LoadImage("data/text-color.png")
 		if CheckFailed == nil {
 			break
 		}
