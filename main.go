@@ -1,15 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
+	"image"
 	"image/color"
 	_ "image/png"
 	. "playful-patterns.com/miln/gamelib"
 	. "playful-patterns.com/miln/world"
+	"slices"
 )
 
 var PlayerCooldown Int = I(15)
@@ -28,16 +32,52 @@ type Gui struct {
 	imgShadow       *ebiten.Image
 	world           World
 	frameIdx        Int
-	screenSize      Pt
 	folderWatcher   FolderWatcher
 	recording       bool
 	recordingFile   string
 	allInputs       []PlayerInput
+	state           GameState
+	textHeight      Int
 }
 
-func (g *Gui) Update() error {
+type GameState int64
+
+const (
+	GameOngoing GameState = iota
+	GamePaused
+	GameWon
+	GameLost
+	Playback
+)
+
+func (g *Gui) UpdateGameOngoing() {
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyEscape) {
+		g.state = GamePaused
+		return
+	}
+	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+		g.world = World{}
+		g.world.Initialize()
+	}
+	if g.world.Enemy.Health.Leq(ZERO) {
+		g.state = GameWon
+		return
+	}
+	if g.world.Player.Health.Leq(ZERO) {
+		g.state = GameLost
+		return
+	}
+
 	x, y := ebiten.CursorPosition()
 	mousePt := IPt(x, y).DivBy(BlockSize)
+	if mousePt.X.Geq(g.world.Obstacles.Size().X) {
+		mousePt.X = g.world.Obstacles.Size().X.Minus(ONE)
+	}
+	if mousePt.Y.Geq(g.world.Obstacles.Size().Y) {
+		mousePt.Y = g.world.Obstacles.Size().Y.Minus(ONE)
+	}
 
 	var input PlayerInput
 	input.Move = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0)
@@ -61,6 +101,50 @@ func (g *Gui) Update() error {
 	}
 
 	g.frameIdx.Inc()
+}
+
+func (g *Gui) UpdateGamePaused() {
+	g.world.Player.TimeoutIdx = ZERO
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		g.state = GameOngoing
+		g.UpdateGameOngoing()
+	}
+}
+
+func (g *Gui) UpdateGameWon() {
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+		g.state = GameOngoing
+		g.UpdateGameOngoing()
+	}
+}
+
+func (g *Gui) UpdateGameLost() {
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+		g.state = GameOngoing
+		g.UpdateGameOngoing()
+	}
+}
+
+func (g *Gui) UpdatePlayback() {
+
+}
+
+func (g *Gui) Update() error {
+	if g.state == GameOngoing {
+		g.UpdateGameOngoing()
+	} else if g.state == GamePaused {
+		g.UpdateGamePaused()
+	} else if g.state == GameWon {
+		g.UpdateGameWon()
+	} else if g.state == GameLost {
+		g.UpdateGameLost()
+	} else if g.state == Playback {
+		g.UpdatePlayback()
+	}
 	return nil
 }
 
@@ -151,8 +235,85 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		}
 	}
 
+	// Draw instructional text.
+	//g.DrawSprite2(g.textBackground, 0,
+	//	float64(screen.Bounds().Dy())-textHeight-float64(g.data.PlaybackBarHeight),
+	//	float64(screen.Bounds().Dx()),
+	//	textHeight)
+	var message1 string
+	var message2 string
+	if g.state == GameOngoing {
+		message1 = "Kill everyone!"
+		message2 = "left click - move, right click - shoot, R - restart, ESC - pause"
+	} else if g.state == GamePaused {
+		message1 = "Paused. Kill everyone!"
+		message2 = "left click - move, right click - shoot, R - restart"
+	} else if g.state == GameWon {
+		message1 = "You won, congratulations!"
+		message2 = "R - restart"
+	} else if g.state == GameLost {
+		message1 = "You lost."
+		message2 = "R - restart"
+	} else if g.state == Playback {
+		//message = fmt.Sprintf("Playing back frame %d / %d", g.frameIdx, len(g.playerInputs))
+	} else {
+		Check(fmt.Errorf("unhandled game state: %d", g.state))
+	}
+
+	//textSize1 := text.BoundString(g.defaultFont, message1)
+	//textSize2 := text.BoundString(g.defaultFont, message2)
+	//
+	//g.textHeight.
+	//	textSize1.Dy() + textSize2.Dy()
+	//actualTextHeight := I(textSize.Min.Y).Abs()
+
+	//var r Rectangle
+	//dx := I(screen.Bounds().Dx())
+	//dy := I(screen.Bounds().Dy())
+	//r.Corner1 = Pt{ZERO, dy.Minus(g.textHeight)}
+	//r.Corner2 = Pt{dx, dy}
+	//g.DrawFilledRect(screen, r, HexToColor(0x00FF00))
+	//
+	//var r2 Rectangle
+	//
+	//r2.Corner1 = Pt{ZERO, dy.Minus(actualTextHeight)}
+	//r2.Corner2 = Pt{dx, dy}
+	//g.DrawFilledRect(screen, r2, HexToColor(0x0000FF))
+
+	//offsetX := (screen.Bounds().Dx() - textSize.Dx()) / 2
+	//offsetY := g.textHeight.Minus(I(textSize.Dy())).DivBy(TWO).ToInt()
+	//
+	//textX := screen.Bounds().Min.X + offsetX
+	//textY := screen.Bounds().Max.Y - offsetY - textSize.Max.Y
+	//text.Draw(screen, message, g.defaultFont, textX, textY, HexToColor(0xFF0000))
+
+	var r image.Rectangle
+	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()}
+	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
+	textBox1 := screen.SubImage(r).(*ebiten.Image)
+	g.DrawText(textBox1, message1, true, HexToColor(0xFF0000))
+
+	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
+	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y}
+	textBox2 := screen.SubImage(r).(*ebiten.Image)
+	g.DrawText(textBox2, message2, true, HexToColor(0xFF0000))
+
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+}
+
+func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color color.Color) {
+	textSize := text.BoundString(g.defaultFont, message)
+	var offsetX int
+	if centerX {
+		offsetX = (screen.Bounds().Dx() - textSize.Dx()) / 2
+	} else {
+		offsetX = 0
+	}
+	offsetY := (screen.Bounds().Dy() - textSize.Dy()) / 2
+	textX := screen.Bounds().Min.X + offsetX
+	textY := screen.Bounds().Max.Y - offsetY - textSize.Max.Y
+	text.Draw(screen, message, g.defaultFont, textX, textY, color)
 }
 
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
@@ -200,23 +361,45 @@ func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, maxHealt
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	g.screenSize = IPt(outsideWidth, outsideHeight)
 	return outsideWidth, outsideHeight
 }
 
-//func (g *Game) DrawFilledSquare(screen *ebiten.Image, s Square, col color.Color) {
-//	size := WorldToScreen(s.Size)
-//	x := WorldToScreen(s.Center.X) - size/2
-//	y := WorldToScreen(s.Center.Y) - size/2
-//
-//	if g.img == nil {
-//		g.img = ebiten.NewImage(int(size), int(size))
-//	}
-//	g.img.Fill(col)
-//	op := &ebiten.DrawImageOptions{}
-//	op.GeoM.Translate(x, y)
-//	screen.DrawImage(g.img, op)
-//}
+func (g *Gui) DrawFilledSquare(screen *ebiten.Image, s Square, col color.Color) {
+	img := ebiten.NewImage(s.Size.ToInt(), s.Size.ToInt())
+	img.Fill(col)
+
+	op := &ebiten.DrawImageOptions{}
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	x := s.Center.X.Minus(s.Size.DivBy(TWO)).ToFloat64()
+	y := s.Center.Y.Minus(s.Size.DivBy(TWO)).ToFloat64()
+	op.GeoM.Translate(x, y)
+	screen.DrawImage(img, op)
+}
+
+func (g *Gui) DrawFilledRect(screen *ebiten.Image, r Rectangle, col color.Color) {
+	img := ebiten.NewImage(r.Width().ToInt(), r.Height().ToInt())
+	img.Fill(col)
+
+	op := &ebiten.DrawImageOptions{}
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	op.GeoM.Translate(r.Min().X.ToFloat64(), r.Min().Y.ToFloat64())
+	screen.DrawImage(img, op)
+}
+
 //
 //func DrawSquare(screen *ebiten.Image, s Square, color color.Color) {
 //	halfSize := s.Size.DivBy(I(2)).Plus(s.Size.Mod(I(2)))
@@ -277,11 +460,8 @@ func (g *Gui) loadGuiData() {
 func main() {
 	var g Gui
 	g.world.Initialize()
-
-	// screen size
-	g.screenSize = g.world.Obstacles.Size().Times(BlockSize)
-
 	g.recording = true
+	g.textHeight = I(75)
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 	} else {
@@ -289,13 +469,16 @@ func main() {
 		g.allInputs = DeserializeInputs(g.recordingFile)
 	}
 
-	ebiten.SetWindowSize(g.screenSize.X.ToInt(), g.screenSize.Y.ToInt())
+	windowSize := g.world.Obstacles.Size().Times(BlockSize)
+	windowSize.Y.Add(g.textHeight)
+	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
 	g.folderWatcher.Folder = "data"
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
+	g.state = GameOngoing
 
 	// font
 	var err error

@@ -1,9 +1,5 @@
 package gamelib
 
-import (
-	_ "image/png"
-)
-
 type Line struct {
 	Start Pt
 	End   Pt
@@ -17,6 +13,27 @@ type Circle struct {
 type Square struct {
 	Center Pt
 	Size   Int
+}
+
+type Rectangle struct {
+	Corner1 Pt
+	Corner2 Pt
+}
+
+func (r *Rectangle) Width() Int {
+	return r.Corner1.X.Minus(r.Corner2.X).Abs()
+}
+
+func (r *Rectangle) Height() Int {
+	return r.Corner1.Y.Minus(r.Corner2.Y).Abs()
+}
+
+func (r *Rectangle) Min() Pt {
+	return Pt{Min(r.Corner1.X, r.Corner2.X), Min(r.Corner1.Y, r.Corner2.Y)}
+}
+
+func (r *Rectangle) Max() Pt {
+	return Pt{Max(r.Corner1.X, r.Corner2.X), Max(r.Corner1.Y, r.Corner2.Y)}
 }
 
 func LineVerticalLineIntersection(l, vert Line) (bool, Pt) {
