@@ -44,3 +44,10 @@ func (m *Matrix) IndexToPt(i Int) (p Pt) {
 	p.Y = i.DivBy(m.size.X)
 	return
 }
+
+func (m *Matrix) RPos() Pt {
+	var pt Pt
+	pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
+	pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
+	return pt
+}

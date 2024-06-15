@@ -63,7 +63,15 @@ func (g *Gui) UpdateGameOngoing() {
 		g.world = World{}
 		g.world.Initialize()
 	}
-	if g.world.Enemy.Health.Leq(ZERO) {
+
+	allEnemiesDead := true
+	for _, enemy := range g.world.Enemies {
+		if enemy.Health.IsPositive() {
+			allEnemiesDead = false
+		}
+	}
+
+	if allEnemiesDead {
 		g.state = GameWon
 		return
 	}
@@ -209,18 +217,14 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	//g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
-	g.DrawEnemy(screen, g.world.Enemy)
+	for _, enemy := range g.world.Enemies {
+		g.DrawEnemy(screen, enemy)
+	}
 
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
 	if g.world.Beam.Idx.Gt(ZERO) {
-		var beam Line
-		if g.world.Beam.Enemy != nil {
-			beam = Line{g.TileToScreen(g.world.Player.Pos), g.TileToScreen(g.world.Beam.Enemy.Pos)}
-		} else {
-			beam = Line{g.TileToScreen(g.world.Player.Pos), g.WorldToGuiPos(g.world.Beam.End)}
-		}
-
+		beam := Line{g.TileToScreen(g.world.Player.Pos), g.WorldToGuiPos(g.world.Beam.End)}
 		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
 		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
 		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
