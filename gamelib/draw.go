@@ -2,8 +2,24 @@ package gamelib
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+	"image"
 	"image/color"
 )
+
+func DrawSpriteXY(screen *ebiten.Image, img *ebiten.Image,
+	x float64, y float64) {
+	op := &ebiten.DrawImageOptions{}
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
+	screen.DrawImage(img, op)
+}
 
 func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	x float64, y float64, targetWidth float64, targetHeight float64) {
@@ -25,15 +41,16 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
 	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
 
-	op.GeoM.Translate(x, y)
+	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
 	screen.DrawImage(img, op)
 }
 
 func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
 	size := I(2)
+	m := screen.Bounds().Min
 	for ax := pt.X.Minus(size); ax.Leq(pt.X.Plus(size)); ax.Inc() {
 		for ay := pt.Y.Minus(size); ay.Leq(pt.Y.Plus(size)); ay.Inc() {
-			screen.Set(ax.ToInt(), ay.ToInt(), color)
+			screen.Set(m.X+ax.ToInt(), m.Y+ay.ToInt(), color)
 		}
 	}
 }
@@ -118,4 +135,16 @@ func DrawSquare(screen *ebiten.Image, s Square, color color.Color) {
 	DrawLine(screen, Line{upperLeftCorner, lowerLeftCorner}, color)
 	DrawLine(screen, Line{lowerLeftCorner, lowerRightCorner}, color)
 	DrawLine(screen, Line{lowerRightCorner, upperRightCorner}, color)
+}
+
+func imagePoint(pt Pt) image.Point {
+	return image.Point{pt.X.ToInt(), pt.Y.ToInt()}
+}
+
+func imageRectangle(r Rectangle) image.Rectangle {
+	return image.Rectangle{imagePoint(r.Min()), imagePoint(r.Max())}
+}
+
+func SubImage(screen *ebiten.Image, r Rectangle) *ebiten.Image {
+	return screen.SubImage(imageRectangle(r)).(*ebiten.Image)
 }

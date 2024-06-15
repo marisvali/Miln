@@ -41,6 +41,7 @@ type Gui struct {
 	allInputs         []PlayerInput
 	state             GameState
 	textHeight        Int
+	guiMargin         Int
 }
 
 type GameState int64
@@ -105,14 +106,20 @@ func (g *Gui) UpdateGameOngoing() {
 			input.ShootPt = g.world.Enemies[iClosestEnemy].Pos
 		} else {
 			input.Move = true
-			mousePt := IPt(x, y).DivBy(BlockSize)
-			if mousePt.X.Geq(g.world.Obstacles.Size().X) {
-				mousePt.X = g.world.Obstacles.Size().X.Minus(ONE)
+			tilePos := g.ScreenToTile(IPt(x, y))
+			if tilePos.X.IsNegative() {
+				tilePos.X = ZERO
 			}
-			if mousePt.Y.Geq(g.world.Obstacles.Size().Y) {
-				mousePt.Y = g.world.Obstacles.Size().Y.Minus(ONE)
+			if tilePos.X.Geq(g.world.Obstacles.Size().X) {
+				tilePos.X = g.world.Obstacles.Size().X.Minus(ONE)
 			}
-			input.MovePt = mousePt
+			if tilePos.Y.IsNegative() {
+				tilePos.Y = ZERO
+			}
+			if tilePos.Y.Geq(g.world.Obstacles.Size().Y) {
+				tilePos.Y = g.world.Obstacles.Size().Y.Minus(ONE)
+			}
+			input.MovePt = tilePos
 		}
 	}
 
@@ -209,17 +216,27 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 
 func (g *Gui) TileToScreen(pos Pt) Pt {
 	half := BlockSize.DivBy(TWO)
+	return pos.Times(BlockSize).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
+}
+
+func (g *Gui) TileToPlayRegion(pos Pt) Pt {
+	half := BlockSize.DivBy(TWO)
 	return pos.Times(BlockSize).Plus(Pt{half, half})
 }
 
+func (g *Gui) ScreenToTile(pos Pt) Pt {
+	return pos.Minus(Pt{g.guiMargin, g.guiMargin}).DivBy(BlockSize)
+}
+
 func (g *Gui) WorldToGuiPos(pt Pt) Pt {
+	return pt.Times(BlockSize).DivBy(g.world.BlockSize).Plus(Pt{g.guiMargin, g.guiMargin})
+}
+
+func (g *Gui) WorldToPlayRegion(pt Pt) Pt {
 	return pt.Times(BlockSize).DivBy(g.world.BlockSize)
 }
 
-func (g *Gui) Draw(screen *ebiten.Image) {
-	// Draw background.
-	screen.Fill(color.RGBA{0, 0, 0, 0})
-
+func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Draw ground and trees.
 	rows := g.world.Obstacles.Size().Y
 	cols := g.world.Obstacles.Size().X
@@ -235,7 +252,6 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	// Draw player.
 	g.DrawPlayer(screen, g.world.Player)
-	//g.DrawTile(screen, g.imgPlayer, g.world.Player.Pos)
 
 	// Draw enemy.
 	for _, enemy := range g.world.Enemies {
@@ -245,13 +261,13 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
 	if g.world.Beam.Idx.Gt(ZERO) {
-		beam := Line{g.TileToScreen(g.world.Player.Pos), g.WorldToGuiPos(g.world.Beam.End)}
+		beam := Line{g.TileToPlayRegion(g.world.Player.Pos), g.WorldToPlayRegion(g.world.Beam.End)}
 		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
 		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
 		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
 		DrawLine(beamScreen, beam, beamCol)
 	}
-	DrawSprite(screen, beamScreen, 0, 0, float64(beamScreen.Bounds().Dx()), float64(beamScreen.Bounds().Dy()))
+	DrawSpriteXY(screen, beamScreen, 0, 0)
 
 	// Mark attackable tiles.
 	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
@@ -261,8 +277,37 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
+}
 
-	g.DrawInstructionalText(screen)
+func (g *Gui) Draw(screen *ebiten.Image) {
+	// Draw background.
+	// percent starts from 100 and goes down to 0
+	percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+
+	// gray needs to be at 80 when percent is at 0 and 0 when percent is at 100.
+	var gray Int
+	if percent.Gt(ZERO) {
+		gray = (I(100).Minus(percent)).Times(I(30)).DivBy(I(100))
+	} else {
+		gray = I(50)
+	}
+	v := uint8(gray.ToInt())
+	screen.Fill(color.RGBA{v, v, v, 255})
+
+	{
+		upperLeft := Pt{g.guiMargin, g.guiMargin}
+		playSize := g.world.Obstacles.Size().Times(BlockSize)
+		lowerRight := upperLeft.Plus(playSize)
+		playRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		g.DrawPlayRegion(playRegion)
+	}
+
+	{
+		upperLeft := Pt{ZERO, I(screen.Bounds().Dy()).Minus(g.textHeight)}
+		lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
+		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		g.DrawInstructionalText(textRegion)
+	}
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
@@ -289,20 +334,18 @@ func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
 		Check(fmt.Errorf("unhandled game state: %d", g.state))
 	}
 
-	DrawSprite(screen, g.imgTextBackground,
-		float64(screen.Bounds().Min.X),
-		float64(screen.Bounds().Max.Y)-g.textHeight.ToFloat64(),
+	DrawSprite(screen, g.imgTextBackground, 0, 0,
 		float64(screen.Bounds().Dx()),
-		g.textHeight.ToFloat64())
+		float64(screen.Bounds().Dy()))
 
 	var r image.Rectangle
-	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()}
-	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
+	r.Min = screen.Bounds().Min
+	r.Max = image.Point{screen.Bounds().Max.X, r.Min.Y + screen.Bounds().Dy()/2}
 	textBox1 := screen.SubImage(r).(*ebiten.Image)
 	g.DrawText(textBox1, message1, true, g.imgTextColor.At(0, 0))
 
-	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Max.Y - g.textHeight.ToInt()/2}
-	r.Max = image.Point{screen.Bounds().Max.X, screen.Bounds().Max.Y}
+	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Min.Y + screen.Bounds().Dy()/2}
+	r.Max = screen.Bounds().Max
 	textBox2 := screen.SubImage(r).(*ebiten.Image)
 	g.DrawText(textBox2, message2, true, g.imgTextColor.At(0, 0))
 }
@@ -406,8 +449,10 @@ func (g *Gui) loadGuiData() {
 func main() {
 	var g Gui
 	g.world.Initialize()
-	g.recording = true
+
 	g.textHeight = I(75)
+	g.guiMargin = I(50)
+	g.recording = true
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 	} else {
@@ -415,7 +460,9 @@ func main() {
 		g.allInputs = DeserializeInputs(g.recordingFile)
 	}
 
-	windowSize := g.world.Obstacles.Size().Times(BlockSize)
+	playSize := g.world.Obstacles.Size().Times(BlockSize)
+	windowSize := playSize
+	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
 	windowSize.Y.Add(g.textHeight)
 	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")
