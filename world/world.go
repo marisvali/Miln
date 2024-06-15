@@ -8,6 +8,10 @@ import (
 	. "playful-patterns.com/miln/gamelib"
 )
 
+var playerCooldown Int = I(1)
+var enemyCooldown Int = I(40)
+var enemyHitCooldown Int = I(30)
+
 type Player struct {
 	Pos        Pt
 	TimeoutIdx Int
@@ -35,7 +39,6 @@ type World struct {
 	AttackableTiles Matrix
 	TimeStep        Int
 	BeamMax         Int
-	pathfinding     Pathfinding
 	beamPts         []Pt
 	BlockSize       Int
 }
@@ -59,10 +62,6 @@ func DeserializeInputs(filename string) []PlayerInput {
 	DeserializeSlice(buf, &inputs)
 	return inputs
 }
-
-var playerCooldown Int = I(40)
-var enemyCooldown Int = I(40)
-var enemyHitCooldown Int = I(30)
 
 func (w *World) TileToWorldPos(pt Pt) Pt {
 	half := w.BlockSize.DivBy(TWO)
@@ -226,7 +225,6 @@ func (w *World) Initialize() {
 		enemy.Health = enemy.MaxHealth
 		w.Enemies = append(w.Enemies, enemy)
 	}
-	w.pathfinding.Initialize(w.Obstacles)
 
 	// Params
 	w.BlockSize = I(1000)
@@ -254,8 +252,16 @@ func (e *Enemy) Step(w *World) {
 		return
 	}
 
-	// Move
-	path := w.pathfinding.FindPath(e.Pos, w.Player.Pos)
+	// Move.
+	// Clone obstacle matrix and put (other) enemies on it.
+	allObstacles := w.Obstacles.Clone()
+	for _, enemy := range w.Enemies {
+		if !enemy.Pos.Eq(e.Pos) {
+			allObstacles.Set(enemy.Pos, TWO)
+		}
+	}
+
+	path := FindPath(e.Pos, w.Player.Pos, allObstacles)
 	if len(path) > 1 {
 		e.Pos = path[1]
 		if e.Pos.Eq(w.Player.Pos) {

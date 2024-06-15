@@ -125,3 +125,9 @@ func (p *Pathfinding) FindPath(startPt, endPt Pt) []Pt {
 	}
 	return []Pt{}
 }
+
+func FindPath(startPt, endPt Pt, m Matrix) []Pt {
+	var pathfinding Pathfinding
+	pathfinding.Initialize(m)
+	return pathfinding.FindPath(startPt, endPt)
+}
