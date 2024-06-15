@@ -152,6 +152,17 @@ func (w *World) Step(input *PlayerInput) {
 		}
 	}
 
+	// Cull dead enemies.
+	// This kind of operation makes me thing I should have a slice of pointers,
+	// not values.
+	newEnemies := []Enemy{}
+	for i, _ := range w.Enemies {
+		if w.Enemies[i].Health.IsPositive() {
+			newEnemies = append(newEnemies, w.Enemies[i])
+		}
+	}
+	w.Enemies = newEnemies
+
 	w.TimeStep.Inc()
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
 		// Damn.
