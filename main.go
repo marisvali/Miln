@@ -11,6 +11,7 @@ import (
 	"image"
 	"image/color"
 	_ "image/png"
+	"math"
 	. "playful-patterns.com/miln/gamelib"
 	. "playful-patterns.com/miln/world"
 	"slices"
@@ -81,19 +82,39 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	x, y := ebiten.CursorPosition()
-	mousePt := IPt(x, y).DivBy(BlockSize)
-	if mousePt.X.Geq(g.world.Obstacles.Size().X) {
-		mousePt.X = g.world.Obstacles.Size().X.Minus(ONE)
-	}
-	if mousePt.Y.Geq(g.world.Obstacles.Size().Y) {
-		mousePt.Y = g.world.Obstacles.Size().Y.Minus(ONE)
-	}
-
 	var input PlayerInput
-	input.Move = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0)
-	input.MovePt = mousePt
-	input.Shoot = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2)
-	input.ShootPt = mousePt
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		// Decide if this is a move attempt or a shoot attempt.
+		// See what is the closest distance to an enemy, from the click point.
+		iClosestEnemy := -1
+		minDist := I(math.MaxInt64)
+		for i, _ := range g.world.Enemies {
+			enemyPos := g.TileToScreen(g.world.Enemies[i].Pos)
+			dist := enemyPos.To(IPt(x, y)).Len()
+			if dist.Lt(minDist) {
+				minDist = dist
+				iClosestEnemy = i
+			}
+		}
+
+		// It's a shoot attempt if the click point was "close" to an enemy,
+		// where I define "close" relative to the block size.
+		shootAttempt := minDist.Lt(BlockSize.Times(I(120)).DivBy(I(100)))
+		if shootAttempt {
+			input.Shoot = true
+			input.ShootPt = g.world.Enemies[iClosestEnemy].Pos
+		} else {
+			input.Move = true
+			mousePt := IPt(x, y).DivBy(BlockSize)
+			if mousePt.X.Geq(g.world.Obstacles.Size().X) {
+				mousePt.X = g.world.Obstacles.Size().X.Minus(ONE)
+			}
+			if mousePt.Y.Geq(g.world.Obstacles.Size().Y) {
+				mousePt.Y = g.world.Obstacles.Size().Y.Minus(ONE)
+			}
+			input.MovePt = mousePt
+		}
+	}
 
 	if g.recording {
 		g.allInputs = append(g.allInputs, input)
