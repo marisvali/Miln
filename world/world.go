@@ -3,8 +3,6 @@ package world
 import (
 	"bytes"
 	"fmt"
-	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	_ "image/png"
 	"math"
 	. "playful-patterns.com/miln/gamelib"
@@ -18,9 +16,10 @@ type Player struct {
 }
 
 type Enemy struct {
-	Pos       Pt
-	Health    Int
-	MaxHealth Int
+	Pos        Pt
+	Health     Int
+	MaxHealth  Int
+	TimeoutIdx Int
 }
 
 type Beam struct {
@@ -63,11 +62,18 @@ func DeserializeInputs(filename string) []PlayerInput {
 
 var playerCooldown Int = I(15)
 var enemyCooldown Int = I(40)
+var enemyHitCooldown Int = I(30)
 
 func (w *World) TileToWorldPos(pt Pt) Pt {
 	half := w.BlockSize.DivBy(TWO)
 	offset := Pt{half, half}
 	return pt.Times(w.BlockSize).Plus(offset)
+}
+
+func (w *World) WorldPosToTile(pt Pt) Pt {
+	half := w.BlockSize.DivBy(TWO)
+	offset := Pt{half, half}
+	return pt.Minus(offset).DivBy(w.BlockSize)
 }
 
 func (w *World) computeAttackableTiles() {
@@ -140,9 +146,6 @@ func (w *World) Step(input *PlayerInput) {
 			w.Beam.Idx = w.BeamMax // show beam
 			if w.AttackableTiles.Get(input.ShootPt).Neq(ZERO) {
 				w.Player.TimeoutIdx = playerCooldown
-				for _, enemy := range shotEnemies {
-					enemy.Health.Dec()
-				}
 				w.Beam.End = w.TileToWorldPos(input.ShootPt)
 			} else {
 				idx := w.AttackableTiles.PtToIndex(input.ShootPt).ToInt()
@@ -150,6 +153,11 @@ func (w *World) Step(input *PlayerInput) {
 				w.Beam.End = w.beamPts[idx]
 			}
 		}
+	}
+
+	// Step the enemies.
+	for i, _ := range w.Enemies {
+		w.Enemies[i].Step(w)
 	}
 
 	// Cull dead enemies.
@@ -167,23 +175,6 @@ func (w *World) Step(input *PlayerInput) {
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
 		// Damn.
 		Check(fmt.Errorf("got to an unusually large time step: %d", w.TimeStep.ToInt64()))
-	}
-
-	// Get keyboard input.
-	var pressedKeys []ebiten.Key
-	pressedKeys = inpututil.AppendPressedKeys(pressedKeys)
-
-	// Move the enemies.
-	if w.TimeStep.Mod(enemyCooldown).Eq(ZERO) {
-		for i, _ := range w.Enemies {
-			path := w.pathfinding.FindPath(w.Enemies[i].Pos, w.Player.Pos)
-			if len(path) > 1 {
-				w.Enemies[i].Pos = path[1]
-				if w.Enemies[i].Pos.Eq(w.Player.Pos) {
-					w.Player.Health.Dec()
-				}
-			}
-		}
 	}
 }
 
@@ -206,10 +197,13 @@ func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt) {
 		m.Set(m.RPos(), ONE)
 	}
 	pos1 = append(pos1, IPt(0, 0))
-	for i := 0; i < 10; i++ {
+	for {
 		pt := m.RPos()
 		if m.Get(pt).IsZero() {
 			pos2 = append(pos2, pt)
+			if len(pos2) == 10 {
+				break
+			}
 		}
 	}
 	return
@@ -239,4 +233,33 @@ func (w *World) Initialize() {
 	w.BeamMax = I(15)
 	w.Player.MaxHealth = I(3)
 	w.Player.Health = w.Player.MaxHealth
+}
+
+func (e *Enemy) Step(w *World) {
+	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
+		// I need to structure this stuff differently.
+		beamEndTile := w.WorldPosToTile(w.Beam.End)
+		if beamEndTile.Eq(e.Pos) {
+			// We have been shot.
+			e.Health.Dec()
+			e.TimeoutIdx = enemyHitCooldown
+		}
+	}
+
+	if e.TimeoutIdx.IsPositive() {
+		e.TimeoutIdx.Dec()
+		return // Don't move.
+	}
+	if w.TimeStep.Mod(enemyCooldown).Neq(ZERO) {
+		return
+	}
+
+	// Move
+	path := w.pathfinding.FindPath(e.Pos, w.Player.Pos)
+	if len(path) > 1 {
+		e.Pos = path[1]
+		if e.Pos.Eq(w.Player.Pos) {
+			w.Player.Health.Dec()
+		}
+	}
 }
