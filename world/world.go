@@ -9,7 +9,7 @@ import (
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldown Int = I(200)
+var enemyCooldown Int = I(70)
 var enemyHitCooldown Int = I(30)
 
 type Player struct {
@@ -131,7 +131,8 @@ func (w *World) Step(input *PlayerInput) {
 	w.computeAttackableTiles()
 
 	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) {
-		if w.Obstacles.Get(input.MovePt).Eq(ZERO) {
+		if w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
+			w.AttackableTiles.Get(input.MovePt).Neq(ZERO) {
 			w.Player.Pos = input.MovePt
 			w.Player.TimeoutIdx = playerCooldown
 		}
