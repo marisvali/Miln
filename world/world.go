@@ -9,7 +9,7 @@ import (
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldown Int = I(40)
+var enemyCooldown Int = I(200)
 var enemyHitCooldown Int = I(30)
 
 type Player struct {
@@ -70,9 +70,7 @@ func (w *World) TileToWorldPos(pt Pt) Pt {
 }
 
 func (w *World) WorldPosToTile(pt Pt) Pt {
-	half := w.BlockSize.DivBy(TWO)
-	offset := Pt{half, half}
-	return pt.Minus(offset).DivBy(w.BlockSize)
+	return pt.DivBy(w.BlockSize)
 }
 
 func (w *World) computeAttackableTiles() {
@@ -90,10 +88,15 @@ func (w *World) computeAttackableTiles() {
 			pt := Pt{x, y}
 			if !w.Obstacles.Get(pt).IsZero() {
 				center := w.TileToWorldPos(pt)
-				size := w.BlockSize.Times(I(90)).DivBy(I(100))
+				size := w.BlockSize.Times(I(98)).DivBy(I(100))
 				squares = append(squares, Square{center, size})
 			}
 		}
+	}
+	for _, enemy := range w.Enemies {
+		center := w.TileToWorldPos(enemy.Pos)
+		size := w.BlockSize.Times(I(98)).DivBy(I(100))
+		squares = append(squares, Square{center, size})
 	}
 
 	// Draw a line from the player's pos to each of the tiles and test if that
@@ -105,9 +108,14 @@ func (w *World) computeAttackableTiles() {
 			lineEnd := w.TileToWorldPos(Pt{x, y})
 			l := Line{lineStart, lineEnd}
 			if intersects, pt := LineSquaresIntersection(l, squares); intersects {
-				w.AttackableTiles.Set(Pt{x, y}, ZERO)
-				idx := w.AttackableTiles.PtToIndex(Pt{x, y}).ToInt()
-				w.beamPts[idx] = pt
+				obstacleTile := w.WorldPosToTile(pt)
+				if obstacleTile.Eq(Pt{x, y}) {
+					w.AttackableTiles.Set(Pt{x, y}, ONE)
+				} else {
+					w.AttackableTiles.Set(Pt{x, y}, ZERO)
+					idx := w.AttackableTiles.PtToIndex(Pt{x, y}).ToInt()
+					w.beamPts[idx] = pt
+				}
 			} else {
 				w.AttackableTiles.Set(Pt{x, y}, ONE)
 			}

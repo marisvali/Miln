@@ -282,17 +282,18 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw background.
 	// percent starts from 100 and goes down to 0
-	percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+	//percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
 
 	// gray needs to be at 80 when percent is at 0 and 0 when percent is at 100.
-	var gray Int
-	if percent.Gt(ZERO) {
-		gray = (I(100).Minus(percent)).Times(I(30)).DivBy(I(100))
-	} else {
-		gray = I(50)
-	}
-	v := uint8(gray.ToInt())
-	screen.Fill(color.RGBA{v, v, v, 255})
+	//var gray Int
+	//if percent.Gt(ZERO) {
+	//	gray = (I(100).Minus(percent)).Times(I(30)).DivBy(I(100))
+	//} else {
+	//	gray = I(50)
+	//}
+	//v := uint8(gray.ToInt())
+	//screen.Fill(color.RGBA{v, v, v, 255})
+	screen.Fill(color.RGBA{0, 0, 0, 255})
 
 	{
 		upperLeft := Pt{g.guiMargin, g.guiMargin}
