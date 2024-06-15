@@ -60,7 +60,7 @@ func DeserializeInputs(filename string) []PlayerInput {
 	return inputs
 }
 
-var playerCooldown Int = I(15)
+var playerCooldown Int = I(40)
 var enemyCooldown Int = I(40)
 var enemyHitCooldown Int = I(30)
 

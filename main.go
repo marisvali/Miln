@@ -17,7 +17,7 @@ import (
 	"slices"
 )
 
-var PlayerCooldown Int = I(15)
+var PlayerCooldown Int = I(40)
 var BlockSize Int = I(80)
 
 type Gui struct {
@@ -358,7 +358,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 
 		totalWidth := I(mask.Bounds().Size().X)
 		lineWidth := p.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
-		l := Line{IPt(0, 0), Pt{lineWidth, I(0)}}
+		l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
 		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	}
 	g.DrawTile(screen, g.imgPlayer, p.Pos)
