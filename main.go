@@ -62,8 +62,9 @@ func (g *Gui) UpdateGameOngoing() {
 		return
 	}
 	if slices.Contains(justPressedKeys, ebiten.KeyR) {
-		g.world = World{}
-		g.world.Initialize()
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
 	}
 
 	allEnemiesDead := true
@@ -146,6 +147,12 @@ func (g *Gui) UpdateGamePaused() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
 		g.state = GameOngoing
 		g.UpdateGameOngoing()
+	}
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+		g.world = World{}
+		g.world.Initialize()
 	}
 }
 
@@ -472,7 +479,7 @@ func main() {
 	g.folderWatcher.Folder = "data"
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
-	g.state = GameOngoing
+	g.state = GamePaused
 
 	// font
 	var err error

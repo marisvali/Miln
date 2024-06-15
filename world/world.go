@@ -200,14 +200,25 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 }
 
 func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt) {
+	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
 	for i := 0; i < 10; i++ {
 		m.Set(m.RPos(), ONE)
 	}
-	pos1 = append(pos1, IPt(0, 0))
+
+	// Search for a non-occupied position to place the player in.
 	for {
 		pt := m.RPos()
 		if m.Get(pt).IsZero() {
+			pos1 = append(pos1, pt)
+			break
+		}
+	}
+
+	// Place n enemies at unoccupied positions.
+	for {
+		pt := m.RPos()
+		if m.Get(pt).IsZero() && !pt.Eq(pos1[0]) {
 			pos2 = append(pos2, pt)
 			if len(pos2) == 10 {
 				break
@@ -240,6 +251,9 @@ func (w *World) Initialize() {
 	w.BeamMax = I(15)
 	w.Player.MaxHealth = I(3)
 	w.Player.Health = w.Player.MaxHealth
+
+	// GUI needs this even without the world ever doing a step.
+	w.computeAttackableTiles()
 }
 
 func (e *Enemy) Step(w *World) {
