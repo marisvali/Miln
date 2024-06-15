@@ -68,3 +68,54 @@ func DrawLine(screen *ebiten.Image, l Line, color color.Color) {
 		}
 	}
 }
+
+func DrawFilledRect(screen *ebiten.Image, r Rectangle, col color.Color) {
+	img := ebiten.NewImage(r.Width().ToInt(), r.Height().ToInt())
+	img.Fill(col)
+
+	op := &ebiten.DrawImageOptions{}
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	op.GeoM.Translate(r.Min().X.ToFloat64(), r.Min().Y.ToFloat64())
+	screen.DrawImage(img, op)
+}
+
+func DrawFilledSquare(screen *ebiten.Image, s Square, col color.Color) {
+	img := ebiten.NewImage(s.Size.ToInt(), s.Size.ToInt())
+	img.Fill(col)
+
+	op := &ebiten.DrawImageOptions{}
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	x := s.Center.X.Minus(s.Size.DivBy(TWO)).ToFloat64()
+	y := s.Center.Y.Minus(s.Size.DivBy(TWO)).ToFloat64()
+	op.GeoM.Translate(x, y)
+	screen.DrawImage(img, op)
+}
+
+func DrawSquare(screen *ebiten.Image, s Square, color color.Color) {
+	halfSize := s.Size.DivBy(I(2)).Plus(s.Size.Mod(I(2)))
+
+	// square corners
+	upperLeftCorner := Pt{s.Center.X.Minus(halfSize), s.Center.Y.Minus(halfSize)}
+	lowerLeftCorner := Pt{s.Center.X.Minus(halfSize), s.Center.Y.Plus(halfSize)}
+	upperRightCorner := Pt{s.Center.X.Plus(halfSize), s.Center.Y.Minus(halfSize)}
+	lowerRightCorner := Pt{s.Center.X.Plus(halfSize), s.Center.Y.Plus(halfSize)}
+
+	DrawLine(screen, Line{upperLeftCorner, upperRightCorner}, color)
+	DrawLine(screen, Line{upperLeftCorner, lowerLeftCorner}, color)
+	DrawLine(screen, Line{lowerLeftCorner, lowerRightCorner}, color)
+	DrawLine(screen, Line{lowerRightCorner, upperRightCorner}, color)
+}
