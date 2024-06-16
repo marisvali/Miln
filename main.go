@@ -129,16 +129,16 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
-	if g.recording {
-		if g.recordingFile != "" {
-			g.allInputs = append(g.allInputs, input)
-			SerializeInputs(g.allInputs, g.recordingFile)
-		}
-	} else {
-		if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
-			input = g.allInputs[idx]
-		}
-	}
+	//if g.recording {
+	//	if g.recordingFile != "" {
+	//		g.allInputs = append(g.allInputs, input)
+	//		SerializeInputs(g.allInputs, g.recordingFile)
+	//	}
+	//} else {
+	//	if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
+	//		input = g.allInputs[idx]
+	//	}
+	//}
 
 	g.world.Step(&input)
 
