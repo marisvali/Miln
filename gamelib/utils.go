@@ -3,6 +3,7 @@ package gamelib
 import (
 	"archive/zip"
 	"bytes"
+	"embed"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -271,6 +272,20 @@ func Zip(filename string, data []byte) {
 
 func LoadImage(str string) *ebiten.Image {
 	file, err := os.Open(str)
+	defer file.Close()
+	Check(err)
+
+	img, _, err := image.Decode(file)
+	Check(err)
+	if err != nil {
+		return nil
+	}
+
+	return ebiten.NewImageFromImage(img)
+}
+
+func LoadImageEmbedded(str string, fs *embed.FS) *ebiten.Image {
+	file, err := fs.Open(str)
 	defer file.Close()
 	Check(err)
 

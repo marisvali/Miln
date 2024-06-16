@@ -3,9 +3,9 @@ package world
 import (
 	"bytes"
 	"fmt"
+	. "github.com/marisvali/miln/gamelib"
 	_ "image/png"
 	"math"
-	. "playful-patterns.com/miln/gamelib"
 )
 
 var playerCooldown Int = I(1)

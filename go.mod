@@ -1,4 +1,4 @@
-module playful-patterns.com/miln
+module github.com/marisvali/miln
 
 go 1.21
 

@@ -1,10 +1,13 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
+	. "github.com/marisvali/miln/gamelib"
+	. "github.com/marisvali/miln/world"
 	"golang.org/x/image/font"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
@@ -12,13 +15,14 @@ import (
 	"image/color"
 	_ "image/png"
 	"math"
-	. "playful-patterns.com/miln/gamelib"
-	. "playful-patterns.com/miln/world"
 	"slices"
 )
 
 var PlayerCooldown Int = I(40)
 var BlockSize Int = I(80)
+
+//go:embed data/*
+var embeddedFiles embed.FS
 
 type Gui struct {
 	defaultFont       font.Face
@@ -42,6 +46,7 @@ type Gui struct {
 	state             GameState
 	textHeight        Int
 	guiMargin         Int
+	useEmbedded       bool
 }
 
 type GameState int64
@@ -429,6 +434,14 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 	return outsideWidth, outsideHeight
 }
 
+func (g *Gui) LoadImage(filename string) *ebiten.Image {
+	if g.useEmbedded {
+		return LoadImageEmbedded(filename, &embeddedFiles)
+	} else {
+		return LoadImage(filename)
+	}
+}
+
 func (g *Gui) loadGuiData() {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
@@ -437,16 +450,16 @@ func (g *Gui) loadGuiData() {
 	CheckCrashes = false
 	for {
 		CheckFailed = nil
-		g.imgGround = LoadImage("data/ground.png")
-		g.imgTree = LoadImage("data/tree.png")
-		g.imgPlayer = LoadImage("data/player.png")
-		g.imgPlayerHealth = LoadImage("data/player-health.png")
-		g.imgEnemy = LoadImage("data/enemy.png")
-		g.imgEnemyHealth = LoadImage("data/enemy-health.png")
-		g.imgBeam = LoadImage("data/beam.png")
-		g.imgShadow = LoadImage("data/shadow.png")
-		g.imgTextBackground = LoadImage("data/text-background.png")
-		g.imgTextColor = LoadImage("data/text-color.png")
+		g.imgGround = g.LoadImage("data/ground.png")
+		g.imgTree = g.LoadImage("data/tree.png")
+		g.imgPlayer = g.LoadImage("data/player.png")
+		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
+		g.imgEnemy = g.LoadImage("data/enemy.png")
+		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")
+		g.imgBeam = g.LoadImage("data/beam.png")
+		g.imgShadow = g.LoadImage("data/shadow.png")
+		g.imgTextBackground = g.LoadImage("data/text-background.png")
+		g.imgTextColor = g.LoadImage("data/text-color.png")
 		if CheckFailed == nil {
 			break
 		}
@@ -476,7 +489,10 @@ func main() {
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
-	g.folderWatcher.Folder = "data"
+	g.useEmbedded = !FileExists("data")
+	if !g.useEmbedded {
+		g.folderWatcher.Folder = "data"
+	}
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
 	g.state = GamePaused

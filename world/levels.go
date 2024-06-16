@@ -1,8 +1,6 @@
 package world
 
-import (
-	. "playful-patterns.com/miln/gamelib"
-)
+import . "github.com/marisvali/miln/gamelib"
 
 func Level1() string {
 	//	return `
