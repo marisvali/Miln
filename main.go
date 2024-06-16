@@ -130,8 +130,10 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	if g.recording {
-		g.allInputs = append(g.allInputs, input)
-		SerializeInputs(g.allInputs, g.recordingFile)
+		if g.recordingFile != "" {
+			g.allInputs = append(g.allInputs, input)
+			SerializeInputs(g.allInputs, g.recordingFile)
+		}
 	} else {
 		if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
 			input = g.allInputs[idx]
@@ -478,7 +480,9 @@ func main() {
 		g.recordingFile = GetNewRecordingFile()
 	} else {
 		g.recordingFile = GetLatestRecordingFile()
-		g.allInputs = DeserializeInputs(g.recordingFile)
+		if g.recordingFile != "" {
+			g.allInputs = DeserializeInputs(g.recordingFile)
+		}
 	}
 
 	playSize := g.world.Obstacles.Size().Times(BlockSize)

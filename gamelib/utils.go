@@ -52,6 +52,9 @@ func FileExists(name string) bool {
 }
 
 func GetNewRecordingFile() string {
+	if !FileExists("recordings") {
+		return ""
+	}
 	date := time.Now()
 	for i := 0; i < 1000000; i++ {
 		filename := fmt.Sprintf("recordings/recorded-inputs-%04d-%02d-%02d-%06d.mln",
@@ -65,6 +68,9 @@ func GetNewRecordingFile() string {
 
 func GetLatestRecordingFile() string {
 	dir := "recordings"
+	if !FileExists(dir) {
+		return ""
+	}
 	entries, err := os.ReadDir(dir)
 	Check(err)
 
