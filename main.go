@@ -37,6 +37,7 @@ type Gui struct {
 	imgShadow         *ebiten.Image
 	imgTextBackground *ebiten.Image
 	imgTextColor      *ebiten.Image
+	imgAmmo           *ebiten.Image
 	world             World
 	frameIdx          Int
 	folderWatcher     FolderWatcher
@@ -264,6 +265,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		}
 	}
 
+	// Draw ammo.
+	for _, ammo := range g.world.Ammos {
+		g.DrawTile(screen, g.imgAmmo, ammo.Pos)
+	}
+
 	// Draw player.
 	g.DrawPlayer(screen, g.world.Player)
 
@@ -415,7 +421,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 		}
 
 		totalWidth := I(mask.Bounds().Size().X)
-		lineWidth := p.TimeoutIdx.Times(totalWidth).DivBy(PlayerCooldown)
+		lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
 		l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
 		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	}
@@ -462,6 +468,7 @@ func (g *Gui) loadGuiData() {
 		g.imgShadow = g.LoadImage("data/shadow.png")
 		g.imgTextBackground = g.LoadImage("data/text-background.png")
 		g.imgTextColor = g.LoadImage("data/text-color.png")
+		g.imgAmmo = g.LoadImage("data/ammo.png")
 		if CheckFailed == nil {
 			break
 		}

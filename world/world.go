@@ -17,6 +17,7 @@ type Player struct {
 	TimeoutIdx Int
 	Health     Int
 	MaxHealth  Int
+	AmmoCount  Int
 }
 
 type Enemy struct {
@@ -24,6 +25,11 @@ type Enemy struct {
 	Health     Int
 	MaxHealth  Int
 	TimeoutIdx Int
+}
+
+type Ammo struct {
+	Pos   Pt
+	Count Int
 }
 
 type Beam struct {
@@ -41,6 +47,7 @@ type World struct {
 	BeamMax         Int
 	beamPts         []Pt
 	BlockSize       Int
+	Ammos           []Ammo
 }
 
 type PlayerInput struct {
@@ -135,6 +142,49 @@ func (w *World) Step(input *PlayerInput) {
 			w.AttackableTiles.Get(input.MovePt).Neq(ZERO) {
 			w.Player.Pos = input.MovePt
 			w.Player.TimeoutIdx = playerCooldown
+
+			// Collect ammos.
+
+			newAmmos := make([]Ammo, 0)
+			for i := range w.Ammos {
+				if w.Ammos[i].Pos == w.Player.Pos {
+					w.Player.AmmoCount.Add(w.Ammos[i].Count)
+				} else {
+					newAmmos = append(newAmmos, w.Ammos[i])
+				}
+			}
+			targetLen := len(w.Ammos)
+			w.Ammos = newAmmos
+
+			// Spawn new ammos
+			for {
+				if len(w.Ammos) == targetLen {
+					break
+				}
+
+				pt := w.Obstacles.RPos()
+				if !w.Obstacles.Get(pt).IsZero() {
+					continue
+				}
+				if w.Player.Pos == pt {
+					continue
+				}
+				invalid := false
+				for i := range w.Ammos {
+					if w.Ammos[i].Pos == pt {
+						invalid = true
+						break
+					}
+				}
+				if invalid {
+					continue
+				}
+				ammo := Ammo{
+					Pos:   pt,
+					Count: I(3),
+				}
+				w.Ammos = append(w.Ammos, ammo)
+			}
 		}
 	}
 
@@ -142,7 +192,10 @@ func (w *World) Step(input *PlayerInput) {
 	if w.Beam.Idx.Gt(ZERO) {
 		w.Beam.Idx.Dec()
 	}
-	if input.Shoot && w.Player.TimeoutIdx.Eq(ZERO) {
+	if input.Shoot &&
+		w.Player.TimeoutIdx.Eq(ZERO) &&
+		w.Player.AmmoCount.Gt(I(0)) &&
+		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
 		shotEnemies := []*Enemy{}
 		for i, _ := range w.Enemies {
 			if w.Enemies[i].Pos.Eq(input.ShootPt) {
@@ -152,14 +205,9 @@ func (w *World) Step(input *PlayerInput) {
 
 		if len(shotEnemies) > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
-			if w.AttackableTiles.Get(input.ShootPt).Neq(ZERO) {
-				w.Player.TimeoutIdx = playerCooldown
-				w.Beam.End = w.TileToWorldPos(input.ShootPt)
-			} else {
-				idx := w.AttackableTiles.PtToIndex(input.ShootPt).ToInt()
-				w.Beam.Idx = w.BeamMax
-				w.Beam.End = w.beamPts[idx]
-			}
+			w.Player.TimeoutIdx = playerCooldown
+			w.Beam.End = w.TileToWorldPos(input.ShootPt)
+			w.Player.AmmoCount.Dec()
 		}
 	}
 
@@ -199,7 +247,7 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 	return
 }
 
-func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt) {
+func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt) {
 	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
 	for i := 0; i < 10; i++ {
@@ -225,6 +273,15 @@ func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt) {
 			}
 		}
 	}
+
+	// Search for a non-occupied position to place the ammo in.
+	for {
+		pt := m.RPos()
+		if m.Get(pt).IsZero() {
+			pos3 = append(pos3, pt)
+			break
+		}
+	}
 	return
 }
 
@@ -233,17 +290,25 @@ func (w *World) Initialize() {
 	//g.world.Obstacles.Init(I(15), I(15))
 	pos1 := []Pt{}
 	pos2 := []Pt{}
+	pos3 := []Pt{}
 	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	w.Obstacles, pos1, pos2 = RandomLevel2()
+	w.Obstacles, pos1, pos2, pos3 = RandomLevel2()
 	if len(pos1) > 0 {
 		w.Player.Pos = pos1[0]
 	}
-	for _, enemyPos := range pos2 {
+	for _, pos := range pos2 {
 		enemy := Enemy{}
-		enemy.Pos = enemyPos
-		enemy.MaxHealth = I(5)
+		enemy.Pos = pos
+		enemy.MaxHealth = I(1)
 		enemy.Health = enemy.MaxHealth
 		w.Enemies = append(w.Enemies, enemy)
+	}
+
+	for _, pos := range pos3 {
+		ammo := Ammo{}
+		ammo.Pos = pos
+		ammo.Count = I(3)
+		w.Ammos = append(w.Ammos, ammo)
 	}
 
 	// Params
@@ -251,6 +316,7 @@ func (w *World) Initialize() {
 	w.BeamMax = I(15)
 	w.Player.MaxHealth = I(3)
 	w.Player.Health = w.Player.MaxHealth
+	w.Player.AmmoCount = I(3)
 
 	// GUI needs this even without the world ever doing a step.
 	w.computeAttackableTiles()

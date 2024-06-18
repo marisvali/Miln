@@ -322,3 +322,10 @@ func HexToColor(hexVal int) color.Color {
 		A: 255,
 	}
 }
+
+// Remove modifies the underlying array, which may be what you want, or
+// may not be what you want.
+func Remove[S ~[]E, E any](s S, i int) S {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}
