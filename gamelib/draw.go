@@ -21,6 +21,30 @@ func DrawSpriteXY(screen *ebiten.Image, img *ebiten.Image,
 	screen.DrawImage(img, op)
 }
 
+func DrawSpriteAlpha(screen *ebiten.Image, img *ebiten.Image,
+	x float64, y float64, targetWidth float64, targetHeight float64, alpha uint8) {
+	op := &ebiten.DrawImageOptions{}
+
+	// Resize image to fit the target size we want to draw.
+	// This kind of scaling is very useful during development when the final
+	// sizes are not decided, and thus it's impossible to have final sprites.
+	// For an actual release, scaling should be avoided.
+	imgSize := img.Bounds().Size()
+	newDx := targetWidth / float64(imgSize.X)
+	newDy := targetHeight / float64(imgSize.Y)
+	op.GeoM.Scale(newDx, newDy)
+
+	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
+	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
+	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
+	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
+
+	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
+	op.ColorScale.SetA(float32(alpha) / 255)
+	screen.DrawImage(img, op)
+}
 func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	x float64, y float64, targetWidth float64, targetHeight float64) {
 	op := &ebiten.DrawImageOptions{}

@@ -329,3 +329,17 @@ func Remove[S ~[]E, E any](s S, i int) S {
 	s[i] = s[len(s)-1]
 	return s[:len(s)-1]
 }
+
+func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
+	mask := ebiten.NewImageFromImage(img)
+	sz := mask.Bounds().Size()
+	for y := 0; y < sz.Y; y++ {
+		for x := 0; x < sz.X; x++ {
+			_, _, _, a := img.At(x, y).RGBA()
+			if a > 0 {
+				mask.Set(x, y, color.RGBA{0, 0, 0, 255})
+			}
+		}
+	}
+	return mask
+}

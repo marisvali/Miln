@@ -31,6 +31,7 @@ type Gui struct {
 	imgPlayer         *ebiten.Image
 	imgPlayerHealth   *ebiten.Image
 	imgEnemy          []*ebiten.Image
+	imgEnemyMask      []*ebiten.Image
 	imgEnemyHealth    *ebiten.Image
 	imgTileOverlay    *ebiten.Image
 	imgBeam           *ebiten.Image
@@ -206,6 +207,12 @@ func (g *Gui) UpdatePlayback() {
 }
 
 func (g *Gui) Update() error {
+	if len(g.imgEnemyMask) < len(g.imgEnemy) {
+		for _, img := range g.imgEnemy {
+			g.imgEnemyMask = append(g.imgEnemyMask, ComputeSpriteMask(img))
+		}
+	}
+
 	if g.state == GameOngoing {
 		g.UpdateGameOngoing()
 	} else if g.state == GamePaused {
@@ -246,6 +253,15 @@ func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	y := pos.Y.ToFloat64()
 	tileSize := BlockSize.ToFloat64() - 2*margin
 	DrawSprite(screen, img, x+margin, y+margin, tileSize, tileSize)
+}
+
+func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alpha uint8) {
+	margin := float64(1)
+	pos = pos.Times(BlockSize)
+	x := pos.X.ToFloat64()
+	y := pos.Y.ToFloat64()
+	tileSize := BlockSize.ToFloat64() - 2*margin
+	DrawSpriteAlpha(screen, img, x+margin, y+margin, tileSize, tileSize, alpha)
 }
 
 func (g *Gui) TileToScreen(pos Pt) Pt {
@@ -422,6 +438,14 @@ func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color
 
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	g.DrawTile(screen, g.imgEnemy[e.Type.ToInt()], e.Pos)
+	percent := e.FrozenIdx.Times(I(100)).DivBy(e.MaxFrozen)
+	var alpha Int
+	if percent.Gt(ZERO) {
+		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+	} else {
+		alpha = ZERO
+	}
+	g.DrawTileAlpha(screen, g.imgEnemyMask[e.Type.ToInt()], e.Pos, uint8(alpha.ToInt()))
 	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth, e.Health, e.Pos)
 }
 

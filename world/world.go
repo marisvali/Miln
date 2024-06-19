@@ -10,11 +10,8 @@ import (
 
 var playerCooldown Int = I(1)
 var enemyCooldowns []Int = []Int{I(40), I(20), I(100), I(120)}
-
 var enemyHealths []Int = []Int{I(1), I(4), I(2), I(4)}
-
-// var enemyHealths []Int = []Int{I(100), I(400), I(200), I(400)}
-var enemyHitCooldown Int = I(30)
+var enemyFrozenCooldowns []Int = []Int{I(130), I(130), I(130), I(130)}
 var spawnPortalCooldown Int = I(100)
 
 type Player struct {
@@ -26,11 +23,12 @@ type Player struct {
 }
 
 type Enemy struct {
-	Pos        Pt
-	Health     Int
-	MaxHealth  Int
-	TimeoutIdx Int
-	Type       Int
+	Pos       Pt
+	Health    Int
+	MaxHealth Int
+	FrozenIdx Int
+	MaxFrozen Int
+	Type      Int
 }
 
 type SpawnPortal struct {
@@ -338,7 +336,8 @@ func NewEnemy(enemyType Int, pos Pt) Enemy {
 	e.Pos = pos
 	e.MaxHealth = enemyHealths[e.Type.ToInt()]
 	e.Health = e.MaxHealth
-	e.TimeoutIdx = enemyCooldowns[e.Type.ToInt()].DivBy(TWO)
+	e.MaxFrozen = enemyFrozenCooldowns[e.Type.ToInt()]
+	e.FrozenIdx = e.MaxFrozen.DivBy(TWO)
 	return e
 }
 
@@ -391,12 +390,12 @@ func (e *Enemy) Step(w *World) {
 		if beamEndTile.Eq(e.Pos) {
 			// We have been shot.
 			e.Health.Dec()
-			e.TimeoutIdx = enemyHitCooldown
+			e.FrozenIdx = e.MaxFrozen
 		}
 	}
 
-	if e.TimeoutIdx.IsPositive() {
-		e.TimeoutIdx.Dec()
+	if e.FrozenIdx.IsPositive() {
+		e.FrozenIdx.Dec()
 		return // Don't move.
 	}
 	if w.TimeStep.Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
