@@ -92,7 +92,24 @@ func (g *Gui) UpdateGameOngoing() {
 	x, y := ebiten.CursorPosition()
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		// Decide if this is a move attempt or a shoot attempt.
+		input.Move = true
+		tilePos := g.ScreenToTile(IPt(x, y))
+		if tilePos.X.IsNegative() {
+			tilePos.X = ZERO
+		}
+		if tilePos.X.Geq(g.world.Obstacles.Size().X) {
+			tilePos.X = g.world.Obstacles.Size().X.Minus(ONE)
+		}
+		if tilePos.Y.IsNegative() {
+			tilePos.Y = ZERO
+		}
+		if tilePos.Y.Geq(g.world.Obstacles.Size().Y) {
+			tilePos.Y = g.world.Obstacles.Size().Y.Minus(ONE)
+		}
+		input.MovePt = tilePos
+	}
+
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		// See what is the closest distance to an enemy, from the click point.
 		iClosestEnemy := -1
 		minDist := I(math.MaxInt64)
@@ -105,28 +122,10 @@ func (g *Gui) UpdateGameOngoing() {
 			}
 		}
 
-		// It's a shoot attempt if the click point was "close" to an enemy,
-		// where I define "close" relative to the block size.
-		shootAttempt := minDist.Lt(BlockSize.Times(I(120)).DivBy(I(100)))
-		if shootAttempt {
+		closeEnough := minDist.Lt(BlockSize.Times(I(120)).DivBy(I(100)))
+		if closeEnough {
 			input.Shoot = true
 			input.ShootPt = g.world.Enemies[iClosestEnemy].Pos
-		} else {
-			input.Move = true
-			tilePos := g.ScreenToTile(IPt(x, y))
-			if tilePos.X.IsNegative() {
-				tilePos.X = ZERO
-			}
-			if tilePos.X.Geq(g.world.Obstacles.Size().X) {
-				tilePos.X = g.world.Obstacles.Size().X.Minus(ONE)
-			}
-			if tilePos.Y.IsNegative() {
-				tilePos.Y = ZERO
-			}
-			if tilePos.Y.Geq(g.world.Obstacles.Size().Y) {
-				tilePos.Y = g.world.Obstacles.Size().Y.Minus(ONE)
-			}
-			input.MovePt = tilePos
 		}
 	}
 
