@@ -458,9 +458,10 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 
 func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, maxHealth Int, currentHealth Int, tilePos Pt) {
 	g.imgTileOverlay.Clear()
-	totalWidth := g.imgTileOverlay.Bounds().Dx()
-	width := I(totalWidth).Times(currentHealth).DivBy(maxHealth)
-	DrawSprite(g.imgTileOverlay, imgHealth, 0, 0, width.ToFloat64(), float64(g.imgEnemyHealth.Bounds().Dy()))
+	blockSize := float64(g.imgEnemyHealth.Bounds().Dy())
+	for i := I(0); i.Lt(currentHealth); i.Inc() {
+		DrawSprite(g.imgTileOverlay, imgHealth, blockSize*i.ToFloat64()*1.3, 0, blockSize, blockSize)
+	}
 	g.DrawTile(screen, g.imgTileOverlay, tilePos)
 }
 
