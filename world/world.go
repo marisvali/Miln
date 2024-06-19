@@ -9,7 +9,11 @@ import (
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldown Int = I(40)
+var enemyCooldowns []Int = []Int{I(40), I(20), I(100), I(120)}
+
+var enemyHealths []Int = []Int{I(1), I(4), I(2), I(4)}
+
+// var enemyHealths []Int = []Int{I(100), I(400), I(200), I(400)}
 var enemyHitCooldown Int = I(30)
 var spawnPortalCooldown Int = I(100)
 
@@ -26,6 +30,7 @@ type Enemy struct {
 	Health     Int
 	MaxHealth  Int
 	TimeoutIdx Int
+	Type       Int
 }
 
 type SpawnPortal struct {
@@ -282,7 +287,7 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt, pos4 []Pt) {
 	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		m.Set(m.RPos(), ONE)
 	}
 
@@ -327,6 +332,16 @@ func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt, pos4 []Pt) {
 	return
 }
 
+func NewEnemy(enemyType Int, pos Pt) Enemy {
+	e := Enemy{}
+	e.Type = enemyType
+	e.Pos = pos
+	e.MaxHealth = enemyHealths[e.Type.ToInt()]
+	e.Health = e.MaxHealth
+	e.TimeoutIdx = enemyCooldowns[e.Type.ToInt()].DivBy(TWO)
+	return e
+}
+
 func (w *World) Initialize() {
 	// Obstacles
 	//g.world.Obstacles.Init(I(15), I(15))
@@ -340,12 +355,7 @@ func (w *World) Initialize() {
 		w.Player.Pos = pos1[0]
 	}
 	for _, pos := range pos2 {
-		enemy := Enemy{}
-		enemy.Pos = pos
-		enemy.MaxHealth = I(1)
-		enemy.Health = enemy.MaxHealth
-		enemy.TimeoutIdx = enemyCooldown.DivBy(TWO)
-		w.Enemies = append(w.Enemies, enemy)
+		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(3)), pos))
 	}
 
 	for _, pos := range pos3 {
@@ -389,7 +399,7 @@ func (e *Enemy) Step(w *World) {
 		e.TimeoutIdx.Dec()
 		return // Don't move.
 	}
-	if w.TimeStep.Mod(enemyCooldown).Neq(ZERO) {
+	if w.TimeStep.Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
 		return
 	}
 
@@ -442,10 +452,6 @@ func (p *SpawnPortal) Step(w *World) {
 		return // Don't spawn.
 	}
 
-	enemy := Enemy{}
-	enemy.Pos = p.Pos
-	enemy.MaxHealth = I(1)
-	enemy.Health = enemy.MaxHealth
-	w.Enemies = append(w.Enemies, enemy)
+	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(3)), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
 }

@@ -30,7 +30,7 @@ type Gui struct {
 	imgTree           *ebiten.Image
 	imgPlayer         *ebiten.Image
 	imgPlayerHealth   *ebiten.Image
-	imgEnemy          *ebiten.Image
+	imgEnemy          []*ebiten.Image
 	imgEnemyHealth    *ebiten.Image
 	imgTileOverlay    *ebiten.Image
 	imgBeam           *ebiten.Image
@@ -421,7 +421,7 @@ func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color
 }
 
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
-	g.DrawTile(screen, g.imgEnemy, e.Pos)
+	g.DrawTile(screen, g.imgEnemy[e.Type.ToInt()], e.Pos)
 	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth, e.Health, e.Pos)
 }
 
@@ -488,7 +488,10 @@ func (g *Gui) loadGuiData() {
 		g.imgTree = g.LoadImage("data/tree.png")
 		g.imgPlayer = g.LoadImage("data/player.png")
 		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
-		g.imgEnemy = g.LoadImage("data/enemy.png")
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy2.png"))
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy3.png"))
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy4.png"))
 		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")
 		g.imgBeam = g.LoadImage("data/beam.png")
 		g.imgShadow = g.LoadImage("data/shadow.png")
