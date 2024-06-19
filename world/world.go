@@ -9,8 +9,8 @@ import (
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldowns []Int = []Int{I(40), I(20), I(100), I(120)}
-var enemyHealths []Int = []Int{I(1), I(4), I(2), I(4)}
+var enemyCooldowns []Int = []Int{I(40), I(200), I(40), I(120)}
+var enemyHealths []Int = []Int{I(1), I(10), I(4), I(4)}
 var enemyFrozenCooldowns []Int = []Int{I(130), I(130), I(130), I(130)}
 var spawnPortalCooldown Int = I(100)
 
@@ -354,7 +354,7 @@ func (w *World) Initialize() {
 		w.Player.Pos = pos1[0]
 	}
 	for _, pos := range pos2 {
-		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(3)), pos))
+		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), pos))
 	}
 
 	for _, pos := range pos3 {
@@ -451,6 +451,6 @@ func (p *SpawnPortal) Step(w *World) {
 		return // Don't spawn.
 	}
 
-	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(3)), p.Pos))
+	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
 }

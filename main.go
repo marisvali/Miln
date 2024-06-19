@@ -513,7 +513,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTree = g.LoadImage("data/tree.png")
 		g.imgPlayer = g.LoadImage("data/player.png")
 		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
+		//g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy2.png"))
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy3.png"))
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy4.png"))
