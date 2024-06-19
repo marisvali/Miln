@@ -38,6 +38,7 @@ type Gui struct {
 	imgTextBackground *ebiten.Image
 	imgTextColor      *ebiten.Image
 	imgAmmo           *ebiten.Image
+	imgSpawnPortal    *ebiten.Image
 	world             World
 	frameIdx          Int
 	folderWatcher     FolderWatcher
@@ -264,6 +265,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		}
 	}
 
+	// Draw portals.
+	for i := range g.world.SpawnPortals {
+		g.DrawTile(screen, g.imgSpawnPortal, g.world.SpawnPortals[i].Pos)
+	}
+
 	// Draw ammo.
 	for _, ammo := range g.world.Ammos {
 		g.DrawTile(screen, g.imgAmmo, ammo.Pos)
@@ -468,6 +474,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTextBackground = g.LoadImage("data/text-background.png")
 		g.imgTextColor = g.LoadImage("data/text-color.png")
 		g.imgAmmo = g.LoadImage("data/ammo.png")
+		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
 		if CheckFailed == nil {
 			break
 		}

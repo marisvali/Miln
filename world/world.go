@@ -27,6 +27,14 @@ type Enemy struct {
 	TimeoutIdx Int
 }
 
+type SpawnPortal struct {
+	Pos        Pt
+	Health     Int
+	MaxHealth  Int
+	MaxTimeout Int
+	TimeoutIdx Int
+}
+
 type Ammo struct {
 	Pos   Pt
 	Count Int
@@ -48,6 +56,7 @@ type World struct {
 	beamPts         []Pt
 	BlockSize       Int
 	Ammos           []Ammo
+	SpawnPortals    []SpawnPortal
 }
 
 type PlayerInput struct {
@@ -194,7 +203,7 @@ func (w *World) Step(input *PlayerInput) {
 	}
 	if input.Shoot &&
 		w.Player.TimeoutIdx.Eq(ZERO) &&
-		w.Player.AmmoCount.Gt(I(0)) &&
+		//w.Player.AmmoCount.Gt(I(0)) &&
 		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
 		shotEnemies := []*Enemy{}
 		for i, _ := range w.Enemies {
@@ -217,7 +226,7 @@ func (w *World) Step(input *PlayerInput) {
 	}
 
 	// Cull dead enemies.
-	// This kind of operation makes me thing I should have a slice of pointers,
+	// This kind of operation makes me think I should have a slice of pointers,
 	// not values.
 	newEnemies := []Enemy{}
 	for i, _ := range w.Enemies {
@@ -226,6 +235,11 @@ func (w *World) Step(input *PlayerInput) {
 		}
 	}
 	w.Enemies = newEnemies
+
+	// Step portals.
+	for i := range w.SpawnPortals {
+		w.SpawnPortals[i].Step(w)
+	}
 
 	w.TimeStep.Inc()
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
@@ -247,7 +261,7 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 	return
 }
 
-func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt) {
+func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt, pos4 []Pt) {
 	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
 	for i := 0; i < 10; i++ {
@@ -282,6 +296,16 @@ func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt) {
 			break
 		}
 	}
+
+	// Search for a non-occupied position to place the spawn portal in.
+	for {
+		pt := m.RPos()
+		if m.Get(pt).IsZero() {
+			pos4 = append(pos4, pt)
+			break
+		}
+	}
+
 	return
 }
 
@@ -291,8 +315,9 @@ func (w *World) Initialize() {
 	pos1 := []Pt{}
 	pos2 := []Pt{}
 	pos3 := []Pt{}
+	pos4 := []Pt{}
 	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	w.Obstacles, pos1, pos2, pos3 = RandomLevel2()
+	w.Obstacles, pos1, pos2, pos3, pos4 = RandomLevel2()
 	if len(pos1) > 0 {
 		w.Player.Pos = pos1[0]
 	}
@@ -309,6 +334,15 @@ func (w *World) Initialize() {
 		ammo.Pos = pos
 		ammo.Count = I(3)
 		w.Ammos = append(w.Ammos, ammo)
+	}
+
+	for _, pos := range pos4 {
+		portal := SpawnPortal{}
+		portal.Pos = pos
+		portal.MaxHealth = I(3)
+		portal.Health = portal.MaxHealth
+		portal.MaxTimeout = I(100)
+		w.SpawnPortals = append(w.SpawnPortals, portal)
 	}
 
 	// Params
@@ -357,4 +391,40 @@ func (e *Enemy) Step(w *World) {
 			w.Player.Health.Dec()
 		}
 	}
+}
+
+func (p *SpawnPortal) Step(w *World) {
+	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
+		// I need to structure this stuff differently.
+		beamEndTile := w.WorldPosToTile(w.Beam.End)
+		if beamEndTile.Eq(p.Pos) {
+			// We have been shot.
+			p.Health.Dec()
+		}
+	}
+
+	if p.TimeoutIdx.IsPositive() {
+		p.TimeoutIdx.Dec()
+		return // Don't spawn.
+	}
+
+	// Spawn guy.
+	// Check if there is already a guy here.
+	occupied := false
+	for _, enemy := range w.Enemies {
+		if enemy.Pos == p.Pos {
+			occupied = true
+			break
+		}
+	}
+	if occupied {
+		return // Don't spawn.
+	}
+
+	enemy := Enemy{}
+	enemy.Pos = p.Pos
+	enemy.MaxHealth = I(1)
+	enemy.Health = enemy.MaxHealth
+	w.Enemies = append(w.Enemies, enemy)
+	p.TimeoutIdx = p.MaxTimeout
 }
