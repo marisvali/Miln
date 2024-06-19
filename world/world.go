@@ -9,8 +9,9 @@ import (
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldown Int = I(70)
+var enemyCooldown Int = I(40)
 var enemyHitCooldown Int = I(30)
+var spawnPortalCooldown Int = I(100)
 
 type Player struct {
 	Pos        Pt
@@ -153,7 +154,6 @@ func (w *World) Step(input *PlayerInput) {
 			w.Player.TimeoutIdx = playerCooldown
 
 			// Collect ammos.
-
 			newAmmos := make([]Ammo, 0)
 			for i := range w.Ammos {
 				if w.Ammos[i].Pos == w.Player.Pos {
@@ -162,39 +162,42 @@ func (w *World) Step(input *PlayerInput) {
 					newAmmos = append(newAmmos, w.Ammos[i])
 				}
 			}
-			targetLen := len(w.Ammos)
 			w.Ammos = newAmmos
+		}
+	}
 
-			// Spawn new ammos
-			for {
-				if len(w.Ammos) == targetLen {
-					break
-				}
+	// Spawn new ammos
+	for {
+		if len(w.Ammos) == 1 {
+			break
+		}
 
-				pt := w.Obstacles.RPos()
-				if !w.Obstacles.Get(pt).IsZero() {
-					continue
-				}
-				if w.Player.Pos == pt {
-					continue
-				}
-				invalid := false
-				for i := range w.Ammos {
-					if w.Ammos[i].Pos == pt {
-						invalid = true
-						break
-					}
-				}
-				if invalid {
-					continue
-				}
-				ammo := Ammo{
-					Pos:   pt,
-					Count: I(3),
-				}
-				w.Ammos = append(w.Ammos, ammo)
+		if w.Player.AmmoCount.IsPositive() {
+			break
+		}
+
+		pt := w.Obstacles.RPos()
+		if !w.Obstacles.Get(pt).IsZero() {
+			continue
+		}
+		if w.Player.Pos == pt {
+			continue
+		}
+		invalid := false
+		for i := range w.Ammos {
+			if w.Ammos[i].Pos == pt {
+				invalid = true
+				break
 			}
 		}
+		if invalid {
+			continue
+		}
+		ammo := Ammo{
+			Pos:   pt,
+			Count: I(3),
+		}
+		w.Ammos = append(w.Ammos, ammo)
 	}
 
 	// See about the beam.
@@ -203,8 +206,8 @@ func (w *World) Step(input *PlayerInput) {
 	}
 	if input.Shoot &&
 		w.Player.TimeoutIdx.Eq(ZERO) &&
-		//w.Player.AmmoCount.Gt(I(0)) &&
 		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
+
 		shotEnemies := []*Enemy{}
 		for i, _ := range w.Enemies {
 			if w.Enemies[i].Pos.Eq(input.ShootPt) {
@@ -212,11 +215,17 @@ func (w *World) Step(input *PlayerInput) {
 			}
 		}
 
-		if len(shotEnemies) > 0 {
+		shotPortals := []*SpawnPortal{}
+		for i, _ := range w.SpawnPortals {
+			if w.SpawnPortals[i].Pos.Eq(input.ShootPt) {
+				shotPortals = append(shotPortals, &w.SpawnPortals[i])
+			}
+		}
+
+		if len(shotEnemies) > 0 || len(shotPortals) > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
 			w.Player.TimeoutIdx = playerCooldown
 			w.Beam.End = w.TileToWorldPos(input.ShootPt)
-			w.Player.AmmoCount.Dec()
 		}
 	}
 
@@ -240,6 +249,15 @@ func (w *World) Step(input *PlayerInput) {
 	for i := range w.SpawnPortals {
 		w.SpawnPortals[i].Step(w)
 	}
+
+	// Cull dead portals.
+	newPortals := []SpawnPortal{}
+	for i, _ := range w.SpawnPortals {
+		if w.SpawnPortals[i].Health.IsPositive() {
+			newPortals = append(newPortals, w.SpawnPortals[i])
+		}
+	}
+	w.SpawnPortals = newPortals
 
 	w.TimeStep.Inc()
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
@@ -326,22 +344,23 @@ func (w *World) Initialize() {
 		enemy.Pos = pos
 		enemy.MaxHealth = I(1)
 		enemy.Health = enemy.MaxHealth
+		enemy.TimeoutIdx = enemyCooldown.DivBy(TWO)
 		w.Enemies = append(w.Enemies, enemy)
 	}
 
 	for _, pos := range pos3 {
 		ammo := Ammo{}
 		ammo.Pos = pos
-		ammo.Count = I(3)
+		ammo.Count = I(1)
 		w.Ammos = append(w.Ammos, ammo)
 	}
 
 	for _, pos := range pos4 {
 		portal := SpawnPortal{}
 		portal.Pos = pos
-		portal.MaxHealth = I(3)
+		portal.MaxHealth = I(1)
 		portal.Health = portal.MaxHealth
-		portal.MaxTimeout = I(100)
+		portal.MaxTimeout = spawnPortalCooldown
 		w.SpawnPortals = append(w.SpawnPortals, portal)
 	}
 
@@ -350,7 +369,6 @@ func (w *World) Initialize() {
 	w.BeamMax = I(15)
 	w.Player.MaxHealth = I(3)
 	w.Player.Health = w.Player.MaxHealth
-	w.Player.AmmoCount = I(3)
 
 	// GUI needs this even without the world ever doing a step.
 	w.computeAttackableTiles()
@@ -398,8 +416,11 @@ func (p *SpawnPortal) Step(w *World) {
 		// I need to structure this stuff differently.
 		beamEndTile := w.WorldPosToTile(w.Beam.End)
 		if beamEndTile.Eq(p.Pos) {
-			// We have been shot.
-			p.Health.Dec()
+			if w.Player.AmmoCount.Gt(I(0)) {
+				// We have been shot.
+				p.Health.Dec()
+				w.Player.AmmoCount.Dec()
+			}
 		}
 	}
 

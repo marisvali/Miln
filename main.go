@@ -80,6 +80,11 @@ func (g *Gui) UpdateGameOngoing() {
 			allEnemiesDead = false
 		}
 	}
+	for _, enemy := range g.world.SpawnPortals {
+		if enemy.Health.IsPositive() {
+			allEnemiesDead = false
+		}
+	}
 
 	if allEnemiesDead {
 		g.state = GameWon
@@ -112,21 +117,34 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		// See what is the closest distance to an enemy, from the click point.
-		iClosestEnemy := -1
+		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
 		for i, _ := range g.world.Enemies {
-			enemyPos := g.TileToScreen(g.world.Enemies[i].Pos)
-			dist := enemyPos.To(IPt(x, y)).Len()
-			if dist.Lt(minDist) {
-				minDist = dist
-				iClosestEnemy = i
+			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos).IsPositive() {
+				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos)
+				dist := enemyPos.To(IPt(x, y)).Len()
+				if dist.Lt(minDist) {
+					minDist = dist
+					closestPos = g.world.Enemies[i].Pos
+				}
 			}
 		}
 
-		closeEnough := minDist.Lt(BlockSize.Times(I(120)).DivBy(I(100)))
+		for i := range g.world.SpawnPortals {
+			if g.world.AttackableTiles.Get(g.world.SpawnPortals[i].Pos).IsPositive() {
+				enemyPos := g.TileToScreen(g.world.SpawnPortals[i].Pos)
+				dist := enemyPos.To(IPt(x, y)).Len()
+				if dist.Lt(minDist) {
+					minDist = dist
+					closestPos = g.world.SpawnPortals[i].Pos
+				}
+			}
+		}
+
+		closeEnough := minDist.Lt(BlockSize.Times(I(220)).DivBy(I(100)))
 		if closeEnough {
 			input.Shoot = true
-			input.ShootPt = g.world.Enemies[iClosestEnemy].Pos
+			input.ShootPt = closestPos
 		}
 	}
 
@@ -152,7 +170,8 @@ func (g *Gui) UpdateGameOngoing() {
 
 func (g *Gui) UpdateGamePaused() {
 	g.world.Player.TimeoutIdx = ZERO
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
+		inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		g.state = GameOngoing
 		g.UpdateGameOngoing()
 	}
@@ -267,7 +286,9 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 
 	// Draw portals.
 	for i := range g.world.SpawnPortals {
-		g.DrawTile(screen, g.imgSpawnPortal, g.world.SpawnPortals[i].Pos)
+		p := &g.world.SpawnPortals[i]
+		g.DrawTile(screen, g.imgSpawnPortal, p.Pos)
+		g.DrawHealth(screen, g.imgEnemyHealth, p.MaxHealth, p.Health, p.Pos)
 	}
 
 	// Draw ammo.
