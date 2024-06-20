@@ -55,6 +55,8 @@ type Gui struct {
 	buttonPause        Rectangle
 	buttonNewLevel     Rectangle
 	buttonRestartLevel Rectangle
+	justPressedKeys    []ebiten.Key // keys pressed in this frame
+	mousePt            Pt           // mouse position in this frame
 }
 
 type GameState int64
@@ -67,49 +69,27 @@ const (
 	Playback
 )
 
-func (g *Gui) UserRequestedPause() bool {
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyEscape) {
-		return true
-	}
+func (g *Gui) JustPressed(key ebiten.Key) bool {
+	return slices.Contains(g.justPressedKeys, key)
+}
 
+func (g *Gui) JustClicked(button Rectangle) bool {
 	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
 		return false
 	}
-	x, y := ebiten.CursorPosition()
-	pt := IPt(x, y)
-	return g.buttonPause.ContainsPt(pt)
+	return button.ContainsPt(g.mousePt)
+}
+
+func (g *Gui) UserRequestedPause() bool {
+	return g.JustPressed(ebiten.KeyEscape) || g.JustClicked(g.buttonPause)
 }
 
 func (g *Gui) UserRequestedNewLevel() bool {
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyN) {
-		return true
-	}
-
-	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		return false
-	}
-	x, y := ebiten.CursorPosition()
-	pt := IPt(x, y)
-	return g.buttonNewLevel.ContainsPt(pt)
+	return g.JustPressed(ebiten.KeyN) || g.JustClicked(g.buttonNewLevel)
 }
 
 func (g *Gui) UserRequestedRestartLevel() bool {
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyR) {
-		return true
-	}
-
-	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		return false
-	}
-	x, y := ebiten.CursorPosition()
-	pt := IPt(x, y)
-	return g.buttonRestartLevel.ContainsPt(pt)
+	return g.JustPressed(ebiten.KeyR) || g.JustClicked(g.buttonRestartLevel)
 }
 
 func (g *Gui) UpdateGameOngoing() {
@@ -149,11 +129,10 @@ func (g *Gui) UpdateGameOngoing() {
 		return
 	}
 
-	x, y := ebiten.CursorPosition()
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
 		input.Move = true
-		tilePos := g.ScreenToTile(IPt(x, y))
+		tilePos := g.ScreenToTile(g.mousePt)
 		if tilePos.X.IsNegative() {
 			tilePos.X = ZERO
 		}
@@ -176,7 +155,7 @@ func (g *Gui) UpdateGameOngoing() {
 		for i, _ := range g.world.Enemies {
 			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos).IsPositive() {
 				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos)
-				dist := enemyPos.To(IPt(x, y)).Len()
+				dist := enemyPos.To(g.mousePt).Len()
 				if dist.Lt(minDist) {
 					minDist = dist
 					closestPos = g.world.Enemies[i].Pos
@@ -187,7 +166,7 @@ func (g *Gui) UpdateGameOngoing() {
 		for i := range g.world.SpawnPortals {
 			if g.world.AttackableTiles.Get(g.world.SpawnPortals[i].Pos).IsPositive() {
 				enemyPos := g.TileToScreen(g.world.SpawnPortals[i].Pos)
-				dist := enemyPos.To(IPt(x, y)).Len()
+				dist := enemyPos.To(g.mousePt).Len()
 				if dist.Lt(minDist) {
 					minDist = dist
 					closestPos = g.world.SpawnPortals[i].Pos
@@ -274,11 +253,21 @@ func (g *Gui) UpdatePlayback() {
 }
 
 func (g *Gui) Update() error {
+	// One-time initialization. This needs to happen here because I need to
+	// operate on ebiten images and it won't let me before I do RunGame.
+	// TODO: find a better place for this code
 	if len(g.imgEnemyMask) < len(g.imgEnemy) {
 		for _, img := range g.imgEnemy {
 			g.imgEnemyMask = append(g.imgEnemyMask, ComputeSpriteMask(img))
 		}
 	}
+
+	// Get input once, so we don't need to get it every time we need it in
+	// other functions.
+	g.justPressedKeys = g.justPressedKeys[:0]
+	g.justPressedKeys = inpututil.AppendJustPressedKeys(g.justPressedKeys)
+	x, y := ebiten.CursorPosition()
+	g.mousePt = IPt(x, y)
 
 	if g.state == GameOngoing {
 		g.UpdateGameOngoing()
