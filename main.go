@@ -25,31 +25,36 @@ var BlockSize Int = I(80)
 var embeddedFiles embed.FS
 
 type Gui struct {
-	defaultFont       font.Face
-	imgGround         *ebiten.Image
-	imgTree           *ebiten.Image
-	imgPlayer         *ebiten.Image
-	imgPlayerHealth   *ebiten.Image
-	imgEnemy          []*ebiten.Image
-	imgEnemyMask      []*ebiten.Image
-	imgEnemyHealth    *ebiten.Image
-	imgTileOverlay    *ebiten.Image
-	imgBeam           *ebiten.Image
-	imgShadow         *ebiten.Image
-	imgTextBackground *ebiten.Image
-	imgTextColor      *ebiten.Image
-	imgAmmo           *ebiten.Image
-	imgSpawnPortal    *ebiten.Image
-	world             World
-	frameIdx          Int
-	folderWatcher     FolderWatcher
-	recording         bool
-	recordingFile     string
-	allInputs         []PlayerInput
-	state             GameState
-	textHeight        Int
-	guiMargin         Int
-	useEmbedded       bool
+	defaultFont        font.Face
+	imgGround          *ebiten.Image
+	imgTree            *ebiten.Image
+	imgPlayer          *ebiten.Image
+	imgPlayerHealth    *ebiten.Image
+	imgEnemy           []*ebiten.Image
+	imgEnemyMask       []*ebiten.Image
+	imgEnemyHealth     *ebiten.Image
+	imgTileOverlay     *ebiten.Image
+	imgBeam            *ebiten.Image
+	imgShadow          *ebiten.Image
+	imgTextBackground  *ebiten.Image
+	imgTextColor       *ebiten.Image
+	imgAmmo            *ebiten.Image
+	imgSpawnPortal     *ebiten.Image
+	world              World
+	worldAtStart       World
+	frameIdx           Int
+	folderWatcher      FolderWatcher
+	recording          bool
+	recordingFile      string
+	allInputs          []PlayerInput
+	state              GameState
+	textHeight         Int
+	guiMargin          Int
+	useEmbedded        bool
+	buttonRegionWidth  Int
+	buttonPause        Rectangle
+	buttonNewLevel     Rectangle
+	buttonRestartLevel Rectangle
 }
 
 type GameState int64
@@ -62,14 +67,62 @@ const (
 	Playback
 )
 
-func (g *Gui) UpdateGameOngoing() {
+func (g *Gui) UserRequestedPause() bool {
 	var justPressedKeys []ebiten.Key
 	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
 	if slices.Contains(justPressedKeys, ebiten.KeyEscape) {
+		return true
+	}
+
+	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		return false
+	}
+	x, y := ebiten.CursorPosition()
+	pt := IPt(x, y)
+	return g.buttonPause.ContainsPt(pt)
+}
+
+func (g *Gui) UserRequestedNewLevel() bool {
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyN) {
+		return true
+	}
+
+	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		return false
+	}
+	x, y := ebiten.CursorPosition()
+	pt := IPt(x, y)
+	return g.buttonNewLevel.ContainsPt(pt)
+}
+
+func (g *Gui) UserRequestedRestartLevel() bool {
+	var justPressedKeys []ebiten.Key
+	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
+	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+		return true
+	}
+
+	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		return false
+	}
+	x, y := ebiten.CursorPosition()
+	pt := IPt(x, y)
+	return g.buttonRestartLevel.ContainsPt(pt)
+}
+
+func (g *Gui) UpdateGameOngoing() {
+	if g.UserRequestedPause() {
 		g.state = GamePaused
 		return
 	}
-	if slices.Contains(justPressedKeys, ebiten.KeyR) {
+	if g.UserRequestedRestartLevel() {
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
+	}
+	if g.UserRequestedNewLevel() {
 		g.state = GamePaused
 		g.UpdateGamePaused()
 		return
@@ -171,34 +224,48 @@ func (g *Gui) UpdateGameOngoing() {
 
 func (g *Gui) UpdateGamePaused() {
 	g.world.Player.TimeoutIdx = ZERO
+	if g.UserRequestedNewLevel() {
+		g.world = World{}
+		g.world.Initialize(RInt(I(0), I(10000000)))
+		return
+	}
+	if g.UserRequestedRestartLevel() {
+		oldSeed := g.world.Seed()
+		g.world = World{}
+		g.world.Initialize(oldSeed)
+		return
+	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
 		inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		g.state = GameOngoing
 		g.UpdateGameOngoing()
-	}
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyR) {
-		g.world = World{}
-		g.world.Initialize()
+		return
 	}
 }
 
 func (g *Gui) UpdateGameWon() {
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyR) {
-		g.state = GameOngoing
-		g.UpdateGameOngoing()
+	if g.UserRequestedRestartLevel() {
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
+	}
+	if g.UserRequestedNewLevel() {
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
 	}
 }
 
 func (g *Gui) UpdateGameLost() {
-	var justPressedKeys []ebiten.Key
-	justPressedKeys = inpututil.AppendJustPressedKeys(justPressedKeys)
-	if slices.Contains(justPressedKeys, ebiten.KeyR) {
-		g.state = GameOngoing
-		g.UpdateGameOngoing()
+	if g.UserRequestedRestartLevel() {
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
+	}
+	if g.UserRequestedNewLevel() {
+		g.state = GamePaused
+		g.UpdateGamePaused()
+		return
 	}
 }
 
@@ -365,32 +432,67 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		g.DrawPlayRegion(playRegion)
 	}
 
+	//buttonRegionX := I(screen.Bounds().Dx()).Minus(g.buttonRegionWidth)
+	screenSize := IPt(screen.Bounds().Dx(), screen.Bounds().Dy())
 	{
-		upperLeft := Pt{ZERO, I(screen.Bounds().Dy()).Minus(g.textHeight)}
-		lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
+		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight)}
+		//lowerRight := upperLeft.Plus(Pt{buttonRegionX, g.textHeight.DivBy(TWO)})
+		lowerRight := Pt{screenSize.X, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		textRegion.Fill(color.RGBA{215, 215, 15, 255})
 		g.DrawInstructionalText(textRegion)
+	}
+
+	{
+		//upperLeft := Pt{buttonRegionX, I(screen.Bounds().Dy()).Minus(g.textHeight)}
+		//lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
+		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
+		lowerRight := Pt{screenSize.X, screenSize.Y}
+		buttonRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		buttonRegion.Fill(color.RGBA{5, 215, 215, 255})
+		g.DrawButtons(buttonRegion)
 	}
 
 	// Output TPS (ticks per second, which is like frames per second).
 	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
+func (g *Gui) DrawButtons(screen *ebiten.Image) {
+	height := I(screen.Bounds().Dy())
+	buttonWidth := I(200)
+
+	buttonCols := []color.RGBA{{35, 115, 115, 255}, {65, 215, 115, 255}, {225, 115, 215, 255}}
+
+	buttons := []*ebiten.Image{}
+	for i := I(0); i.Lt(I(3)); i.Inc() {
+		upperLeft := Pt{buttonWidth.Times(i), ZERO}
+		lowerRight := Pt{buttonWidth.Times(i.Plus(ONE)), height}
+		button := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		button.Fill(buttonCols[i.ToInt()])
+		buttons = append(buttons, button)
+	}
+
+	textCol := color.RGBA{0, 0, 0, 255}
+	g.DrawText(buttons[0], "[ESC] Pause", true, textCol)
+	g.DrawText(buttons[1], "[R] Restart level", true, textCol)
+	g.DrawText(buttons[2], "[N] New level", true, textCol)
+
+	// Remember the regions so that Update() can react when they're clicked.
+	g.buttonPause = FromImageRectangle(buttons[0].Bounds())
+	g.buttonRestartLevel = FromImageRectangle(buttons[1].Bounds())
+	g.buttonNewLevel = FromImageRectangle(buttons[2].Bounds())
+}
+
 func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
-	var message1 string
-	var message2 string
+	var message string
 	if g.state == GameOngoing {
-		message1 = "Kill everyone!"
-		message2 = "left click - move, right click - shoot, R - restart, ESC - pause"
+		message = "Kill everyone! left click - move, right click - shoot"
 	} else if g.state == GamePaused {
-		message1 = "Paused. Kill everyone!"
-		message2 = "left click - move, right click - shoot, R - restart"
+		message = "Paused. Kill everyone! left click - move, right click - shoot"
 	} else if g.state == GameWon {
-		message1 = "You won, congratulations!"
-		message2 = "R - restart"
+		message = "You won, congratulations!"
 	} else if g.state == GameLost {
-		message1 = "You lost."
-		message2 = "R - restart"
+		message = "You lost."
 	} else if g.state == Playback {
 		//message = fmt.Sprintf("Playing back frame %d / %d", g.frameIdx, len(g.playerInputs))
 	} else {
@@ -403,14 +505,9 @@ func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
 
 	var r image.Rectangle
 	r.Min = screen.Bounds().Min
-	r.Max = image.Point{screen.Bounds().Max.X, r.Min.Y + screen.Bounds().Dy()/2}
-	textBox1 := screen.SubImage(r).(*ebiten.Image)
-	g.DrawText(textBox1, message1, true, g.imgTextColor.At(0, 0))
-
-	r.Min = image.Point{screen.Bounds().Min.X, screen.Bounds().Min.Y + screen.Bounds().Dy()/2}
-	r.Max = screen.Bounds().Max
-	textBox2 := screen.SubImage(r).(*ebiten.Image)
-	g.DrawText(textBox2, message2, true, g.imgTextColor.At(0, 0))
+	r.Max = image.Point{screen.Bounds().Max.X, r.Min.Y + screen.Bounds().Dy()}
+	textBox := screen.SubImage(r).(*ebiten.Image)
+	g.DrawText(textBox, message, true, g.imgTextColor.At(0, 0))
 }
 
 func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color color.Color) {
@@ -533,10 +630,11 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
-	g.world.Initialize()
+	g.world.Initialize(RInt(I(0), I(10000000)))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
+	g.buttonRegionWidth = I(200)
 	g.recording = true
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()

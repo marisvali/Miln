@@ -36,6 +36,12 @@ func (r *Rectangle) Max() Pt {
 	return Pt{Max(r.Corner1.X, r.Corner2.X), Max(r.Corner1.Y, r.Corner2.Y)}
 }
 
+func (r *Rectangle) ContainsPt(pt Pt) bool {
+	minX, maxX := MinMax(r.Corner1.X, r.Corner2.X)
+	minY, maxY := MinMax(r.Corner1.Y, r.Corner2.Y)
+	return pt.X.Geq(minX) && pt.X.Leq(maxX) && pt.Y.Geq(minY) && pt.Y.Leq(maxY)
+}
+
 func LineVerticalLineIntersection(l, vert Line) (bool, Pt) {
 	// Check if the Lines even intersect.
 

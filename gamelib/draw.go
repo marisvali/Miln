@@ -161,14 +161,33 @@ func DrawSquare(screen *ebiten.Image, s Square, color color.Color) {
 	DrawLine(screen, Line{lowerRightCorner, upperRightCorner}, color)
 }
 
-func imagePoint(pt Pt) image.Point {
+func ToImagePoint(pt Pt) image.Point {
 	return image.Point{pt.X.ToInt(), pt.Y.ToInt()}
 }
 
-func imageRectangle(r Rectangle) image.Rectangle {
-	return image.Rectangle{imagePoint(r.Min()), imagePoint(r.Max())}
+func FromImagePoint(pt image.Point) Pt {
+	return IPt(pt.X, pt.Y)
+}
+
+func ToImageRectangle(r Rectangle) image.Rectangle {
+	return image.Rectangle{ToImagePoint(r.Min()), ToImagePoint(r.Max())}
+}
+
+func FromImageRectangle(r image.Rectangle) Rectangle {
+	return Rectangle{FromImagePoint(r.Min), FromImagePoint(r.Max)}
 }
 
 func SubImage(screen *ebiten.Image, r Rectangle) *ebiten.Image {
-	return screen.SubImage(imageRectangle(r)).(*ebiten.Image)
+	// Do this because when dealing with sub-images in general I think in
+	// relative coordinates. So for img2 = img1.SubImage(pt1, pt2) I now expect
+	// that img2.At(0, 0) indicates the same pixel as img1.At(pt1). Ebitengine
+	// doesn't do it like that. I still need to use img2.At(pt1) to indicate
+	// pixel img1.At(pt1). I don't know why Ebitengine does it like that.
+	// Personally, I'm used to a different style, one of the main reasons for
+	// working with subimages, for me, is to be able to think in local
+	// coordinates instead of global ones.
+	minPt := FromImagePoint(screen.Bounds().Min)
+	r.Corner1.Add(minPt)
+	r.Corner2.Add(minPt)
+	return screen.SubImage(ToImageRectangle(r)).(*ebiten.Image)
 }

@@ -61,6 +61,7 @@ type World struct {
 	BlockSize       Int
 	Ammos           []Ammo
 	SpawnPortals    []SpawnPortal
+	seed            Int
 }
 
 type PlayerInput struct {
@@ -68,6 +69,10 @@ type PlayerInput struct {
 	MovePt  Pt // tile-coordinates
 	Shoot   bool
 	ShootPt Pt // tile-coordinates
+}
+
+func (w *World) Seed() Int {
+	return w.seed
 }
 
 func SerializeInputs(inputs []PlayerInput, filename string) {
@@ -341,7 +346,10 @@ func NewEnemy(enemyType Int, pos Pt) Enemy {
 	return e
 }
 
-func (w *World) Initialize() {
+func (w *World) Initialize(seed Int) {
+	w.seed = seed
+	RSeed(seed)
+
 	// Obstacles
 	//g.world.Obstacles.Init(I(15), I(15))
 	pos1 := []Pt{}
