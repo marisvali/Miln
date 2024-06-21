@@ -22,19 +22,22 @@ type Beam struct {
 }
 
 type World struct {
-	Player          Player
-	Enemies         []Enemy
-	Beam            Beam
-	Obstacles       Matrix
-	AttackableTiles Matrix
-	TimeStep        Int
-	BeamMax         Int
-	beamPts         []Pt
-	BlockSize       Int
-	Ammos           []Ammo
-	SpawnPortals    []SpawnPortal
-	seed            Int
-	Keys            []Key
+	Player           Player
+	Enemies          []Enemy
+	Beam             Beam
+	Obstacles        Matrix
+	AttackableTiles  Matrix
+	TimeStep         Int
+	BeamMax          Int
+	beamPts          []Pt
+	BlockSize        Int
+	Ammos            []Ammo
+	SpawnPortals     []SpawnPortal
+	seed             Int
+	Keys             []Key
+	PillarKeyDropped bool
+	HoundKeyDropped  bool
+	PortalKeyDropped bool
 }
 
 type PlayerInput struct {
@@ -58,9 +61,6 @@ func NewWorld(seed Int) (w World) {
 		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), occ.NewlyOccupiedRandomPos()))
 	}
 
-	w.Keys = append(w.Keys, NewPillarKey(occ.NewlyOccupiedRandomPos()))
-	w.Keys = append(w.Keys, NewHoundKey(occ.NewlyOccupiedRandomPos()))
-	w.Keys = append(w.Keys, NewPortalKey(occ.NewlyOccupiedRandomPos()))
 	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
 
 	// Params
