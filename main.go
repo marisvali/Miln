@@ -148,7 +148,7 @@ func (g *Gui) UpdateGameOngoing() {
 		input.MovePt = tilePos
 	}
 
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		// See what is the closest distance to an enemy, from the click point.
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
@@ -388,10 +388,12 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	DrawSpriteXY(screen, beamScreen, 0, 0)
 
 	// Mark attackable tiles.
-	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
-		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-			if g.world.AttackableTiles.Get(pt).Neq(ZERO) {
-				g.DrawTile(screen, g.imgShadow, pt)
+	if g.world.Player.OnMap {
+		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
+			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
+				if g.world.AttackableTiles.Get(pt).Neq(ZERO) {
+					g.DrawTile(screen, g.imgShadow, pt)
+				}
 			}
 		}
 	}
@@ -536,6 +538,9 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 }
 
 func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
+	if !p.OnMap {
+		return
+	}
 	mask := ebiten.NewImageFromImage(g.imgPlayer)
 	{
 		percent := p.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)

@@ -16,6 +16,7 @@ var spawnPortalCooldown Int = I(100)
 
 type Player struct {
 	Pos        Pt
+	OnMap      bool
 	TimeoutIdx Int
 	Health     Int
 	MaxHealth  Int
@@ -157,8 +158,9 @@ func (w *World) Step(input *PlayerInput) {
 
 	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) {
 		if w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
-			w.AttackableTiles.Get(input.MovePt).Neq(ZERO) {
+			(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) {
 			w.Player.Pos = input.MovePt
+			w.Player.OnMap = true
 			w.Player.TimeoutIdx = playerCooldown
 
 			// Collect ammos.
@@ -352,15 +354,11 @@ func (w *World) Initialize(seed Int) {
 
 	// Obstacles
 	//g.world.Obstacles.Init(I(15), I(15))
-	pos1 := []Pt{}
 	pos2 := []Pt{}
 	pos3 := []Pt{}
 	pos4 := []Pt{}
 	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	w.Obstacles, pos1, pos2, pos3, pos4 = RandomLevel2()
-	if len(pos1) > 0 {
-		w.Player.Pos = pos1[0]
-	}
+	w.Obstacles, _, pos2, pos3, pos4 = RandomLevel2()
 	for _, pos := range pos2 {
 		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), pos))
 	}
@@ -411,19 +409,22 @@ func (e *Enemy) Step(w *World) {
 	}
 
 	// Move.
-	// Clone obstacle matrix and put (other) enemies on it.
-	allObstacles := w.Obstacles.Clone()
-	for _, enemy := range w.Enemies {
-		if !enemy.Pos.Eq(e.Pos) {
-			allObstacles.Set(enemy.Pos, TWO)
+	if w.Player.OnMap {
+		// Clone obstacle matrix and put (other) enemies on it.
+		allObstacles := w.Obstacles.Clone()
+		for _, enemy := range w.Enemies {
+			if !enemy.Pos.Eq(e.Pos) {
+				allObstacles.Set(enemy.Pos, TWO)
+			}
 		}
-	}
 
-	path := FindPath(e.Pos, w.Player.Pos, allObstacles)
-	if len(path) > 1 {
-		e.Pos = path[1]
-		if e.Pos.Eq(w.Player.Pos) {
-			w.Player.Health.Dec()
+		path := FindPath(e.Pos, w.Player.Pos, allObstacles)
+		if len(path) > 1 {
+			e.Pos = path[1]
+			if e.Pos.Eq(w.Player.Pos) {
+				w.Player.Health.Dec()
+				w.Player.OnMap = false
+			}
 		}
 	}
 }
