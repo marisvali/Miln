@@ -632,7 +632,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTextColor = g.LoadImage("data/text-color.png")
 		g.imgAmmo = g.LoadImage("data/ammo.png")
 		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
-		g.imgPlayerHitEffect = g.LoadImage("data/playerHitEffect.png ")
+		g.imgPlayerHitEffect = g.LoadImage("data/player-hit-effect.png ")
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key1.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key2.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key3.png"))
@@ -668,10 +668,11 @@ func main() {
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
-	g.useEmbedded = !FileExists("data")
-	if !g.useEmbedded {
-		g.folderWatcher.Folder = "data"
-	}
+	g.useEmbedded = true
+	//g.useEmbedded = !FileExists("data")
+	//if !g.useEmbedded {
+	//	g.folderWatcher.Folder = "data"
+	//}
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
 	g.state = GamePaused
