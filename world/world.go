@@ -14,15 +14,6 @@ var enemyHealths []Int = []Int{I(1), I(10), I(4), I(4)}
 var enemyFrozenCooldowns []Int = []Int{I(130), I(130), I(130), I(130)}
 var spawnPortalCooldown Int = I(100)
 
-type Player struct {
-	Pos        Pt
-	OnMap      bool
-	TimeoutIdx Int
-	Health     Int
-	MaxHealth  Int
-	AmmoCount  Int
-}
-
 type Enemy struct {
 	Pos       Pt
 	Health    Int
@@ -150,39 +141,8 @@ func (w *World) computeAttackableTiles() {
 }
 
 func (w *World) Step(input *PlayerInput) {
-	if w.Player.TimeoutIdx.Gt(ZERO) {
-		w.Player.TimeoutIdx.Dec()
-	}
-
 	w.computeAttackableTiles()
-
-	onEnemy := false
-	for i := range w.Enemies {
-		if w.Enemies[i].Pos == input.MovePt {
-			onEnemy = true
-			break
-		}
-	}
-
-	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) &&
-		w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
-		(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) &&
-		!onEnemy {
-		w.Player.Pos = input.MovePt
-		w.Player.OnMap = true
-		w.Player.TimeoutIdx = playerCooldown
-
-		// Collect ammos.
-		newAmmos := make([]Ammo, 0)
-		for i := range w.Ammos {
-			if w.Ammos[i].Pos == w.Player.Pos {
-				w.Player.AmmoCount.Add(w.Ammos[i].Count)
-			} else {
-				newAmmos = append(newAmmos, w.Ammos[i])
-			}
-		}
-		w.Ammos = newAmmos
-	}
+	w.Player.Step(w, input)
 
 	// Spawn new ammos
 	for {
@@ -216,35 +176,6 @@ func (w *World) Step(input *PlayerInput) {
 			Count: I(3),
 		}
 		w.Ammos = append(w.Ammos, ammo)
-	}
-
-	// See about the beam.
-	if w.Beam.Idx.Gt(ZERO) {
-		w.Beam.Idx.Dec()
-	}
-	if input.Shoot &&
-		w.Player.TimeoutIdx.Eq(ZERO) &&
-		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
-
-		shotEnemies := []*Enemy{}
-		for i, _ := range w.Enemies {
-			if w.Enemies[i].Pos.Eq(input.ShootPt) {
-				shotEnemies = append(shotEnemies, &w.Enemies[i])
-			}
-		}
-
-		shotPortals := []*SpawnPortal{}
-		for i, _ := range w.SpawnPortals {
-			if w.SpawnPortals[i].Pos.Eq(input.ShootPt) {
-				shotPortals = append(shotPortals, &w.SpawnPortals[i])
-			}
-		}
-
-		if len(shotEnemies) > 0 || len(shotPortals) > 0 {
-			w.Beam.Idx = w.BeamMax // show beam
-			w.Player.TimeoutIdx = playerCooldown
-			w.Beam.End = w.TileToWorldPos(input.ShootPt)
-		}
 	}
 
 	// Step the enemies.
@@ -429,8 +360,7 @@ func (e *Enemy) Step(w *World) {
 		if len(path) > 1 {
 			e.Pos = path[1]
 			if e.Pos.Eq(w.Player.Pos) {
-				w.Player.Health.Dec()
-				w.Player.OnMap = false
+				w.Player.Hit()
 			}
 		}
 	}

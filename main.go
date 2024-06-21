@@ -40,6 +40,7 @@ type Gui struct {
 	imgTextColor       *ebiten.Image
 	imgAmmo            *ebiten.Image
 	imgSpawnPortal     *ebiten.Image
+	imgPlayerHitEffect *ebiten.Image
 	world              World
 	worldAtStart       World
 	frameIdx           Int
@@ -57,6 +58,7 @@ type Gui struct {
 	buttonRestartLevel Rectangle
 	justPressedKeys    []ebiten.Key // keys pressed in this frame
 	mousePt            Pt           // mouse position in this frame
+	playerHitEffectIdx Int
 }
 
 type GameState int64
@@ -397,6 +399,18 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	// Draw hit effect.
+	if g.world.Player.JustHit {
+		g.world.Player.JustHit = false
+		g.playerHitEffectIdx = I(50)
+	}
+
+	if g.playerHitEffectIdx.IsPositive() {
+		alpha := uint8(g.playerHitEffectIdx.Times(I(100)).DivBy(I(50)).ToInt())
+		DrawSpriteAlpha(screen, g.imgPlayerHitEffect, 0, 0, float64(screen.Bounds().Dx()), float64(screen.Bounds().Dy()), alpha)
+		g.playerHitEffectIdx.Dec()
+	}
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
@@ -615,6 +629,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTextColor = g.LoadImage("data/text-color.png")
 		g.imgAmmo = g.LoadImage("data/ammo.png")
 		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
+		g.imgPlayerHitEffect = g.LoadImage("data/playerHitEffect.png ")
 		if CheckFailed == nil {
 			break
 		}
