@@ -16,33 +16,6 @@ var spawnPortalCooldown Int = I(100)
 
 const NEnemyTypes = 3
 
-type Enemy struct {
-	Pos       Pt
-	Health    Int
-	MaxHealth Int
-	FrozenIdx Int
-	MaxFrozen Int
-	Type      Int
-}
-
-type SpawnPortal struct {
-	Pos        Pt
-	Health     Int
-	MaxHealth  Int
-	MaxTimeout Int
-	TimeoutIdx Int
-}
-
-type Ammo struct {
-	Pos   Pt
-	Count Int
-}
-
-type Key struct {
-	Pos         Pt
-	Permissions HitPermissions
-}
-
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
 	End Pt  // this is the point to where the beam ends
@@ -61,6 +34,7 @@ type World struct {
 	Ammos           []Ammo
 	SpawnPortals    []SpawnPortal
 	seed            Int
+	Keys            []Key
 }
 
 type PlayerInput struct {
@@ -68,6 +42,39 @@ type PlayerInput struct {
 	MovePt  Pt // tile-coordinates
 	Shoot   bool
 	ShootPt Pt // tile-coordinates
+}
+
+func NewWorld(seed Int) (w World) {
+	w.seed = seed
+	RSeed(seed)
+
+	// Obstacles
+	w.Obstacles = RandomLevel2()
+
+	// Place each item at an unoccupied position (and occupy that position).
+	occ := w.Obstacles.Clone() // Keeps track of occupied positions.
+
+	for i := 0; i < 10; i++ {
+		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), occ.NewlyOccupiedRandomPos()))
+	}
+
+	w.Keys = append(w.Keys, NewPillarKey(occ.NewlyOccupiedRandomPos()))
+	w.Keys = append(w.Keys, NewHoundKey(occ.NewlyOccupiedRandomPos()))
+	w.Keys = append(w.Keys, NewPortalKey(occ.NewlyOccupiedRandomPos()))
+	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
+
+	// Params
+	w.BlockSize = I(1000)
+	w.BeamMax = I(15)
+	w.Player = NewPlayer()
+	w.Player.HitPermissions.CanHitEnemy[0] = true
+
+	// GUI needs this even without the world ever doing a step.
+	// Note: this was true when the player started on the map, so it might not
+	// be relevant now that the player doesn't start on the map. But, keep it
+	// in case things change again.
+	w.computeAttackableTiles()
+	return
 }
 
 func (w *World) Seed() Int {
@@ -201,218 +208,11 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 	return
 }
 
-func RandomLevel2() (m Matrix, pos1 []Pt, pos2 []Pt, pos3 []Pt, pos4 []Pt) {
+func RandomLevel2() (m Matrix) {
 	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
 	for i := 0; i < 5; i++ {
-		m.Set(m.RPos(), ONE)
+		m.Set(m.RandomPos(), ONE)
 	}
-
-	// Search for a non-occupied position to place the player in.
-	for {
-		pt := m.RPos()
-		if m.Get(pt).IsZero() {
-			pos1 = append(pos1, pt)
-			break
-		}
-	}
-
-	// Place n enemies at unoccupied positions.
-	for {
-		pt := m.RPos()
-		if m.Get(pt).IsZero() && !pt.Eq(pos1[0]) {
-			pos2 = append(pos2, pt)
-			if len(pos2) == 10 {
-				break
-			}
-		}
-	}
-
-	// Search for a non-occupied position to place the ammo in.
-	for {
-		pt := m.RPos()
-		if m.Get(pt).IsZero() {
-			pos3 = append(pos3, pt)
-			break
-		}
-	}
-
-	// Search for a non-occupied position to place the spawn portal in.
-	for {
-		pt := m.RPos()
-		if m.Get(pt).IsZero() {
-			pos4 = append(pos4, pt)
-			break
-		}
-	}
-
 	return
-}
-
-func NewEnemy(enemyType Int, pos Pt) Enemy {
-	e := Enemy{}
-	e.Type = enemyType
-	e.Pos = pos
-	e.MaxHealth = enemyHealths[e.Type.ToInt()]
-	e.Health = e.MaxHealth
-	e.MaxFrozen = enemyFrozenCooldowns[e.Type.ToInt()]
-	return e
-}
-
-func NewWorld(seed Int) (w World) {
-	w.seed = seed
-	RSeed(seed)
-
-	// Obstacles
-	//g.world.Obstacles.Init(I(15), I(15))
-	pos2 := []Pt{}
-	pos3 := []Pt{}
-	pos4 := []Pt{}
-	//g.world.Obstacles, pos1, pos2 = LevelFromString(Level1())
-	w.Obstacles, _, pos2, pos3, pos4 = RandomLevel2()
-	for _, pos := range pos2 {
-		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), pos))
-	}
-
-	for _, pos := range pos3 {
-		ammo := Ammo{}
-		ammo.Pos = pos
-		ammo.Count = I(1)
-		w.Ammos = append(w.Ammos, ammo)
-	}
-
-	for _, pos := range pos4 {
-		portal := SpawnPortal{}
-		portal.Pos = pos
-		portal.MaxHealth = I(1)
-		portal.Health = portal.MaxHealth
-		portal.MaxTimeout = spawnPortalCooldown
-		w.SpawnPortals = append(w.SpawnPortals, portal)
-	}
-
-	// Params
-	w.BlockSize = I(1000)
-	w.BeamMax = I(15)
-	w.Player = NewPlayer()
-	w.Player.HitPermissions.CanHitEnemy[0] = true
-
-	// GUI needs this even without the world ever doing a step.
-	// Note: this was true when the player started on the map, so it might not
-	// be relevant now that the player doesn't start on the map. But, keep it
-	// in case things change again.
-	w.computeAttackableTiles()
-	return
-}
-
-func (e *Enemy) Step(w *World) {
-	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
-		// I need to structure this stuff differently.
-		beamEndTile := w.WorldPosToTile(w.Beam.End)
-		if beamEndTile.Eq(e.Pos) {
-			// We have been shot.
-			e.FrozenIdx = e.MaxFrozen
-			if w.Player.HitPermissions.CanHitEnemy[e.Type.ToInt()] {
-				e.Health.Dec()
-			}
-		}
-	}
-
-	if e.FrozenIdx.IsPositive() {
-		e.FrozenIdx.Dec()
-		return // Don't move.
-	}
-	if w.TimeStep.Plus(ONE).Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
-		return
-	}
-
-	// Move.
-	if w.Player.OnMap {
-		// Clone obstacle matrix and put (other) enemies on it.
-		allObstacles := w.Obstacles.Clone()
-		for _, enemy := range w.Enemies {
-			if !enemy.Pos.Eq(e.Pos) {
-				allObstacles.Set(enemy.Pos, TWO)
-			}
-		}
-
-		path := FindPath(e.Pos, w.Player.Pos, allObstacles)
-		if len(path) > 1 {
-			e.Pos = path[1]
-			if e.Pos.Eq(w.Player.Pos) {
-				w.Player.Hit()
-			}
-		}
-	}
-}
-
-func (p *SpawnPortal) Step(w *World) {
-	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
-		// I need to structure this stuff differently.
-		beamEndTile := w.WorldPosToTile(w.Beam.End)
-		if beamEndTile.Eq(p.Pos) {
-			if w.Player.AmmoCount.Gt(I(0)) {
-				// We have been shot.
-				if w.Player.HitPermissions.CanHitPortal {
-					p.Health.Dec()
-				}
-			}
-		}
-	}
-
-	if p.TimeoutIdx.IsPositive() {
-		p.TimeoutIdx.Dec()
-		return // Don't spawn.
-	}
-
-	// Spawn guy.
-	// Check if there is already a guy here.
-	occupied := false
-	for _, enemy := range w.Enemies {
-		if enemy.Pos == p.Pos {
-			occupied = true
-			break
-		}
-	}
-	if occupied {
-		return // Don't spawn.
-	}
-
-	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
-	p.TimeoutIdx = p.MaxTimeout
-}
-
-func (w *World) SpawnAmmos() {
-	// Spawn new ammos
-	for {
-		if len(w.Ammos) == 1 {
-			break
-		}
-
-		if w.Player.AmmoCount.IsPositive() {
-			break
-		}
-
-		pt := w.Obstacles.RPos()
-		if !w.Obstacles.Get(pt).IsZero() {
-			continue
-		}
-		if w.Player.Pos == pt {
-			continue
-		}
-		invalid := false
-		for i := range w.Ammos {
-			if w.Ammos[i].Pos == pt {
-				invalid = true
-				break
-			}
-		}
-		if invalid {
-			continue
-		}
-		ammo := Ammo{
-			Pos:   pt,
-			Count: I(3),
-		}
-		w.Ammos = append(w.Ammos, ammo)
-	}
 }

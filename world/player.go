@@ -17,7 +17,7 @@ type Player struct {
 }
 
 func NewPlayer() (p Player) {
-	p.MaxHealth = I(3)
+	p.MaxHealth = I(300)
 	p.Health = p.MaxHealth
 	p.HitPermissions = NewHitPermissions()
 	return
@@ -54,6 +54,17 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 			}
 		}
 		w.Ammos = newAmmos
+
+		// Collect keys.
+		newKeys := make([]Key, 0)
+		for i := range w.Keys {
+			if w.Keys[i].Pos == w.Player.Pos {
+				w.Player.HitPermissions.Add(w.Keys[i].Permissions)
+			} else {
+				newKeys = append(newKeys, w.Keys[i])
+			}
+		}
+		w.Keys = newKeys
 	}
 
 	// See about the beam.

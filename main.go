@@ -41,6 +41,7 @@ type Gui struct {
 	imgAmmo            *ebiten.Image
 	imgSpawnPortal     *ebiten.Image
 	imgPlayerHitEffect *ebiten.Image
+	imgKey             []*ebiten.Image
 	world              World
 	worldAtStart       World
 	frameIdx           Int
@@ -367,6 +368,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		g.DrawTile(screen, g.imgAmmo, ammo.Pos)
 	}
 
+	// Draw keys.
+	for _, key := range g.world.Keys {
+		g.DrawTile(screen, g.imgKey[key.Type.ToInt()], key.Pos)
+	}
+
 	// Draw player.
 	g.DrawPlayer(screen, g.world.Player)
 
@@ -627,6 +633,9 @@ func (g *Gui) loadGuiData() {
 		g.imgAmmo = g.LoadImage("data/ammo.png")
 		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
 		g.imgPlayerHitEffect = g.LoadImage("data/playerHitEffect.png ")
+		g.imgKey = append(g.imgKey, g.LoadImage("data/key1.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/key2.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/key3.png"))
 		if CheckFailed == nil {
 			break
 		}

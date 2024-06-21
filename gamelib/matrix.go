@@ -45,9 +45,25 @@ func (m *Matrix) IndexToPt(i Int) (p Pt) {
 	return
 }
 
-func (m *Matrix) RPos() Pt {
+func (m *Matrix) RandomPos() Pt {
 	var pt Pt
 	pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
 	pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
 	return pt
+}
+
+func (m *Matrix) RandomNonZeroPos() (p Pt) {
+	for {
+		p = m.RandomPos()
+		if m.Get(p).IsZero() {
+			return
+		}
+	}
+}
+
+// TODO: Should probably create a new type of matrix, a bool one, and give it this occupied logic
+func (m *Matrix) NewlyOccupiedRandomPos() (p Pt) {
+	p = m.RandomNonZeroPos()
+	m.Set(p, ONE)
+	return
 }
