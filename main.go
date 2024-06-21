@@ -632,7 +632,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTextColor = g.LoadImage("data/text-color.png")
 		g.imgAmmo = g.LoadImage("data/ammo.png")
 		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
-		g.imgPlayerHitEffect = g.LoadImage("data/player-hit-effect.png ")
+		g.imgPlayerHitEffect = g.LoadImage("data/player-hit-effect.png")
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key1.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key2.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key3.png"))
