@@ -6,13 +6,21 @@ import (
 )
 
 type Player struct {
-	Pos        Pt
-	OnMap      bool
-	TimeoutIdx Int
-	MaxHealth  Int
-	AmmoCount  Int
-	JustHit    bool
-	Health     Int
+	Pos            Pt
+	OnMap          bool
+	TimeoutIdx     Int
+	MaxHealth      Int
+	AmmoCount      Int
+	JustHit        bool
+	Health         Int
+	HitPermissions HitPermissions
+}
+
+func NewPlayer() (p Player) {
+	p.MaxHealth = I(3)
+	p.Health = p.MaxHealth
+	p.HitPermissions = NewHitPermissions()
+	return
 }
 
 func (p *Player) Step(w *World, input *PlayerInput) {

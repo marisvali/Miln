@@ -10,9 +10,11 @@ import (
 
 var playerCooldown Int = I(1)
 var enemyCooldowns []Int = []Int{I(40), I(200), I(40), I(120)}
-var enemyHealths []Int = []Int{I(1), I(10), I(4), I(4)}
+var enemyHealths []Int = []Int{I(1), I(3), I(4), I(4)}
 var enemyFrozenCooldowns []Int = []Int{I(130), I(130), I(130), I(130)}
 var spawnPortalCooldown Int = I(100)
+
+const NEnemyTypes = 3
 
 type Enemy struct {
 	Pos       Pt
@@ -34,6 +36,11 @@ type SpawnPortal struct {
 type Ammo struct {
 	Pos   Pt
 	Count Int
+}
+
+type Key struct {
+	Pos         Pt
+	Permissions HitPermissions
 }
 
 type Beam struct {
@@ -144,40 +151,6 @@ func (w *World) Step(input *PlayerInput) {
 	w.computeAttackableTiles()
 	w.Player.Step(w, input)
 
-	// Spawn new ammos
-	for {
-		if len(w.Ammos) == 1 {
-			break
-		}
-
-		if w.Player.AmmoCount.IsPositive() {
-			break
-		}
-
-		pt := w.Obstacles.RPos()
-		if !w.Obstacles.Get(pt).IsZero() {
-			continue
-		}
-		if w.Player.Pos == pt {
-			continue
-		}
-		invalid := false
-		for i := range w.Ammos {
-			if w.Ammos[i].Pos == pt {
-				invalid = true
-				break
-			}
-		}
-		if invalid {
-			continue
-		}
-		ammo := Ammo{
-			Pos:   pt,
-			Count: I(3),
-		}
-		w.Ammos = append(w.Ammos, ammo)
-	}
-
 	// Step the enemies.
 	for i := range w.Enemies {
 		w.Enemies[i].Step(w)
@@ -286,7 +259,7 @@ func NewEnemy(enemyType Int, pos Pt) Enemy {
 	return e
 }
 
-func (w *World) Initialize(seed Int) {
+func NewWorld(seed Int) (w World) {
 	w.seed = seed
 	RSeed(seed)
 
@@ -320,11 +293,15 @@ func (w *World) Initialize(seed Int) {
 	// Params
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
-	w.Player.MaxHealth = I(3)
-	w.Player.Health = w.Player.MaxHealth
+	w.Player = NewPlayer()
+	w.Player.HitPermissions.CanHitEnemy[0] = true
 
 	// GUI needs this even without the world ever doing a step.
+	// Note: this was true when the player started on the map, so it might not
+	// be relevant now that the player doesn't start on the map. But, keep it
+	// in case things change again.
 	w.computeAttackableTiles()
+	return
 }
 
 func (e *Enemy) Step(w *World) {
@@ -333,8 +310,10 @@ func (e *Enemy) Step(w *World) {
 		beamEndTile := w.WorldPosToTile(w.Beam.End)
 		if beamEndTile.Eq(e.Pos) {
 			// We have been shot.
-			e.Health.Dec()
 			e.FrozenIdx = e.MaxFrozen
+			if w.Player.HitPermissions.CanHitEnemy[e.Type.ToInt()] {
+				e.Health.Dec()
+			}
 		}
 	}
 
@@ -373,8 +352,9 @@ func (p *SpawnPortal) Step(w *World) {
 		if beamEndTile.Eq(p.Pos) {
 			if w.Player.AmmoCount.Gt(I(0)) {
 				// We have been shot.
-				p.Health.Dec()
-				w.Player.AmmoCount.Dec()
+				if w.Player.HitPermissions.CanHitPortal {
+					p.Health.Dec()
+				}
 			}
 		}
 	}
@@ -399,4 +379,40 @@ func (p *SpawnPortal) Step(w *World) {
 
 	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
+}
+
+func (w *World) SpawnAmmos() {
+	// Spawn new ammos
+	for {
+		if len(w.Ammos) == 1 {
+			break
+		}
+
+		if w.Player.AmmoCount.IsPositive() {
+			break
+		}
+
+		pt := w.Obstacles.RPos()
+		if !w.Obstacles.Get(pt).IsZero() {
+			continue
+		}
+		if w.Player.Pos == pt {
+			continue
+		}
+		invalid := false
+		for i := range w.Ammos {
+			if w.Ammos[i].Pos == pt {
+				invalid = true
+				break
+			}
+		}
+		if invalid {
+			continue
+		}
+		ammo := Ammo{
+			Pos:   pt,
+			Count: I(3),
+		}
+		w.Ammos = append(w.Ammos, ammo)
+	}
 }

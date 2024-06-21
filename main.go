@@ -206,14 +206,11 @@ func (g *Gui) UpdateGameOngoing() {
 func (g *Gui) UpdateGamePaused() {
 	g.world.Player.TimeoutIdx = ZERO
 	if g.UserRequestedNewLevel() {
-		g.world = World{}
-		g.world.Initialize(RInt(I(0), I(10000000)))
+		g.world = NewWorld(RInt(I(0), I(10000000)))
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		oldSeed := g.world.Seed()
-		g.world = World{}
-		g.world.Initialize(oldSeed)
+		g.world = NewWorld(g.world.Seed())
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -639,7 +636,7 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
-	g.world.Initialize(RInt(I(0), I(10000000)))
+	g.world = NewWorld(RInt(I(0), I(10000000)))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
