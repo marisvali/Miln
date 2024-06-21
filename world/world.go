@@ -156,24 +156,32 @@ func (w *World) Step(input *PlayerInput) {
 
 	w.computeAttackableTiles()
 
-	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) {
-		if w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
-			(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) {
-			w.Player.Pos = input.MovePt
-			w.Player.OnMap = true
-			w.Player.TimeoutIdx = playerCooldown
-
-			// Collect ammos.
-			newAmmos := make([]Ammo, 0)
-			for i := range w.Ammos {
-				if w.Ammos[i].Pos == w.Player.Pos {
-					w.Player.AmmoCount.Add(w.Ammos[i].Count)
-				} else {
-					newAmmos = append(newAmmos, w.Ammos[i])
-				}
-			}
-			w.Ammos = newAmmos
+	onEnemy := false
+	for i := range w.Enemies {
+		if w.Enemies[i].Pos == input.MovePt {
+			onEnemy = true
+			break
 		}
+	}
+
+	if input.Move && w.Player.TimeoutIdx.Eq(ZERO) &&
+		w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
+		(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) &&
+		!onEnemy {
+		w.Player.Pos = input.MovePt
+		w.Player.OnMap = true
+		w.Player.TimeoutIdx = playerCooldown
+
+		// Collect ammos.
+		newAmmos := make([]Ammo, 0)
+		for i := range w.Ammos {
+			if w.Ammos[i].Pos == w.Player.Pos {
+				w.Player.AmmoCount.Add(w.Ammos[i].Count)
+			} else {
+				newAmmos = append(newAmmos, w.Ammos[i])
+			}
+		}
+		w.Ammos = newAmmos
 	}
 
 	// Spawn new ammos
@@ -240,7 +248,7 @@ func (w *World) Step(input *PlayerInput) {
 	}
 
 	// Step the enemies.
-	for i, _ := range w.Enemies {
+	for i := range w.Enemies {
 		w.Enemies[i].Step(w)
 	}
 
