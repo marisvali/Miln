@@ -668,11 +668,10 @@ func main() {
 	ebiten.SetWindowTitle("Miln")
 	ebiten.SetWindowPosition(100, 100)
 
-	g.useEmbedded = true
-	//g.useEmbedded = !FileExists("data")
-	//if !g.useEmbedded {
-	//	g.folderWatcher.Folder = "data"
-	//}
+	g.useEmbedded = !FileExists("data")
+	if !g.useEmbedded {
+		g.folderWatcher.Folder = "data"
+	}
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
 	g.state = GamePaused
