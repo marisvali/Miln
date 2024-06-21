@@ -25,11 +25,9 @@ func (p *SpawnPortal) Step(w *World) {
 		// I need to structure this stuff differently.
 		beamEndTile := w.WorldPosToTile(w.Beam.End)
 		if beamEndTile.Eq(p.Pos) {
-			if w.Player.AmmoCount.Gt(I(0)) {
-				// We have been shot.
-				if w.Player.HitPermissions.CanHitPortal {
-					p.Health.Dec()
-				}
+			// We have been shot.
+			if w.Player.HitPermissions.CanHitPortal {
+				p.Health.Dec()
 			}
 		}
 	}
@@ -52,6 +50,8 @@ func (p *SpawnPortal) Step(w *World) {
 		return // Don't spawn.
 	}
 
-	w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
+	//w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
+	// Spawn only gremlins.
+	w.Enemies = append(w.Enemies, NewEnemy(I(0), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
 }
