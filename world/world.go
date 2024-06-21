@@ -344,7 +344,6 @@ func NewEnemy(enemyType Int, pos Pt) Enemy {
 	e.MaxHealth = enemyHealths[e.Type.ToInt()]
 	e.Health = e.MaxHealth
 	e.MaxFrozen = enemyFrozenCooldowns[e.Type.ToInt()]
-	e.FrozenIdx = e.MaxFrozen.DivBy(TWO)
 	return e
 }
 
@@ -404,7 +403,7 @@ func (e *Enemy) Step(w *World) {
 		e.FrozenIdx.Dec()
 		return // Don't move.
 	}
-	if w.TimeStep.Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
+	if w.TimeStep.Plus(ONE).Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
 		return
 	}
 
