@@ -49,9 +49,19 @@ func (e *Enemy) Step(w *World) {
 	if w.Player.OnMap {
 		// Clone obstacle matrix and put (other) enemies on it.
 		allObstacles := w.Obstacles.Clone()
-		for _, enemy := range w.Enemies {
-			if !enemy.Pos.Eq(e.Pos) {
-				allObstacles.Set(enemy.Pos, TWO)
+		if e.Type == TWO {
+			// For hounds, only put other hounds on it.
+			for _, enemy := range w.Enemies {
+				if enemy.Type == TWO && !enemy.Pos.Eq(e.Pos) {
+					allObstacles.Set(enemy.Pos, ONE)
+				}
+			}
+		} else {
+			// For other enemies, put everyone on it.
+			for _, enemy := range w.Enemies {
+				if !enemy.Pos.Eq(e.Pos) {
+					allObstacles.Set(enemy.Pos, ONE)
+				}
 			}
 		}
 
