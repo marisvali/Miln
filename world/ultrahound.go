@@ -4,25 +4,25 @@ import (
 	. "github.com/marisvali/miln/gamelib"
 )
 
-type Hound struct {
+type UltraHound struct {
 	EnemyBase
 }
 
-func NewHound(pos Pt) *Hound {
-	var h Hound
+func NewUltraHound(pos Pt) *UltraHound {
+	var h UltraHound
 	h.pos = pos
-	h.maxHealth = HoundMaxHealth
+	h.maxHealth = UltraHoundMaxHealth
 	h.health = h.maxHealth
-	h.freezeCooldown = HoundFreezeCooldown
-	h.moveCooldown = HoundMoveCooldown
+	h.freezeCooldown = UltraHoundFreezeCooldown
+	h.moveCooldown = UltraHoundMoveCooldown
 	h.moveCooldownIdx = h.moveCooldown.DivBy(TWO)
 	return &h
 }
 
-func (h *Hound) Step(w *World) {
+func (h *UltraHound) Step(w *World) {
 	if h.beamJustHit(w) {
 		h.freezeCooldownIdx = h.freezeCooldown
-		if w.Player.HitPermissions.CanHitHound {
+		if w.Player.HitPermissions.CanHitUltraHound {
 			h.health.Dec()
 		}
 	}
@@ -32,10 +32,10 @@ func (h *Hound) Step(w *World) {
 		return // Don't move.
 	}
 
-	// For hounds, only consider other hounds.
+	// For ultra hounds, only consider other ultra hounds.
 	m := NewMatrix(w.Obstacles.Size())
 	for _, enemy := range w.Enemies {
-		_, ok := enemy.(*Hound)
+		_, ok := enemy.(*UltraHound)
 		if ok && !enemy.Pos().Eq(h.pos) {
 			m.Set(enemy.Pos(), ONE)
 		}

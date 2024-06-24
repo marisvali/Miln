@@ -36,15 +36,15 @@ func (q *Question) onDeath(w *World) {
 				nGremlins.Inc()
 			}
 		}
-		if nQuestions.Mod(I(4)) == ZERO && nGremlins.Leq(I(4)) {
+		if nQuestions.Mod(I(3)) == ZERO && nGremlins.Leq(I(4)) {
 			nHounds := ZERO
 			for i := range w.Enemies {
-				if _, ok := w.Enemies[i].(*Hound); ok {
+				if _, ok := w.Enemies[i].(*UltraHound); ok {
 					nHounds.Inc()
 				}
 			}
 			if nHounds.Lt(ONE) && (RInt(I(0), I(100)).Leq(I(40)) || nQuestions.Leq(I(4))) {
-				w.Enemies = append(w.Enemies, NewHound(q.pos))
+				w.Enemies = append(w.Enemies, NewUltraHound(q.pos))
 			} else {
 				w.Enemies = append(w.Enemies, NewPillar(q.pos))
 			}

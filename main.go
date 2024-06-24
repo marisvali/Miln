@@ -18,7 +18,6 @@ import (
 	"slices"
 )
 
-var PlayerCooldown Int = I(40)
 var BlockSize Int = I(80)
 
 //go:embed data/*
@@ -34,6 +33,8 @@ type Gui struct {
 	imgGremlinMask     *ebiten.Image
 	imgHound           *ebiten.Image
 	imgHoundMask       *ebiten.Image
+	imgUltraHound      *ebiten.Image
+	imgUltraHoundMask  *ebiten.Image
 	imgPillar          *ebiten.Image
 	imgPillarMask      *ebiten.Image
 	imgQuestion        *ebiten.Image
@@ -266,6 +267,7 @@ func (g *Gui) Update() error {
 	if g.imgGremlinMask == nil {
 		g.imgGremlinMask = ComputeSpriteMask(g.imgGremlin)
 		g.imgHoundMask = ComputeSpriteMask(g.imgHound)
+		g.imgUltraHoundMask = ComputeSpriteMask(g.imgUltraHound)
 		g.imgPillarMask = ComputeSpriteMask(g.imgPillar)
 		g.imgQuestionMask = ComputeSpriteMask(g.imgQuestion)
 		g.imgKingMask = ComputeSpriteMask(g.imgKing)
@@ -557,6 +559,9 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	case *Hound:
 		img = g.imgHound
 		imgMask = g.imgHoundMask
+	case *UltraHound:
+		img = g.imgUltraHound
+		imgMask = g.imgUltraHoundMask
 	case *Pillar:
 		img = g.imgPillar
 		imgMask = g.imgPillarMask
@@ -588,30 +593,31 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	}
 	mask := ebiten.NewImageFromImage(g.imgPlayer)
 	// Draw mask of move cooldown.
-	//{
-	//	percent := p.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
-	//	var alpha Int
-	//	if percent.Gt(ZERO) {
-	//		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-	//	} else {
-	//		alpha = ZERO
-	//	}
-	//
-	//	sz := mask.Bounds().Size()
-	//	for y := 0; y < sz.Y; y++ {
-	//		for x := 0; x < sz.X; x++ {
-	//			_, _, _, a := mask.At(x, y).RGBA()
-	//			if a > 0 {
-	//				mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
-	//			}
-	//		}
-	//	}
-	//
-	//	totalWidth := I(mask.Bounds().Size().X)
-	//	lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
-	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
-	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
-	//}
+	{
+		//percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
+		//var alpha Int
+		//if percent.Gt(ZERO) {
+		//	alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+		//} else {
+		//	alpha = ZERO
+		//}
+		//
+		//sz := mask.Bounds().Size()
+		//for y := 0; y < sz.Y; y++ {
+		//	for x := 0; x < sz.X; x++ {
+		//		_, _, _, a := mask.At(x, y).RGBA()
+		//		if a > 0 {
+		//			mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+		//		}
+		//	}
+		//}
+
+		totalWidth := I(mask.Bounds().Size().X)
+		percent := p.Energy.Times(I(100)).DivBy(PlayerMaxEnergy)
+		lineWidth := percent.Times(totalWidth).DivBy(I(100))
+		l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
+		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
+	}
 	g.DrawTile(screen, g.imgPlayer, p.Pos)
 	g.DrawTile(screen, mask, p.Pos)
 	g.DrawHealth(screen, g.imgPlayerHealth, p.MaxHealth, p.Health, p.Pos)
@@ -654,6 +660,7 @@ func (g *Gui) loadGuiData() {
 		g.imgGremlin = g.LoadImage("data/enemy2.png")
 		g.imgPillar = g.LoadImage("data/enemy3.png")
 		g.imgHound = g.LoadImage("data/enemy4.png")
+		g.imgUltraHound = g.LoadImage("data/ultra-hound.png")
 		g.imgQuestion = g.LoadImage("data/enemy5.png")
 		g.imgKing = g.LoadImage("data/enemy6.png")
 		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")

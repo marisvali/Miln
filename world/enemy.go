@@ -4,21 +4,6 @@ import (
 	. "github.com/marisvali/miln/gamelib"
 )
 
-var GremlinMoveCooldown = I(30)
-var GremlinFreezeCooldown = I(30)
-var GremlinMaxHealth = I(1)
-var HoundMoveCooldown = I(50)
-var HoundFreezeCooldown = I(30)
-var HoundMaxHealth = I(4)
-var PillarMoveCooldown = I(60)
-var PillarFreezeCooldown = I(200)
-var PillarMaxHealth = I(3)
-var KingMoveCooldown = I(30)
-var KingFreezeCooldown = I(30)
-var KingMaxHealth = I(5)
-var QuestionMaxHealth = I(1)
-var SpawnPortalCooldown = I(60)
-
 type Enemy interface {
 	Step(w *World)
 	Pos() Pt
@@ -82,6 +67,9 @@ func getObstaclesAndEnemies(w *World) (m Matrix) {
 }
 
 func (e *EnemyBase) beamJustHit(w *World) bool {
+	if e.freezeCooldownIdx.IsPositive() {
+		return false
+	}
 	if !w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
 		// I need to structure this stuff differently.
 		return false

@@ -23,6 +23,7 @@ func NewHoundKey(pos Pt) (k Key) {
 	k.Pos = pos
 	k.Permissions = HitPermissions{}
 	k.Permissions.CanHitHound = true
+	k.Permissions.CanHitUltraHound = true
 	k.Permissions.CanHitPortal = true
 	return
 }

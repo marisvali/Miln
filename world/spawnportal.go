@@ -76,13 +76,19 @@ func (p *SpawnPortal) Step(w *World) {
 	//		w.KingSpawned = true
 	//	}
 	//}
-	if p.nHoundsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewHound(p.Pos))
-		p.nHoundsLeftToSpawn.Dec()
-	} else if p.nGremlinsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
-		p.nGremlinsLeftToSpawn.Dec()
-	} else if !w.KingSpawned {
+	//if p.nHoundsLeftToSpawn.IsPositive() {
+	//	w.Enemies = append(w.Enemies, NewHound(p.Pos))
+	//	p.nHoundsLeftToSpawn.Dec()
+	//} else if p.nGremlinsLeftToSpawn.IsPositive() {
+	//	w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+	//	p.nGremlinsLeftToSpawn.Dec()
+	//} else if !w.KingSpawned {
+	//	w.Enemies = append(w.Enemies, NewKing(p.Pos))
+	//	w.KingSpawned = true
+	//} else {
+	//	w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+	//}
+	if !w.KingSpawned {
 		w.Enemies = append(w.Enemies, NewKing(p.Pos))
 		w.KingSpawned = true
 	} else {

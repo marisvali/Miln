@@ -7,6 +7,27 @@ import (
 	"math"
 )
 
+var PlayerMaxEnergy = I(50)
+var PlayerEnergyPerAction = I(10)
+var PlayerEnergyRecoveryCooldown = I(30)
+var GremlinMoveCooldown = I(50)
+var GremlinFreezeCooldown = I(30)
+var GremlinMaxHealth = I(1)
+var HoundMoveCooldown = I(70)
+var HoundFreezeCooldown = I(300)
+var HoundMaxHealth = I(1)
+var UltraHoundMoveCooldown = I(100)
+var UltraHoundFreezeCooldown = I(10)
+var UltraHoundMaxHealth = I(1)
+var PillarMoveCooldown = I(100)
+var PillarFreezeCooldown = I(300)
+var PillarMaxHealth = I(1)
+var KingMoveCooldown = I(60)
+var KingFreezeCooldown = I(200)
+var KingMaxHealth = I(3)
+var QuestionMaxHealth = I(1)
+var SpawnPortalCooldown = I(300)
+
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
 	End Pt  // this is the point to where the beam ends
@@ -54,7 +75,7 @@ func NewWorld(seed Int) (w World) {
 	//for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, occ.NewlyOccupiedRandomPos()))
 	//}
-	limit = RInt(I(15), I(18)).ToInt()
+	limit = RInt(I(20), I(23)).ToInt()
 	for i := 0; i < limit; i++ {
 		w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
 	}

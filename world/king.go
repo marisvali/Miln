@@ -27,6 +27,7 @@ func (k *King) Step(w *World) {
 			if k.health == ZERO {
 				w.Keys = append(w.Keys, NewHoundKey(k.pos))
 			}
+			w.Enemies = append(w.Enemies, NewHound(k.pos))
 		}
 	}
 

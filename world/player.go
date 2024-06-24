@@ -14,6 +14,8 @@ type Player struct {
 	HitPermissions             HitPermissions
 	CooldownAfterGettingHit    Int
 	CooldownAfterGettingHitIdx Int
+	EnergyRecoveryCooldownIdx  Int
+	Energy                     Int
 }
 
 func NewPlayer() (p Player) {
@@ -21,10 +23,31 @@ func NewPlayer() (p Player) {
 	p.Health = p.MaxHealth
 	p.HitPermissions = HitPermissions{}
 	p.CooldownAfterGettingHit = I(40)
+	p.EnergyRecoveryCooldownIdx = PlayerEnergyRecoveryCooldown
+	p.Energy = PlayerMaxEnergy
 	return
 }
 
 func (p *Player) Step(w *World, input *PlayerInput) {
+	// See about the beam.
+	if w.Beam.Idx.Gt(ZERO) {
+		w.Beam.Idx.Dec()
+	}
+
+	if p.EnergyRecoveryCooldownIdx.IsPositive() {
+		p.EnergyRecoveryCooldownIdx.Dec()
+		if p.EnergyRecoveryCooldownIdx == ZERO {
+			p.EnergyRecoveryCooldownIdx = PlayerEnergyRecoveryCooldown
+			if p.Energy.Lt(PlayerMaxEnergy) {
+				p.Energy.Add(PlayerEnergyPerAction)
+			}
+		}
+	}
+
+	if p.Energy.Leq(ZERO) {
+		return
+	}
+
 	if w.Player.CooldownAfterGettingHitIdx.Gt(ZERO) {
 		w.Player.CooldownAfterGettingHitIdx.Dec()
 		return
@@ -42,8 +65,9 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
 		(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) &&
 		!onEnemy {
-		w.Player.Pos = input.MovePt
-		w.Player.OnMap = true
+		p.Pos = input.MovePt
+		p.OnMap = true
+		p.Energy.Subtract(PlayerEnergyPerAction)
 
 		// Collect ammos.
 		newAmmos := make([]Ammo, 0)
@@ -59,8 +83,8 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		// Collect keys.
 		newKeys := make([]Key, 0)
 		for i := range w.Keys {
-			if w.Keys[i].Pos == w.Player.Pos {
-				w.Player.HitPermissions.Add(w.Keys[i].Permissions)
+			if w.Keys[i].Pos == p.Pos {
+				p.HitPermissions.Add(w.Keys[i].Permissions)
 			} else {
 				newKeys = append(newKeys, w.Keys[i])
 			}
@@ -68,10 +92,6 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		w.Keys = newKeys
 	}
 
-	// See about the beam.
-	if w.Beam.Idx.Gt(ZERO) {
-		w.Beam.Idx.Dec()
-	}
 	if input.Shoot &&
 		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
 
@@ -92,6 +112,7 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		if len(shotEnemies) > 0 || len(shotPortals) > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
 			w.Beam.End = w.TileToWorldPos(input.ShootPt)
+			p.Energy.Subtract(PlayerEnergyPerAction)
 		}
 	}
 }
