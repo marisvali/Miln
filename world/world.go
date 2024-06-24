@@ -4,17 +4,16 @@ import (
 	"bytes"
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
-	_ "image/png"
 	"math"
 )
 
 var playerCooldown Int = I(1)
-var enemyCooldowns []Int = []Int{I(40), I(200), I(40), I(120)}
-var enemyHealths []Int = []Int{I(1), I(3), I(4), I(4)}
-var enemyFrozenCooldowns []Int = []Int{I(130), I(130), I(130), I(130)}
-var spawnPortalCooldown Int = I(100)
+var enemyCooldowns []Int = []Int{I(55), I(100), I(40), I(-1), I(50)}
+var enemyHealths []Int = []Int{I(1), I(3), I(4), I(1), I(7)}
+var enemyFrozenCooldowns []Int = []Int{I(130), I(200), I(30), I(130), I(10)}
+var spawnPortalCooldown Int = I(60)
 
-const NEnemyTypes = 3
+const NEnemyTypes = 5
 
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
@@ -38,6 +37,7 @@ type World struct {
 	PillarKeyDropped bool
 	HoundKeyDropped  bool
 	PortalKeyDropped bool
+	KingSpawned      bool
 }
 
 type PlayerInput struct {
@@ -57,17 +57,31 @@ func NewWorld(seed Int) (w World) {
 	// Place each item at an unoccupied position (and occupy that position).
 	occ := w.Obstacles.Clone() // Keeps track of occupied positions.
 
-	for i := 0; i < 10; i++ {
-		w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), occ.NewlyOccupiedRandomPos()))
+	var limit int
+	//limit = RInt(I(2), I(4)).ToInt()
+	//for i := 0; i < limit; i++ {
+	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, occ.NewlyOccupiedRandomPos()))
+	//}
+	limit = RInt(I(15), I(18)).ToInt()
+	for i := 0; i < limit; i++ {
+		w.Enemies = append(w.Enemies, NewEnemy(I(3), occ.NewlyOccupiedRandomPos()))
 	}
+	//limit = RInt(I(1), I(1)).ToInt()
+	//for i := 0; i < limit; i++ {
+	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, occ.NewlyOccupiedRandomPos()))
+	//}
 
-	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
+	//w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
+
+	//w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
 
 	// Params
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
 	w.Player.HitPermissions.CanHitEnemy[0] = true
+	w.Player.HitPermissions.CanHitEnemy[3] = true
+	w.Player.HitPermissions.CanHitEnemy[4] = true
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -167,7 +181,7 @@ func (w *World) Step(input *PlayerInput) {
 	// This kind of operation makes me think I should have a slice of pointers,
 	// not values.
 	newEnemies := []Enemy{}
-	for i, _ := range w.Enemies {
+	for i := range w.Enemies {
 		if w.Enemies[i].Health.IsPositive() {
 			newEnemies = append(newEnemies, w.Enemies[i])
 		}
@@ -211,7 +225,7 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 func RandomLevel2() (m Matrix) {
 	// Create matrix with obstacles.
 	m.Init(IPt(10, 10))
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 0; i++ {
 		m.Set(m.RandomPos(), ONE)
 	}
 	return

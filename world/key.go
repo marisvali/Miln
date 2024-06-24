@@ -23,6 +23,7 @@ func NewHoundKey(pos Pt) (k Key) {
 	k.Pos = pos
 	k.Permissions = NewHitPermissions()
 	k.Permissions.CanHitEnemy[2] = true
+	k.Permissions.CanHitPortal = true
 	return
 }
 
@@ -31,5 +32,13 @@ func NewPortalKey(pos Pt) (k Key) {
 	k.Pos = pos
 	k.Permissions = NewHitPermissions()
 	k.Permissions.CanHitPortal = true
+	return
+}
+
+func NewGremlinKey(pos Pt) (k Key) {
+	k.Type = I(3)
+	k.Pos = pos
+	k.Permissions = NewHitPermissions()
+	k.Permissions.CanHitEnemy[0] = true
 	return
 }

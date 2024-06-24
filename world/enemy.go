@@ -2,7 +2,6 @@ package world
 
 import (
 	. "github.com/marisvali/miln/gamelib"
-	_ "image/png"
 )
 
 type Enemy struct {
@@ -37,37 +36,48 @@ func (e *Enemy) Step(w *World) {
 					// Drop things on death.
 					if e.Type == ZERO {
 						// gremlin
-						// Random chance to drop pillar key, if it wasn't dropped before.
-						if !w.PillarKeyDropped && RInt(I(0), I(10)) == ZERO {
-							w.Keys = append(w.Keys, NewPillarKey(e.Pos))
-							w.PillarKeyDropped = true
-						}
 					} else if e.Type == ONE {
-						// pillar
-						// One of the last pillars drops the hound key, if it wasn't dropped before.
-						nPillars := ZERO
-						for i := range w.Enemies {
-							if w.Enemies[i].Type == ONE {
-								nPillars.Inc()
-							}
-						}
-						if !w.HoundKeyDropped && nPillars.Lt(TWO) {
-							w.Keys = append(w.Keys, NewHoundKey(e.Pos))
-							w.HoundKeyDropped = true
-						}
+						// pillar turns into obstacle
+						w.Obstacles.Set(e.Pos, ONE)
 					} else if e.Type == TWO {
 						// hound
-						// One of the last hounds drops the portal key, if it wasn't dropped before.
-						nHounds := ZERO
+					} else if e.Type == I(3) {
+						nQuestions := ZERO
 						for i := range w.Enemies {
-							if w.Enemies[i].Type == TWO {
-								nHounds.Inc()
+							if w.Enemies[i].Type == I(3) {
+								nQuestions.Inc()
 							}
 						}
-						if !w.PortalKeyDropped && nHounds.Lt(TWO) {
-							w.Keys = append(w.Keys, NewPortalKey(e.Pos))
-							w.PortalKeyDropped = true
+						if nQuestions == ONE {
+							w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(e.Pos))
+						} else if nQuestions == TWO {
+							w.Keys = append(w.Keys, NewPillarKey(e.Pos))
+						} else {
+							// question mark
+							nGremlins := ZERO
+							for i := range w.Enemies {
+								if w.Enemies[i].Type == ZERO {
+									nGremlins.Inc()
+								}
+							}
+							if nQuestions.Mod(I(4)) == ZERO && nGremlins.Leq(I(4)) {
+								nHounds := ZERO
+								for i := range w.Enemies {
+									if w.Enemies[i].Type == TWO {
+										nHounds.Inc()
+									}
+								}
+								if nHounds.Lt(ONE) && (RInt(I(0), I(100)).Leq(I(40)) || nQuestions.Leq(I(4))) {
+									w.Enemies = append(w.Enemies, NewEnemy(TWO, e.Pos))
+								} else {
+									w.Enemies = append(w.Enemies, NewEnemy(ONE, e.Pos))
+								}
+							} else {
+								w.Obstacles.Set(e.Pos, ONE)
+							}
 						}
+					} else if e.Type == I(4) {
+						w.Keys = append(w.Keys, NewHoundKey(e.Pos))
 					}
 				}
 			}
@@ -77,6 +87,9 @@ func (e *Enemy) Step(w *World) {
 	if e.FrozenIdx.IsPositive() {
 		e.FrozenIdx.Dec()
 		return // Don't move.
+	}
+	if enemyCooldowns[e.Type.ToInt()].IsNegative() {
+		return
 	}
 	if w.TimeStep.Plus(ONE).Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
 		return

@@ -184,16 +184,16 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
-	//if g.recording {
-	//	if g.recordingFile != "" {
-	//		g.allInputs = append(g.allInputs, input)
-	//		SerializeInputs(g.allInputs, g.recordingFile)
-	//	}
-	//} else {
-	//	if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
-	//		input = g.allInputs[idx]
-	//	}
-	//}
+	if g.recording {
+		if g.recordingFile != "" {
+			g.allInputs = append(g.allInputs, input)
+			SerializeInputs(g.allInputs, g.recordingFile)
+		}
+	} else {
+		if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
+			input = g.allInputs[idx]
+		}
+	}
 
 	g.world.Step(&input)
 
@@ -205,7 +205,6 @@ func (g *Gui) UpdateGameOngoing() {
 }
 
 func (g *Gui) UpdateGamePaused() {
-	g.world.Player.TimeoutIdx = ZERO
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
 		return
@@ -410,9 +409,16 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	}
 
 	if g.playerHitEffectIdx.IsPositive() {
-		alpha := uint8(g.playerHitEffectIdx.Times(I(100)).DivBy(I(50)).ToInt())
+		var alpha uint8
+		if g.world.Player.CooldownAfterGettingHitIdx.IsPositive() {
+			// keep it all fully read until I can do something
+			alpha = 100
+		} else {
+			// fade out once I can act again
+			alpha = uint8(g.playerHitEffectIdx.Times(I(100)).DivBy(I(50)).ToInt())
+			g.playerHitEffectIdx.Dec()
+		}
 		DrawSpriteAlpha(screen, g.imgPlayerHitEffect, 0, 0, float64(screen.Bounds().Dx()), float64(screen.Bounds().Dy()), alpha)
-		g.playerHitEffectIdx.Dec()
 	}
 }
 
@@ -559,30 +565,31 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 		return
 	}
 	mask := ebiten.NewImageFromImage(g.imgPlayer)
-	{
-		percent := p.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
-		var alpha Int
-		if percent.Gt(ZERO) {
-			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-		} else {
-			alpha = ZERO
-		}
-
-		sz := mask.Bounds().Size()
-		for y := 0; y < sz.Y; y++ {
-			for x := 0; x < sz.X; x++ {
-				_, _, _, a := mask.At(x, y).RGBA()
-				if a > 0 {
-					mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
-				}
-			}
-		}
-
-		totalWidth := I(mask.Bounds().Size().X)
-		lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
-		l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
-		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
-	}
+	// Draw mask of move cooldown.
+	//{
+	//	percent := p.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+	//	var alpha Int
+	//	if percent.Gt(ZERO) {
+	//		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+	//	} else {
+	//		alpha = ZERO
+	//	}
+	//
+	//	sz := mask.Bounds().Size()
+	//	for y := 0; y < sz.Y; y++ {
+	//		for x := 0; x < sz.X; x++ {
+	//			_, _, _, a := mask.At(x, y).RGBA()
+	//			if a > 0 {
+	//				mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+	//			}
+	//		}
+	//	}
+	//
+	//	totalWidth := I(mask.Bounds().Size().X)
+	//	lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
+	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
+	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
+	//}
 	g.DrawTile(screen, g.imgPlayer, p.Pos)
 	g.DrawTile(screen, mask, p.Pos)
 	g.DrawHealth(screen, g.imgPlayerHealth, p.MaxHealth, p.Health, p.Pos)
@@ -625,6 +632,8 @@ func (g *Gui) loadGuiData() {
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy2.png"))
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy3.png"))
 		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy4.png"))
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy5.png"))
+		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy6.png"))
 		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")
 		g.imgBeam = g.LoadImage("data/beam.png")
 		g.imgShadow = g.LoadImage("data/shadow.png")
@@ -636,6 +645,7 @@ func (g *Gui) loadGuiData() {
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key1.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key2.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/key3.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/key4.png"))
 		if CheckFailed == nil {
 			break
 		}
@@ -645,7 +655,8 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
-	g.world = NewWorld(RInt(I(0), I(10000000)))
+	//g.world = NewWorld(RInt(I(0), I(10000000)))
+	g.world = NewWorld(I(149))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)

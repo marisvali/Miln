@@ -5,11 +5,13 @@ import (
 )
 
 type SpawnPortal struct {
-	Pos        Pt
-	Health     Int
-	MaxHealth  Int
-	MaxTimeout Int
-	TimeoutIdx Int
+	Pos                  Pt
+	Health               Int
+	MaxHealth            Int
+	MaxTimeout           Int
+	TimeoutIdx           Int
+	nGremlinsLeftToSpawn Int
+	nHoundsLeftToSpawn   Int
 }
 
 func NewSpawnPortal(pos Pt) (p SpawnPortal) {
@@ -17,6 +19,8 @@ func NewSpawnPortal(pos Pt) (p SpawnPortal) {
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
 	p.MaxTimeout = spawnPortalCooldown
+	p.nGremlinsLeftToSpawn = I(4)
+	p.nHoundsLeftToSpawn = I(3)
 	return
 }
 
@@ -52,6 +56,39 @@ func (p *SpawnPortal) Step(w *World) {
 
 	//w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
 	// Spawn only gremlins.
-	w.Enemies = append(w.Enemies, NewEnemy(I(0), p.Pos))
+	//if p.nGremlinsLeftToSpawn.IsPositive() && p.nHoundsLeftToSpawn.IsPositive() {
+	//	if RInt(I(0), I(4)) == ZERO {
+	//		w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
+	//		p.nHoundsLeftToSpawn.Dec()
+	//	} else {
+	//		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+	//		p.nGremlinsLeftToSpawn.Dec()
+	//	}
+	//} else if p.nGremlinsLeftToSpawn.IsPositive() {
+	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+	//	p.nGremlinsLeftToSpawn.Dec()
+	//} else if p.nHoundsLeftToSpawn.IsPositive() {
+	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
+	//	p.nHoundsLeftToSpawn.Dec()
+	//} else {
+	//	if !w.KingSpawned {
+	//		w.Enemies = append(w.Enemies, NewEnemy(I(4), p.Pos))
+	//		w.KingSpawned = true
+	//	}
+	//}
+	if p.nHoundsLeftToSpawn.IsPositive() {
+		w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
+		p.nHoundsLeftToSpawn.Dec()
+	} else if p.nGremlinsLeftToSpawn.IsPositive() {
+		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+		p.nGremlinsLeftToSpawn.Dec()
+	} else if !w.KingSpawned {
+		w.Enemies = append(w.Enemies, NewEnemy(I(4), p.Pos))
+		w.KingSpawned = true
+	} else {
+		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+	}
+
+	//w.Enemies = append(w.Enemies, NewEnemy(I(0), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
 }

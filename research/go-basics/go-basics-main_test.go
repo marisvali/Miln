@@ -2,7 +2,6 @@ package go_basics
 
 import (
 	"github.com/stretchr/testify/assert"
-	_ "image/png"
 	"testing"
 )
 
