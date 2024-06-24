@@ -85,6 +85,7 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 	}
 
 	if input.Shoot &&
+		p.MoveCooldownIdx == ZERO &&
 		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
 
 		shotEnemies := []*Enemy{}
