@@ -1,22 +1,28 @@
 package world
 
 type HitPermissions struct {
-	CanHitEnemy  []bool
-	CanHitPortal bool
+	CanHitGremlin  bool
+	CanHitHound    bool
+	CanHitPillar   bool
+	CanHitKing     bool
+	CanHitPortal   bool
+	CanHitQuestion bool
 }
 
-func NewHitPermissions() (h HitPermissions) {
-	h.CanHitEnemy = make([]bool, NEnemyTypes)
-	for i := range h.CanHitEnemy {
-		h.CanHitEnemy[i] = false
-	}
-	h.CanHitPortal = false
+func (h *HitPermissions) all() (v []*bool) {
+	v = append(v, &h.CanHitGremlin)
+	v = append(v, &h.CanHitHound)
+	v = append(v, &h.CanHitPillar)
+	v = append(v, &h.CanHitKing)
+	v = append(v, &h.CanHitPortal)
+	v = append(v, &h.CanHitQuestion)
 	return
 }
 
 func (h *HitPermissions) Add(other HitPermissions) {
-	h.CanHitPortal = h.CanHitPortal || other.CanHitPortal
-	for i := 0; i < NEnemyTypes; i++ {
-		h.CanHitEnemy[i] = h.CanHitEnemy[i] || other.CanHitEnemy[i]
+	l1 := h.all()
+	l2 := other.all()
+	for i := range l1 {
+		*l1[i] = *l1[i] || *l2[i]
 	}
 }

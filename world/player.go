@@ -19,8 +19,8 @@ type Player struct {
 func NewPlayer() (p Player) {
 	p.MaxHealth = I(3)
 	p.Health = p.MaxHealth
-	p.HitPermissions = NewHitPermissions()
-	p.CooldownAfterGettingHit = I(60)
+	p.HitPermissions = HitPermissions{}
+	p.CooldownAfterGettingHit = I(40)
 	return
 }
 
@@ -32,7 +32,7 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 
 	onEnemy := false
 	for i := range w.Enemies {
-		if w.Enemies[i].Pos == input.MovePt {
+		if w.Enemies[i].Pos() == input.MovePt {
 			onEnemy = true
 			break
 		}
@@ -77,7 +77,7 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 
 		shotEnemies := []*Enemy{}
 		for i, _ := range w.Enemies {
-			if w.Enemies[i].Pos.Eq(input.ShootPt) {
+			if w.Enemies[i].Pos().Eq(input.ShootPt) {
 				shotEnemies = append(shotEnemies, &w.Enemies[i])
 			}
 		}

@@ -30,8 +30,16 @@ type Gui struct {
 	imgTree            *ebiten.Image
 	imgPlayer          *ebiten.Image
 	imgPlayerHealth    *ebiten.Image
-	imgEnemy           []*ebiten.Image
-	imgEnemyMask       []*ebiten.Image
+	imgGremlin         *ebiten.Image
+	imgGremlinMask     *ebiten.Image
+	imgHound           *ebiten.Image
+	imgHoundMask       *ebiten.Image
+	imgPillar          *ebiten.Image
+	imgPillarMask      *ebiten.Image
+	imgQuestion        *ebiten.Image
+	imgQuestionMask    *ebiten.Image
+	imgKing            *ebiten.Image
+	imgKingMask        *ebiten.Image
 	imgEnemyHealth     *ebiten.Image
 	imgTileOverlay     *ebiten.Image
 	imgBeam            *ebiten.Image
@@ -113,7 +121,7 @@ func (g *Gui) UpdateGameOngoing() {
 
 	allEnemiesDead := true
 	for _, enemy := range g.world.Enemies {
-		if enemy.Health.IsPositive() {
+		if enemy.Alive() {
 			allEnemiesDead = false
 		}
 	}
@@ -156,12 +164,12 @@ func (g *Gui) UpdateGameOngoing() {
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
 		for i, _ := range g.world.Enemies {
-			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos).IsPositive() {
-				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos)
+			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos()).IsPositive() {
+				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos())
 				dist := enemyPos.To(g.mousePt).Len()
 				if dist.Lt(minDist) {
 					minDist = dist
-					closestPos = g.world.Enemies[i].Pos
+					closestPos = g.world.Enemies[i].Pos()
 				}
 			}
 		}
@@ -255,10 +263,12 @@ func (g *Gui) Update() error {
 	// One-time initialization. This needs to happen here because I need to
 	// operate on ebiten images and it won't let me before I do RunGame.
 	// TODO: find a better place for this code
-	if len(g.imgEnemyMask) < len(g.imgEnemy) {
-		for _, img := range g.imgEnemy {
-			g.imgEnemyMask = append(g.imgEnemyMask, ComputeSpriteMask(img))
-		}
+	if g.imgGremlinMask == nil {
+		g.imgGremlinMask = ComputeSpriteMask(g.imgGremlin)
+		g.imgHoundMask = ComputeSpriteMask(g.imgHound)
+		g.imgPillarMask = ComputeSpriteMask(g.imgPillar)
+		g.imgQuestionMask = ComputeSpriteMask(g.imgQuestion)
+		g.imgKingMask = ComputeSpriteMask(g.imgKing)
 	}
 
 	// Get input once, so we don't need to get it every time we need it in
@@ -403,21 +413,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	}
 
 	// Draw hit effect.
-	if g.world.Player.JustHit {
-		g.world.Player.JustHit = false
-		g.playerHitEffectIdx = I(50)
-	}
-
-	if g.playerHitEffectIdx.IsPositive() {
-		var alpha uint8
-		if g.world.Player.CooldownAfterGettingHitIdx.IsPositive() {
-			// keep it all fully read until I can do something
-			alpha = 100
-		} else {
-			// fade out once I can act again
-			alpha = uint8(g.playerHitEffectIdx.Times(I(100)).DivBy(I(50)).ToInt())
-			g.playerHitEffectIdx.Dec()
-		}
+	p := &g.world.Player
+	if p.CooldownAfterGettingHitIdx.IsPositive() {
+		i := p.CooldownAfterGettingHitIdx
+		t := p.CooldownAfterGettingHit
+		alpha := uint8(i.Times(I(100)).DivBy(t).ToInt()) + 30
 		DrawSpriteAlpha(screen, g.imgPlayerHitEffect, 0, 0, float64(screen.Bounds().Dx()), float64(screen.Bounds().Dy()), alpha)
 	}
 }
@@ -548,16 +548,38 @@ func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color
 }
 
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
-	g.DrawTile(screen, g.imgEnemy[e.Type.ToInt()], e.Pos)
-	percent := e.FrozenIdx.Times(I(100)).DivBy(e.MaxFrozen)
+	var img *ebiten.Image
+	var imgMask *ebiten.Image
+	switch e.(type) {
+	case *Gremlin:
+		img = g.imgGremlin
+		imgMask = g.imgGremlinMask
+	case *Hound:
+		img = g.imgHound
+		imgMask = g.imgHoundMask
+	case *Pillar:
+		img = g.imgPillar
+		imgMask = g.imgPillarMask
+	case *King:
+		img = g.imgKing
+		imgMask = g.imgKingMask
+	case *Question:
+		img = g.imgQuestion
+		imgMask = g.imgQuestionMask
+	}
+
+	g.DrawTile(screen, img, e.Pos())
+
+	percent := e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
 	var alpha Int
 	if percent.Gt(ZERO) {
 		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
 	} else {
 		alpha = ZERO
 	}
-	g.DrawTileAlpha(screen, g.imgEnemyMask[e.Type.ToInt()], e.Pos, uint8(alpha.ToInt()))
-	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth, e.Health, e.Pos)
+
+	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
+	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth(), e.Health(), e.Pos())
 }
 
 func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
@@ -629,11 +651,11 @@ func (g *Gui) loadGuiData() {
 		g.imgPlayer = g.LoadImage("data/player.png")
 		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
 		//g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy2.png"))
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy3.png"))
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy4.png"))
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy5.png"))
-		g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy6.png"))
+		g.imgGremlin = g.LoadImage("data/enemy2.png")
+		g.imgPillar = g.LoadImage("data/enemy3.png")
+		g.imgHound = g.LoadImage("data/enemy4.png")
+		g.imgQuestion = g.LoadImage("data/enemy5.png")
+		g.imgKing = g.LoadImage("data/enemy6.png")
 		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")
 		g.imgBeam = g.LoadImage("data/beam.png")
 		g.imgShadow = g.LoadImage("data/shadow.png")

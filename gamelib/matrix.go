@@ -11,9 +11,10 @@ func (m *Matrix) Clone() (c Matrix) {
 	return
 }
 
-func (m *Matrix) Init(size Pt) {
+func NewMatrix(size Pt) (m Matrix) {
 	m.size = size
 	m.cells = make([]Int, size.Y.Times(size.X).ToInt64())
+	return m
 }
 
 func (m *Matrix) Set(pos Pt, val Int) {

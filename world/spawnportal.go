@@ -18,7 +18,7 @@ func NewSpawnPortal(pos Pt) (p SpawnPortal) {
 	p.Pos = pos
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
-	p.MaxTimeout = spawnPortalCooldown
+	p.MaxTimeout = SpawnPortalCooldown
 	p.nGremlinsLeftToSpawn = I(4)
 	p.nHoundsLeftToSpawn = I(3)
 	return
@@ -45,7 +45,7 @@ func (p *SpawnPortal) Step(w *World) {
 	// Check if there is already a guy here.
 	occupied := false
 	for _, enemy := range w.Enemies {
-		if enemy.Pos == p.Pos {
+		if enemy.Pos() == p.Pos {
 			occupied = true
 			break
 		}
@@ -77,18 +77,17 @@ func (p *SpawnPortal) Step(w *World) {
 	//	}
 	//}
 	if p.nHoundsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
+		w.Enemies = append(w.Enemies, NewHound(p.Pos))
 		p.nHoundsLeftToSpawn.Dec()
 	} else if p.nGremlinsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
 		p.nGremlinsLeftToSpawn.Dec()
 	} else if !w.KingSpawned {
-		w.Enemies = append(w.Enemies, NewEnemy(I(4), p.Pos))
+		w.Enemies = append(w.Enemies, NewKing(p.Pos))
 		w.KingSpawned = true
 	} else {
-		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
+		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
 	}
 
-	//w.Enemies = append(w.Enemies, NewEnemy(I(0), p.Pos))
 	p.TimeoutIdx = p.MaxTimeout
 }

@@ -4,123 +4,97 @@ import (
 	. "github.com/marisvali/miln/gamelib"
 )
 
-type Enemy struct {
-	Pos       Pt
-	Health    Int
-	MaxHealth Int
-	FrozenIdx Int
-	MaxFrozen Int
-	Type      Int
+var GremlinMoveCooldown = I(30)
+var GremlinFreezeCooldown = I(30)
+var GremlinMaxHealth = I(1)
+var HoundMoveCooldown = I(50)
+var HoundFreezeCooldown = I(30)
+var HoundMaxHealth = I(4)
+var PillarMoveCooldown = I(60)
+var PillarFreezeCooldown = I(200)
+var PillarMaxHealth = I(3)
+var KingMoveCooldown = I(30)
+var KingFreezeCooldown = I(30)
+var KingMaxHealth = I(5)
+var QuestionMaxHealth = I(1)
+var SpawnPortalCooldown = I(60)
+
+type Enemy interface {
+	Step(w *World)
+	Pos() Pt
+	Alive() bool
+	FreezeCooldownIdx() Int
+	FreezeCooldown() Int
+	Health() Int
+	MaxHealth() Int
 }
 
-func NewEnemy(enemyType Int, pos Pt) Enemy {
-	e := Enemy{}
-	e.Type = enemyType
-	e.Pos = pos
-	e.MaxHealth = enemyHealths[e.Type.ToInt()]
-	e.Health = e.MaxHealth
-	e.MaxFrozen = enemyFrozenCooldowns[e.Type.ToInt()]
-	return e
+type EnemyBase struct {
+	pos               Pt
+	health            Int
+	maxHealth         Int
+	freezeCooldownIdx Int
+	freezeCooldown    Int
+	moveCooldownIdx   Int
+	moveCooldown      Int
 }
 
-func (e *Enemy) Step(w *World) {
-	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
+func (e *EnemyBase) Pos() Pt {
+	return e.pos
+}
+
+func (e *EnemyBase) FreezeCooldownIdx() Int {
+	return e.freezeCooldownIdx
+}
+
+func (e *EnemyBase) FreezeCooldown() Int {
+	return e.freezeCooldown
+}
+
+func (e *EnemyBase) Health() Int {
+	return e.health
+}
+
+func (e *EnemyBase) MaxHealth() Int {
+	return e.maxHealth
+}
+
+func (e *EnemyBase) Alive() bool {
+	return e.health.IsPositive()
+}
+
+func (e *EnemyBase) goToPlayer(w *World, m Matrix) {
+	path := FindPath(e.pos, w.Player.Pos, m)
+	if len(path) > 1 {
+		e.pos = path[1]
+		if e.pos.Eq(w.Player.Pos) {
+			w.Player.Hit()
+		}
+	}
+}
+
+func getObstaclesAndEnemies(w *World) (m Matrix) {
+	m = w.Obstacles.Clone()
+	for _, enemy := range w.Enemies {
+		m.Set(enemy.Pos(), ONE)
+	}
+	return
+}
+
+func (e *EnemyBase) beamJustHit(w *World) bool {
+	if !w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
 		// I need to structure this stuff differently.
-		beamEndTile := w.WorldPosToTile(w.Beam.End)
-		if beamEndTile.Eq(e.Pos) {
-			// We have been shot.
-			e.FrozenIdx = e.MaxFrozen
-			if w.Player.HitPermissions.CanHitEnemy[e.Type.ToInt()] {
-				e.Health.Dec()
-				if e.Health == ZERO {
-					// Drop things on death.
-					if e.Type == ZERO {
-						// gremlin
-					} else if e.Type == ONE {
-						// pillar turns into obstacle
-						w.Obstacles.Set(e.Pos, ONE)
-					} else if e.Type == TWO {
-						// hound
-					} else if e.Type == I(3) {
-						nQuestions := ZERO
-						for i := range w.Enemies {
-							if w.Enemies[i].Type == I(3) {
-								nQuestions.Inc()
-							}
-						}
-						if nQuestions == ONE {
-							w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(e.Pos))
-						} else if nQuestions == TWO {
-							w.Keys = append(w.Keys, NewPillarKey(e.Pos))
-						} else {
-							// question mark
-							nGremlins := ZERO
-							for i := range w.Enemies {
-								if w.Enemies[i].Type == ZERO {
-									nGremlins.Inc()
-								}
-							}
-							if nQuestions.Mod(I(4)) == ZERO && nGremlins.Leq(I(4)) {
-								nHounds := ZERO
-								for i := range w.Enemies {
-									if w.Enemies[i].Type == TWO {
-										nHounds.Inc()
-									}
-								}
-								if nHounds.Lt(ONE) && (RInt(I(0), I(100)).Leq(I(40)) || nQuestions.Leq(I(4))) {
-									w.Enemies = append(w.Enemies, NewEnemy(TWO, e.Pos))
-								} else {
-									w.Enemies = append(w.Enemies, NewEnemy(ONE, e.Pos))
-								}
-							} else {
-								w.Obstacles.Set(e.Pos, ONE)
-							}
-						}
-					} else if e.Type == I(4) {
-						w.Keys = append(w.Keys, NewHoundKey(e.Pos))
-					}
-				}
-			}
-		}
+		return false
 	}
+	return w.WorldPosToTile(w.Beam.End) == e.pos
+}
 
-	if e.FrozenIdx.IsPositive() {
-		e.FrozenIdx.Dec()
-		return // Don't move.
+func (e *EnemyBase) move(w *World, m Matrix) {
+	if e.moveCooldownIdx.IsPositive() {
+		e.moveCooldownIdx.Dec()
 	}
-	if enemyCooldowns[e.Type.ToInt()].IsNegative() {
-		return
-	}
-	if w.TimeStep.Plus(ONE).Mod(enemyCooldowns[e.Type.ToInt()]).Neq(ZERO) {
-		return
-	}
-
-	// Move.
-	if w.Player.OnMap {
-		// Clone obstacle matrix and put (other) enemies on it.
-		allObstacles := w.Obstacles.Clone()
-		if e.Type == TWO {
-			// For hounds, only put other hounds on it.
-			for _, enemy := range w.Enemies {
-				if enemy.Type == TWO && !enemy.Pos.Eq(e.Pos) {
-					allObstacles.Set(enemy.Pos, ONE)
-				}
-			}
-		} else {
-			// For other enemies, put everyone on it.
-			for _, enemy := range w.Enemies {
-				if !enemy.Pos.Eq(e.Pos) {
-					allObstacles.Set(enemy.Pos, ONE)
-				}
-			}
-		}
-
-		path := FindPath(e.Pos, w.Player.Pos, allObstacles)
-		if len(path) > 1 {
-			e.Pos = path[1]
-			if e.Pos.Eq(w.Player.Pos) {
-				w.Player.Hit()
-			}
-		}
+	if e.moveCooldown.IsPositive() && e.moveCooldownIdx == ZERO && w.Player.OnMap {
+		e.moveCooldownIdx = e.moveCooldown
+		e.goToPlayer(w, m)
 	}
 }

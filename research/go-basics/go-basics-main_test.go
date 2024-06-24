@@ -2,6 +2,7 @@ package go_basics
 
 import (
 	"github.com/stretchr/testify/assert"
+	"reflect"
 	"testing"
 )
 
@@ -39,5 +40,43 @@ func TestCopy(t *testing.T) {
 		print(v[i].v2)
 		//print(c.v2)
 	}
+	assert.True(t, true)
+}
+
+type A struct {
+	x int
+}
+
+type B struct {
+	x int
+}
+
+func TestMapOfType(t *testing.T) {
+	// regular map
+	var v map[string]int
+	v = make(map[string]int)
+	v["ceva"] = 3
+	v["b"] = 5
+	println(v["b"])
+
+	//m := []reflect.Kind{reflect.String, reflect.Int, reflect.Float32}
+	var m map[reflect.Kind]int
+	m = make(map[reflect.Kind]int)
+	m[reflect.Int] = 2
+	m[reflect.String] = 5
+	println(m[reflect.Int])
+
+	m2 := make(map[reflect.Type]int)
+	m2[reflect.TypeOf(A{})] = 13
+	//m2[A] = 13
+
+	m3 := make(map[interface{}]int)
+	m3[A{}] = 4
+	m3[B{}] = 5
+	println(m3[A{}])
+	println(m3[B{}])
+	println(m3[A{}])
+	println(m3[B{}])
+
 	assert.True(t, true)
 }

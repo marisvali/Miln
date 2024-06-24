@@ -77,7 +77,7 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 	if col > 0 {
 		row++
 	}
-	m.Init(IPt(row, maxCol))
+	m = NewMatrix(IPt(row, maxCol))
 
 	row = -1
 	col = 0

@@ -7,14 +7,6 @@ import (
 	"math"
 )
 
-var playerCooldown Int = I(1)
-var enemyCooldowns []Int = []Int{I(55), I(100), I(40), I(-1), I(50)}
-var enemyHealths []Int = []Int{I(1), I(3), I(4), I(1), I(7)}
-var enemyFrozenCooldowns []Int = []Int{I(130), I(200), I(30), I(130), I(10)}
-var spawnPortalCooldown Int = I(60)
-
-const NEnemyTypes = 5
-
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
 	End Pt  // this is the point to where the beam ends
@@ -64,7 +56,7 @@ func NewWorld(seed Int) (w World) {
 	//}
 	limit = RInt(I(15), I(18)).ToInt()
 	for i := 0; i < limit; i++ {
-		w.Enemies = append(w.Enemies, NewEnemy(I(3), occ.NewlyOccupiedRandomPos()))
+		w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
 	}
 	//limit = RInt(I(1), I(1)).ToInt()
 	//for i := 0; i < limit; i++ {
@@ -79,9 +71,9 @@ func NewWorld(seed Int) (w World) {
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
-	w.Player.HitPermissions.CanHitEnemy[0] = true
-	w.Player.HitPermissions.CanHitEnemy[3] = true
-	w.Player.HitPermissions.CanHitEnemy[4] = true
+	w.Player.HitPermissions.CanHitGremlin = true
+	w.Player.HitPermissions.CanHitQuestion = true
+	w.Player.HitPermissions.CanHitKing = true
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -120,7 +112,7 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 
 func (w *World) computeAttackableTiles() {
 	// Compute which tiles are attackable.
-	w.AttackableTiles.Init(w.Obstacles.Size())
+	w.AttackableTiles = NewMatrix(w.Obstacles.Size())
 
 	rows := w.Obstacles.Size().Y
 	cols := w.Obstacles.Size().X
@@ -139,7 +131,7 @@ func (w *World) computeAttackableTiles() {
 		}
 	}
 	for _, enemy := range w.Enemies {
-		center := w.TileToWorldPos(enemy.Pos)
+		center := w.TileToWorldPos(enemy.Pos())
 		size := w.BlockSize.Times(I(98)).DivBy(I(100))
 		squares = append(squares, Square{center, size})
 	}
@@ -178,11 +170,9 @@ func (w *World) Step(input *PlayerInput) {
 	}
 
 	// Cull dead enemies.
-	// This kind of operation makes me think I should have a slice of pointers,
-	// not values.
 	newEnemies := []Enemy{}
 	for i := range w.Enemies {
-		if w.Enemies[i].Health.IsPositive() {
+		if w.Enemies[i].Alive() {
 			newEnemies = append(newEnemies, w.Enemies[i])
 		}
 	}
@@ -210,7 +200,7 @@ func (w *World) Step(input *PlayerInput) {
 }
 
 func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
-	m.Init(IPt(10, 10))
+	m = NewMatrix(IPt(10, 10))
 	for i := 0; i < 10; i++ {
 		var pt Pt
 		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
@@ -224,7 +214,7 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 
 func RandomLevel2() (m Matrix) {
 	// Create matrix with obstacles.
-	m.Init(IPt(10, 10))
+	m = NewMatrix(IPt(10, 10))
 	for i := 0; i < 0; i++ {
 		m.Set(m.RandomPos(), ONE)
 	}
