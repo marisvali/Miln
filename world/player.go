@@ -14,7 +14,8 @@ type Player struct {
 	HitPermissions             HitPermissions
 	CooldownAfterGettingHit    Int
 	CooldownAfterGettingHitIdx Int
-	EnergyRecoveryCooldownIdx  Int
+	MoveCooldown               Int
+	MoveCooldownIdx            Int
 	Energy                     Int
 }
 
@@ -23,8 +24,8 @@ func NewPlayer() (p Player) {
 	p.Health = p.MaxHealth
 	p.HitPermissions = HitPermissions{}
 	p.CooldownAfterGettingHit = I(40)
-	p.EnergyRecoveryCooldownIdx = PlayerEnergyRecoveryCooldown
-	p.Energy = PlayerMaxEnergy
+	p.MoveCooldown = PlayerMoveCooldown
+	p.MoveCooldownIdx = I(0)
 	return
 }
 
@@ -34,18 +35,8 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		w.Beam.Idx.Dec()
 	}
 
-	if p.EnergyRecoveryCooldownIdx.IsPositive() {
-		p.EnergyRecoveryCooldownIdx.Dec()
-		if p.EnergyRecoveryCooldownIdx == ZERO {
-			p.EnergyRecoveryCooldownIdx = PlayerEnergyRecoveryCooldown
-			if p.Energy.Lt(PlayerMaxEnergy) {
-				p.Energy.Add(PlayerEnergyPerAction)
-			}
-		}
-	}
-
-	if p.Energy.Leq(ZERO) {
-		return
+	if p.MoveCooldownIdx.IsPositive() {
+		p.MoveCooldownIdx.Dec()
 	}
 
 	if w.Player.CooldownAfterGettingHitIdx.Gt(ZERO) {
@@ -64,10 +55,11 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 	if input.Move &&
 		w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
 		(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) &&
-		!onEnemy {
+		!onEnemy &&
+		p.MoveCooldownIdx == ZERO {
 		p.Pos = input.MovePt
 		p.OnMap = true
-		p.Energy.Subtract(PlayerEnergyPerAction)
+		p.MoveCooldownIdx = p.MoveCooldown
 
 		// Collect ammos.
 		newAmmos := make([]Ammo, 0)
@@ -112,7 +104,7 @@ func (p *Player) Step(w *World, input *PlayerInput) {
 		if len(shotEnemies) > 0 || len(shotPortals) > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
 			w.Beam.End = w.TileToWorldPos(input.ShootPt)
-			p.Energy.Subtract(PlayerEnergyPerAction)
+			p.MoveCooldownIdx = p.MoveCooldown
 		}
 	}
 }

@@ -7,9 +7,7 @@ import (
 	"math"
 )
 
-var PlayerMaxEnergy = I(50)
-var PlayerEnergyPerAction = I(10)
-var PlayerEnergyRecoveryCooldown = I(30)
+var PlayerMoveCooldown = I(10)
 var GremlinMoveCooldown = I(50)
 var GremlinFreezeCooldown = I(30)
 var GremlinMaxHealth = I(1)
