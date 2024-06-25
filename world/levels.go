@@ -77,7 +77,7 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 	if col > 0 {
 		row++
 	}
-	m = NewMatrix(IPt(row, maxCol))
+	m = NewMatrix(IPt(maxCol, row))
 
 	row = -1
 	col = 0
@@ -88,7 +88,7 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 			row++
 			continue
 		} else if c == 'x' {
-			m.Set(IPt(row, col), I(1))
+			m.Set(IPt(col, row), I(1))
 		} else if c == '1' {
 			pos1 = append(pos1, IPt(col, row))
 		} else if c == '2' {

@@ -36,7 +36,7 @@ func (q *Question) onDeath(w *World) {
 				nGremlins.Inc()
 			}
 		}
-		if nQuestions.Mod(I(3)) == ZERO && nGremlins.Leq(I(4)) {
+		if nQuestions.Mod(I(4)) == ZERO && nGremlins.Leq(I(4)) {
 			nHounds := ZERO
 			for i := range w.Enemies {
 				if _, ok := w.Enemies[i].(*UltraHound); ok {

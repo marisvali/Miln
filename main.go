@@ -593,31 +593,31 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	}
 	mask := ebiten.NewImageFromImage(g.imgPlayer)
 	// Draw mask of move cooldown.
-	{
-		percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
-		var alpha Int
-		if percent.Gt(ZERO) {
-			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-		} else {
-			alpha = ZERO
-		}
-
-		sz := mask.Bounds().Size()
-		for y := 0; y < sz.Y; y++ {
-			for x := 0; x < sz.X; x++ {
-				_, _, _, a := mask.At(x, y).RGBA()
-				if a > 0 {
-					mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
-				}
-			}
-		}
-
-		totalWidth := I(mask.Bounds().Size().X)
-		//lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
-		lineWidth := percent.Times(totalWidth).DivBy(I(100))
-		l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
-		DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
-	}
+	//{
+	//	percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
+	//	var alpha Int
+	//	if percent.Gt(ZERO) {
+	//		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+	//	} else {
+	//		alpha = ZERO
+	//	}
+	//
+	//	sz := mask.Bounds().Size()
+	//	for y := 0; y < sz.Y; y++ {
+	//		for x := 0; x < sz.X; x++ {
+	//			_, _, _, a := mask.At(x, y).RGBA()
+	//			if a > 0 {
+	//				mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+	//			}
+	//		}
+	//	}
+	//
+	//	totalWidth := I(mask.Bounds().Size().X)
+	//	//lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
+	//	lineWidth := percent.Times(totalWidth).DivBy(I(100))
+	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
+	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
+	//}
 	g.DrawTile(screen, g.imgPlayer, p.Pos)
 	g.DrawTile(screen, mask, p.Pos)
 	g.DrawHealth(screen, g.imgPlayerHealth, p.MaxHealth, p.Health, p.Pos)
@@ -685,7 +685,7 @@ func (g *Gui) loadGuiData() {
 func main() {
 	var g Gui
 	//g.world = NewWorld(RInt(I(0), I(10000000)))
-	g.world = NewWorld(I(149))
+	g.world = NewWorld(I(322))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)

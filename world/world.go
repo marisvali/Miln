@@ -58,25 +58,50 @@ type PlayerInput struct {
 	ShootPt Pt // tile-coordinates
 }
 
+func LevelX() string {
+	return `
+----x----
+--x---xx-
+--x----x-
+--x------
+--x--xxx-
+---------
+---x-----
+-x---xxxx
+-xx------
+---------
+`
+}
+
 func NewWorld(seed Int) (w World) {
 	w.seed = seed
 	RSeed(seed)
 
+	m, _, _ := LevelFromString(LevelX())
+	w.Obstacles = NewMatrix(m.Size())
+	for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
+		for x := ZERO; x.Lt(m.Size().X); x.Inc() {
+			if m.Get(Pt{x, y}) != ZERO {
+				w.Enemies = append(w.Enemies, NewQuestion(Pt{x, y}))
+			}
+		}
+	}
+
 	// Obstacles
-	w.Obstacles = RandomLevel2()
+	//w.Obstacles = RandomLevel2()
 
 	// Place each item at an unoccupied position (and occupy that position).
-	occ := w.Obstacles.Clone() // Keeps track of occupied positions.
+	//occ := w.Obstacles.Clone() // Keeps track of occupied positions.
 
-	var limit int
+	//var limit int
 	//limit = RInt(I(2), I(4)).ToInt()
 	//for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, occ.NewlyOccupiedRandomPos()))
 	//}
-	limit = RInt(I(20), I(23)).ToInt()
-	for i := 0; i < limit; i++ {
-		w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
-	}
+	//limit = RInt(I(17), I(20)).ToInt()
+	//for i := 0; i < limit; i++ {
+	//	w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
+	//}
 	//limit = RInt(I(1), I(1)).ToInt()
 	//for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, occ.NewlyOccupiedRandomPos()))
