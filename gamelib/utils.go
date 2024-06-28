@@ -3,11 +3,14 @@ package gamelib
 import (
 	"archive/zip"
 	"bytes"
+	"database/sql"
 	"embed"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
 	"image/color"
@@ -217,11 +220,14 @@ func Home(relativePath string) string {
 	return path.Join(HomeFolder(), relativePath)
 }
 
-func Unzip(filename string) []byte {
+func Unzip(data []byte) []byte {
+	// Get a bytes.Reader, which implements the io.ReaderAt interface required
+	// by the zip.NewReader() function.
+	bytesReader := bytes.NewReader(data)
+
 	// Open a zip archive for reading.
-	r, err := zip.OpenReader(filename)
+	r, err := zip.NewReader(bytesReader, int64(len(data)))
 	Check(err)
-	defer r.Close()
 
 	// We assume there's exactly 1 file in the zip archive.
 	if len(r.File) != 1 {
@@ -253,7 +259,11 @@ func Unzip(filename string) []byte {
 	return fullContent
 }
 
-func Zip(filename string, data []byte) {
+func UnzipFromFile(filename string) []byte {
+	return Unzip(ReadFile(filename))
+}
+
+func Zip(data []byte) []byte {
 	// Create a buffer to write our archive to.
 	buf := new(bytes.Buffer)
 
@@ -272,8 +282,12 @@ func Zip(filename string, data []byte) {
 	err = w.Close()
 	Check(err)
 
+	return buf.Bytes()
+}
+
+func ZipToFile(filename string, data []byte) {
 	// Actually write the zip to disk.
-	WriteFile(filename, buf.Bytes())
+	WriteFile(filename, Zip(data))
 }
 
 func LoadImage(str string) *ebiten.Image {
@@ -342,4 +356,54 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 		}
 	}
 	return mask
+}
+
+func ConnectToDB() *sql.DB {
+	cfg := mysql.Config{
+		User:                 os.Getenv("MILN_DBUSER"),
+		Passwd:               os.Getenv("MILN_DBPASSWORD"),
+		Net:                  "tcp",
+		Addr:                 os.Getenv("MILN_DBADDR"),
+		DBName:               os.Getenv("MILN_DBNAME"),
+		AllowNativePasswords: true,
+	}
+
+	db, err := sql.Open("mysql", cfg.FormatDSN())
+	Check(err)
+	return db
+}
+
+func InitializeIdInDB(db *sql.DB, id uuid.UUID) {
+	_, err := db.Exec("INSERT INTO test4 (id) VALUES (?)", id.String())
+	Check(err)
+}
+
+func UploadDataToDB(db *sql.DB, id uuid.UUID, data []byte) {
+	_, err := db.Exec("UPDATE test4 SET playthrough = ? WHERE id = ?", data, id.String())
+	Check(err)
+}
+
+func DownloadDataFromDB(db *sql.DB, id uuid.UUID) (data []byte) {
+	rows, err := db.Query("SELECT playthrough FROM test4 WHERE id = ?", id.String())
+	Check(err)
+	defer rows.Close()
+	if !rows.Next() {
+		Check(fmt.Errorf("id not found: %s", id.String()))
+	}
+	err = rows.Scan(&data)
+	Check(err)
+	return
+}
+
+func InspectDataFromDB(db *sql.DB) {
+	rows, err := db.Query("SELECT * FROM test4")
+	Check(err)
+	defer rows.Close()
+
+	for rows.Next() {
+		var data []byte
+		err := rows.Scan(&data)
+		Check(err)
+		println(len(data))
+	}
 }

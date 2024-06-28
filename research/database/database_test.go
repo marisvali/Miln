@@ -4,8 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"os"
 	"testing"
 )
 
@@ -57,16 +59,16 @@ func TestDatabase(t *testing.T) {
 	assert.True(t, true)
 }
 
-func TestDatabase22(t *testing.T) {
+func TestDatabaseBytes(t *testing.T) {
 	var db *sql.DB
-	// Capture connection properties.
 
+	// Capture connection properties.
 	cfg := mysql.Config{
-		User:                 "",
-		Passwd:               "",
+		User:                 os.Getenv("MILN_DBUSER"),
+		Passwd:               os.Getenv("MILN_DBPASSWORD"),
 		Net:                  "tcp",
-		Addr:                 "",
-		DBName:               "",
+		Addr:                 os.Getenv("MILN_DBADDR"),
+		DBName:               os.Getenv("MILN_DBNAME"),
 		AllowNativePasswords: true,
 	}
 
@@ -83,24 +85,33 @@ func TestDatabase22(t *testing.T) {
 	}
 	fmt.Println("Connected!")
 
-	rows, err := db.Query("SELECT * FROM test")
+	data := []byte("Kyle Kinane")
+	_, errIns := db.Exec("INSERT INTO test3 (recording) VALUES (?)", data)
+	if errIns != nil {
+		log.Fatal(errIns)
+	}
+
+	rows, err := db.Query("SELECT * FROM test3")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	// Loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
-		var c1, c2, c3, c4 int
-		if err := rows.Scan(&c1, &c2, &c3, &c4); err != nil {
+		var data []byte
+		var id int
+		if err := rows.Scan(&id, &data); err != nil {
 			log.Fatal(err)
 		}
-		println(c1, c2, c3, c4)
+		println(id, string(data))
 	}
 
-	_, errIns := db.Exec("INSERT INTO test (c1, c2, c3) VALUES (?, ?, ?)", 999, 99, 89)
-	if errIns != nil {
-		log.Fatal(errIns)
-	}
+	assert.True(t, true)
+}
 
+func TestDatabaseUtils(t *testing.T) {
+	db := ConnectToDB()
+	AddDataToDB(db, []byte("what do you mean"))
+	InspectDataFromDB(db)
 	assert.True(t, true)
 }

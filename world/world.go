@@ -3,6 +3,7 @@ package world
 import (
 	"bytes"
 	"fmt"
+	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"math"
 )
@@ -43,12 +44,18 @@ type World struct {
 	BlockSize        Int
 	Ammos            []Ammo
 	SpawnPortals     []SpawnPortal
-	seed             Int
 	Keys             []Key
 	PillarKeyDropped bool
 	HoundKeyDropped  bool
 	PortalKeyDropped bool
 	KingSpawned      bool
+	Id               uuid.UUID
+	Playthrough
+}
+
+type Playthrough struct {
+	Seed    Int
+	History []PlayerInput
 }
 
 type PlayerInput struct {
@@ -74,7 +81,8 @@ func LevelX() string {
 }
 
 func NewWorld(seed Int) (w World) {
-	w.seed = seed
+	w.Seed = seed
+	w.Id = uuid.New()
 	RSeed(seed)
 
 	m, _, _ := LevelFromString(LevelX())
@@ -127,21 +135,20 @@ func NewWorld(seed Int) (w World) {
 	return
 }
 
-func (w *World) Seed() Int {
-	return w.seed
-}
-
-func SerializeInputs(inputs []PlayerInput, filename string) {
+func (w *World) SerializedPlaythrough() []byte {
 	buf := new(bytes.Buffer)
-	SerializeSlice(buf, inputs)
-	Zip(filename, buf.Bytes())
+	Serialize(buf, w.Seed.ToInt64())
+	SerializeSlice(buf, w.History)
+	return Zip(buf.Bytes())
 }
 
-func DeserializeInputs(filename string) []PlayerInput {
-	var inputs []PlayerInput
-	buf := bytes.NewBuffer(Unzip(filename))
-	DeserializeSlice(buf, &inputs)
-	return inputs
+func DeserializePlaythrough(data []byte) (p Playthrough) {
+	buf := bytes.NewBuffer(Unzip(data))
+	var token int64
+	Deserialize(buf, &token)
+	p.Seed = I64(token)
+	DeserializeSlice(buf, &p.History)
+	return
 }
 
 func (w *World) TileToWorldPos(pt Pt) Pt {
@@ -204,7 +211,8 @@ func (w *World) computeAttackableTiles() {
 	}
 }
 
-func (w *World) Step(input *PlayerInput) {
+func (w *World) Step(input PlayerInput) {
+	w.History = append(w.History, input)
 	w.computeAttackableTiles()
 	w.Player.Step(w, input)
 

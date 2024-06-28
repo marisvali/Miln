@@ -25,7 +25,7 @@ func NewPlayer() (p Player) {
 	return
 }
 
-func (p *Player) Step(w *World, input *PlayerInput) {
+func (p *Player) Step(w *World, input PlayerInput) {
 	// See about the beam.
 	if w.Beam.Idx.Gt(ZERO) {
 		w.Beam.Idx.Dec()

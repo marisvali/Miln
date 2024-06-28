@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"embed"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
@@ -57,7 +59,6 @@ type Gui struct {
 	folderWatcher      FolderWatcher
 	recording          bool
 	recordingFile      string
-	allInputs          []PlayerInput
 	state              GameState
 	textHeight         Int
 	guiMargin          Int
@@ -69,6 +70,8 @@ type Gui struct {
 	justPressedKeys    []ebiten.Key // keys pressed in this frame
 	mousePt            Pt           // mouse position in this frame
 	playerHitEffectIdx Int
+	playthrough        Playthrough
+	db                 *sql.DB
 }
 
 type GameState int64
@@ -193,18 +196,21 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
-	if g.recording {
-		if g.recordingFile != "" {
-			g.allInputs = append(g.allInputs, input)
-			SerializeInputs(g.allInputs, g.recordingFile)
-		}
-	} else {
-		if idx := g.frameIdx.ToInt(); idx < len(g.allInputs) {
-			input = g.allInputs[idx]
+	if !g.recording {
+		inputs := g.playthrough.History
+		if idx := g.frameIdx.ToInt(); idx < len(inputs) {
+			input = inputs[idx]
 		}
 	}
 
-	g.world.Step(&input)
+	g.world.Step(input)
+
+	if g.recording && g.recordingFile != "" {
+		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+		if g.frameIdx.Mod(I(60)) == ZERO {
+			UploadDataToDB(g.db, g.world.Id, g.world.SerializedPlaythrough())
+		}
+	}
 
 	if g.folderWatcher.FolderContentsChanged() {
 		g.loadGuiData()
@@ -216,10 +222,12 @@ func (g *Gui) UpdateGameOngoing() {
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
+		InitializeIdInDB(g.db, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed())
+		g.world = NewWorld(g.world.Seed)
+		InitializeIdInDB(g.db, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -684,20 +692,29 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
+	g.db = ConnectToDB()
 	//g.world = NewWorld(RInt(I(0), I(10000000)))
-	g.world = NewWorld(I(322))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = true
+	g.recording = false
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
+		g.world = NewWorld(I(322))
+		InitializeIdInDB(g.db, g.world.Id)
+		UploadDataToDB(g.db, g.world.Id, g.world.SerializedPlaythrough())
 	} else {
-		g.recordingFile = GetLatestRecordingFile()
-		if g.recordingFile != "" {
-			g.allInputs = DeserializeInputs(g.recordingFile)
-		}
+		//g.recordingFile = GetLatestRecordingFile()
+		//if g.recordingFile != "" {
+		//	g.playthrough = DeserializePlaythrough(ReadFile(g.recordingFile))
+		//}
+
+		//id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
+		id, err := uuid.Parse("687f5f75-7fdc-43ae-b9c5-31c86b7d5d25")
+		Check(err)
+		g.playthrough = DeserializePlaythrough(DownloadDataFromDB(g.db, id))
+		g.world = NewWorld(g.playthrough.Seed)
 	}
 
 	playSize := g.world.Obstacles.Size().Times(BlockSize)

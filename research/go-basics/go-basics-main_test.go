@@ -80,3 +80,15 @@ func TestMapOfType(t *testing.T) {
 
 	assert.True(t, true)
 }
+
+func f(x int) (int, int) {
+	return x + 2, x * 2
+}
+
+func TestCreateVars(t *testing.T) {
+	a, b := f(5)
+	println(a, b)
+	a, c := f(7)
+	println(a, c)
+	assert.True(t, true)
+}
