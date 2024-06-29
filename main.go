@@ -294,18 +294,12 @@ func (g *Gui) Update() error {
 }
 
 func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
-	rows := g.world.Obstacles.Size().Y
-	cols := g.world.Obstacles.Size().X
+	obstaclePositions := g.world.Obstacles.ToSlice()
 	ipts := []Pt{}
-	var pt Pt
-	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
-		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-			if g.world.Obstacles.At(pt) {
-				s := Square{g.TileToScreen(pt), BlockSize.Times(I(90)).DivBy(I(100))}
-				if intersects, ipt := LineSquareIntersection(l, s); intersects {
-					ipts = append(ipts, ipt)
-				}
-			}
+	for _, pt := range obstaclePositions {
+		s := Square{g.TileToScreen(pt), BlockSize.Times(I(90)).DivBy(I(100))}
+		if intersects, ipt := LineSquareIntersection(l, s); intersects {
+			ipts = append(ipts, ipt)
 		}
 	}
 
