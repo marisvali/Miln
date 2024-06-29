@@ -45,8 +45,8 @@ func (p *Player) Step(w *World, input PlayerInput) {
 	}
 
 	if input.Move &&
-		w.Obstacles.Get(input.MovePt).Eq(ZERO) &&
-		(w.AttackableTiles.Get(input.MovePt).Neq(ZERO) || !w.Player.OnMap) &&
+		!w.Obstacles.At(input.MovePt) &&
+		(w.AttackableTiles.At(input.MovePt) || !w.Player.OnMap) &&
 		!onEnemy {
 		p.Pos = input.MovePt
 		p.OnMap = true
@@ -75,7 +75,7 @@ func (p *Player) Step(w *World, input PlayerInput) {
 	}
 
 	if input.Shoot &&
-		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
+		w.AttackableTiles.At(input.ShootPt) {
 
 		shotEnemies := []*Enemy{}
 		for i := range w.Enemies {

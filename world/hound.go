@@ -33,11 +33,11 @@ func (h *Hound) Step(w *World) {
 	}
 
 	// For hounds, only consider other hounds.
-	m := NewMatrix[Int](w.Obstacles.Size())
+	m := NewMatBool(w.Obstacles.Size())
 	for _, enemy := range w.Enemies {
 		_, ok := enemy.(*Hound)
 		if ok && !enemy.Pos().Eq(h.pos) {
-			m.Set(enemy.Pos(), ONE)
+			m.Set(enemy.Pos())
 		}
 	}
 	h.move(w, m)

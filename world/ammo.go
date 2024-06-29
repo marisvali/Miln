@@ -21,7 +21,7 @@ func (w *World) SpawnAmmos() {
 		}
 
 		pt := w.Obstacles.RandomPos()
-		if !w.Obstacles.Get(pt).IsZero() {
+		if w.Obstacles.At(pt) {
 			continue
 		}
 		if w.Player.Pos == pt {

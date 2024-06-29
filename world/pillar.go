@@ -26,7 +26,7 @@ func (p *Pillar) Step(w *World) {
 			p.health.Dec()
 			if p.health == ZERO {
 				// pillar turns into obstacle
-				w.Obstacles.Set(p.pos, ONE)
+				w.Obstacles.Set(p.pos)
 			}
 		}
 	}

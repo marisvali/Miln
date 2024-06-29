@@ -49,7 +49,7 @@ func (q *Question) onDeath(w *World) {
 				w.Enemies = append(w.Enemies, NewPillar(q.pos))
 			}
 		} else {
-			w.Obstacles.Set(q.pos, ONE)
+			w.Obstacles.Set(q.pos)
 		}
 	}
 }

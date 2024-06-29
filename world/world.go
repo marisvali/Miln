@@ -35,8 +35,8 @@ type World struct {
 	Player           Player
 	Enemies          []Enemy
 	Beam             Beam
-	Obstacles        Matrix[Int]
-	AttackableTiles  Matrix[Int]
+	Obstacles        MatBool
+	AttackableTiles  MatBool
 	TimeStep         Int
 	BeamMax          Int
 	beamPts          []Pt
@@ -84,11 +84,11 @@ func NewWorld(seed Int) (w World) {
 	w.Id = uuid.New()
 	RSeed(seed)
 
-	m, _, _ := LevelFromString(LevelX())
-	w.Obstacles = NewMatrix[Int](m.Size())
+	m := MatrixFromString(LevelX(), map[byte]bool{'x': true})
+	w.Obstacles = NewMatBool(m.Size())
 	for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
 		for x := ZERO; x.Lt(m.Size().X); x.Inc() {
-			if m.Get(Pt{x, y}) != ZERO {
+			if m.Get(Pt{x, y}) {
 				w.Enemies = append(w.Enemies, NewQuestion(Pt{x, y}))
 			}
 		}
@@ -162,7 +162,7 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 
 func (w *World) computeAttackableTiles() {
 	// Compute which tiles are attackable.
-	w.AttackableTiles = NewMatrix[Int](w.Obstacles.Size())
+	w.AttackableTiles = NewMatBool(w.Obstacles.Size())
 
 	rows := w.Obstacles.Size().Y
 	cols := w.Obstacles.Size().X
@@ -173,7 +173,7 @@ func (w *World) computeAttackableTiles() {
 	for y := ZERO; y.Lt(rows); y.Inc() {
 		for x := ZERO; x.Lt(cols); x.Inc() {
 			pt := Pt{x, y}
-			if !w.Obstacles.Get(pt).IsZero() {
+			if w.Obstacles.At(pt) {
 				center := w.TileToWorldPos(pt)
 				size := w.BlockSize.Times(I(98)).DivBy(I(100))
 				squares = append(squares, Square{center, size})
@@ -197,35 +197,27 @@ func (w *World) computeAttackableTiles() {
 			if intersects, pt := LineSquaresIntersection(l, squares); intersects {
 				obstacleTile := w.WorldPosToTile(pt)
 				if obstacleTile.Eq(Pt{x, y}) {
-					w.AttackableTiles.Set(Pt{x, y}, ONE)
+					w.AttackableTiles.Set(Pt{x, y})
 				} else {
-					w.AttackableTiles.Set(Pt{x, y}, ZERO)
+					w.AttackableTiles.Clear(Pt{x, y})
 					idx := w.AttackableTiles.PtToIndex(Pt{x, y}).ToInt()
 					w.beamPts[idx] = pt
 				}
 			} else {
-				w.AttackableTiles.Set(Pt{x, y}, ONE)
+				w.AttackableTiles.Set(Pt{x, y})
 			}
 		}
 	}
 
-	// Mark all attackable tiles connected to the start with TWO.
-	FloodFill(w.AttackableTiles, w.Player.Pos, TWO)
+	// Get all attackable tiles connected to the player's pos.
+	connectedTiles := w.AttackableTiles.ConnectedPositions(w.Player.Pos)
 
 	// Eliminate tiles which were marked as attackable but are disconnected from
 	// the attackable region that contains the player's position.
 	// This is needed in order to eliminate tiles which are technically
 	// reachable if you respect the math, but which just look weird to people.
-	// Do the elimination by marking ONEs with ZERO and TWOs with ONEs.
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			if w.AttackableTiles.Get(Pt{x, y}) == TWO {
-				w.AttackableTiles.Set(Pt{x, y}, ONE)
-			} else if w.AttackableTiles.Get(Pt{x, y}) == ONE {
-				w.AttackableTiles.Set(Pt{x, y}, ZERO)
-			}
-		}
-	}
+	// Do the elimination by intersecting sets.
+	w.AttackableTiles.IntersectWith(connectedTiles)
 }
 
 func (w *World) Step(input PlayerInput) {

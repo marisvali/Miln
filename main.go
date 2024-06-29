@@ -149,18 +149,18 @@ func (g *Gui) UpdateGameOngoing() {
 		// See what is the closest distance to the center of an attackable tile.
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
-		m := g.world.AttackableTiles.Clone()
-		m2 := g.world.Obstacles
+		attackable := g.world.AttackableTiles.Clone()
+		obstacles := g.world.Obstacles
 		pt := Pt{}
 
 		w := &g.world
 		for i := range w.Enemies {
-			m.Set(w.Enemies[i].Pos(), ZERO)
+			attackable.Clear(w.Enemies[i].Pos())
 		}
 
-		for pt.Y = ZERO; pt.Y.Lt(m.Size().Y); pt.Y.Inc() {
-			for pt.X = ZERO; pt.X.Lt(m.Size().X); pt.X.Inc() {
-				if g.world.Player.OnMap && m.Get(pt) != ZERO && m2.Get(pt) == ZERO ||
+		for pt.Y = ZERO; pt.Y.Lt(attackable.Size().Y); pt.Y.Inc() {
+			for pt.X = ZERO; pt.X.Lt(attackable.Size().X); pt.X.Inc() {
+				if g.world.Player.OnMap && attackable.At(pt) && !obstacles.At(pt) ||
 					!g.world.Player.OnMap {
 					dist := g.TileToScreen(pt).To(g.mousePt).Len()
 					if dist.Lt(minDist) {
@@ -183,7 +183,7 @@ func (g *Gui) UpdateGameOngoing() {
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
 		for i := range g.world.Enemies {
-			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos()).IsPositive() {
+			if g.world.AttackableTiles.At(g.world.Enemies[i].Pos()) {
 				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos())
 				dist := enemyPos.To(g.mousePt).Len()
 				if dist.Lt(minDist) {
@@ -194,7 +194,7 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 
 		for i := range g.world.SpawnPortals {
-			if g.world.AttackableTiles.Get(g.world.SpawnPortals[i].Pos).IsPositive() {
+			if g.world.AttackableTiles.At(g.world.SpawnPortals[i].Pos) {
 				enemyPos := g.TileToScreen(g.world.SpawnPortals[i].Pos)
 				dist := enemyPos.To(g.mousePt).Len()
 				if dist.Lt(minDist) {
@@ -324,7 +324,7 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	var pt Pt
 	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-			if !g.world.Obstacles.Get(pt).IsZero() {
+			if g.world.Obstacles.At(pt) {
 				s := Square{g.TileToScreen(pt), BlockSize.Times(I(90)).DivBy(I(100))}
 				if intersects, ipt := LineSquareIntersection(l, s); intersects {
 					ipts = append(ipts, ipt)
@@ -384,7 +384,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
 			g.DrawTile(screen, g.imgGround, pt)
-			if g.world.Obstacles.Get(pt).Eq(ONE) {
+			if g.world.Obstacles.At(pt) {
 				g.DrawTile(screen, g.imgTree, pt)
 			}
 		}
@@ -430,7 +430,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	if g.world.Player.OnMap {
 		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-				if g.world.AttackableTiles.Get(pt).Neq(ZERO) {
+				if g.world.AttackableTiles.At(pt) {
 					g.DrawTile(screen, g.imgShadow, pt)
 				}
 			}

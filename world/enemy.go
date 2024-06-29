@@ -48,8 +48,8 @@ func (e *EnemyBase) Alive() bool {
 	return e.health.IsPositive()
 }
 
-func (e *EnemyBase) goToPlayer(w *World, m Matrix[Int]) {
-	path := FindPath(e.pos, w.Player.Pos, m, ZERO)
+func (e *EnemyBase) goToPlayer(w *World, m MatBool) {
+	path := FindPath(e.pos, w.Player.Pos, m.Matrix, false)
 	if len(path) > 1 {
 		e.pos = path[1]
 		if e.pos.Eq(w.Player.Pos) {
@@ -58,10 +58,10 @@ func (e *EnemyBase) goToPlayer(w *World, m Matrix[Int]) {
 	}
 }
 
-func getObstaclesAndEnemies(w *World) (m Matrix[Int]) {
+func getObstaclesAndEnemies(w *World) (m MatBool) {
 	m = w.Obstacles.Clone()
 	for _, enemy := range w.Enemies {
-		m.Set(enemy.Pos(), ONE)
+		m.Set(enemy.Pos())
 	}
 	return
 }
@@ -77,7 +77,7 @@ func (e *EnemyBase) beamJustHit(w *World) bool {
 	return w.WorldPosToTile(w.Beam.End) == e.pos
 }
 
-func (e *EnemyBase) move(w *World, m Matrix[Int]) {
+func (e *EnemyBase) move(w *World, m MatBool) {
 	if e.moveCooldownIdx.IsPositive() {
 		e.moveCooldownIdx.Dec()
 	}

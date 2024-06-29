@@ -409,32 +409,6 @@ func InspectDataFromDB(db *sql.DB) {
 	}
 }
 
-// FloodFill fills a matrix with value val starting from point start and going
-// to all connected neighbors and replacing them with value val as well.
-// A neighbor is connected if it has the same value as the original value of the
-// start point.
-// This is intended to be used for example on a matrix where you have 0 for
-// clear zones and 1 for obstacles. You can find out all the positions someone
-// can reach from a starting point, without stepping over obstacles.
-func FloodFill[T comparable](m Matrix[T], start Pt, val T) {
-	emptyVal := m.Get(start)
-	queue := []Pt{}
-	queue = append(queue, start)
-	i := 0
-	dirs := Directions8()
-	for i < len(queue) {
-		pt := queue[i]
-		i++
-		for _, d := range dirs {
-			newPt := pt.Plus(d)
-			if m.InBounds(newPt) && m.Get(newPt) == emptyVal {
-				m.Set(newPt, val)
-				queue = append(queue, newPt)
-			}
-		}
-	}
-}
-
 func Directions8() []Pt {
 	// This order is needed so that straight lines get priority in pathfinding.
 	return []Pt{
