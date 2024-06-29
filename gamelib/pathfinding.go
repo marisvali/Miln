@@ -33,20 +33,7 @@ func (p *Pathfinding) Initialize(m Matrix) {
 	//	{I(0), I(1)},
 	//	{I(1), I(1)},
 	//}
-	// This order is needed so that straight lines get priority
-	dirs := []Pt{
-		// left/right/up/down
-		{I(1).Negative(), I(0)},
-		{I(1), I(0)},
-		{I(0), I(1).Negative()},
-		{I(0), I(1)},
-
-		// diagonals
-		{I(1).Negative(), I(1).Negative()},
-		{I(1), I(1).Negative()},
-		{I(1).Negative(), I(1)},
-		{I(1), I(1)},
-	}
+	dirs := Directions8()
 	p.nDirs = len(dirs)
 
 	// At neighbors[i] we will find the 8 neighbors of node with index i.

@@ -407,3 +407,82 @@ func InspectDataFromDB(db *sql.DB) {
 		println(len(data))
 	}
 }
+
+// FloodFill fills a matrix with value val starting from point start and going
+// to all connected neighbors and replacing them with value val as well.
+// A neighbor is connected if it has the same value as the original value of the
+// start point.
+// This is intended to be used for example on a matrix where you have 0 for
+// clear zones and 1 for obstacles. You can find out all the positions someone
+// can reach from a starting point, without stepping over obstacles.
+func FloodFill(m Matrix, start Pt, val Int) {
+	emptyVal := m.Get(start)
+	queue := []Pt{}
+	queue = append(queue, start)
+	i := 0
+	dirs := Directions8()
+	for i < len(queue) {
+		pt := queue[i]
+		i++
+		for _, d := range dirs {
+			newPt := pt.Plus(d)
+			if m.InBounds(newPt) && m.Get(newPt) == emptyVal {
+				m.Set(newPt, val)
+				queue = append(queue, newPt)
+			}
+		}
+	}
+}
+
+func Directions8() []Pt {
+	// This order is needed so that straight lines get priority in pathfinding.
+	return []Pt{
+		// left/right/up/down
+		{I(1).Negative(), I(0)},
+		{I(1), I(0)},
+		{I(0), I(1).Negative()},
+		{I(0), I(1)},
+
+		// diagonals
+		{I(1).Negative(), I(1).Negative()},
+		{I(1), I(1).Negative()},
+		{I(1).Negative(), I(1)},
+		{I(1), I(1)},
+	}
+}
+
+func MatrixFromString(str string, vals map[byte]Int) (m Matrix) {
+	row := -1
+	col := 0
+	maxCol := 0
+	for i := 0; i < len(str); i++ {
+		c := str[i]
+		if c == '\n' {
+			maxCol = col
+			col = 0
+			row++
+			continue
+		}
+		col++
+	}
+	// If the string does not end with an empty line, count the last row.
+	if col > 0 {
+		row++
+	}
+	m = NewMatrix(IPt(maxCol, row))
+
+	row = -1
+	col = 0
+	for i := 0; i < len(str); i++ {
+		c := str[i]
+		if c == '\n' {
+			col = 0
+			row++
+			continue
+		} else if val, ok := vals[c]; ok {
+			m.Set(IPt(col, row), val)
+		}
+		col++
+	}
+	return
+}
