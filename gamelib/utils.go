@@ -415,7 +415,7 @@ func InspectDataFromDB(db *sql.DB) {
 // This is intended to be used for example on a matrix where you have 0 for
 // clear zones and 1 for obstacles. You can find out all the positions someone
 // can reach from a starting point, without stepping over obstacles.
-func FloodFill(m Matrix, start Pt, val Int) {
+func FloodFill[T comparable](m Matrix[T], start Pt, val T) {
 	emptyVal := m.Get(start)
 	queue := []Pt{}
 	queue = append(queue, start)
@@ -451,7 +451,7 @@ func Directions8() []Pt {
 	}
 }
 
-func MatrixFromString(str string, vals map[byte]Int) (m Matrix) {
+func MatrixFromString[T comparable](str string, vals map[byte]T) (m Matrix[T]) {
 	row := -1
 	col := 0
 	maxCol := 0
@@ -469,7 +469,7 @@ func MatrixFromString(str string, vals map[byte]Int) (m Matrix) {
 	if col > 0 {
 		row++
 	}
-	m = NewMatrix(IPt(maxCol, row))
+	m = NewMatrix[T](IPt(maxCol, row))
 
 	row = -1
 	col = 0

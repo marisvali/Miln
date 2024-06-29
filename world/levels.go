@@ -59,7 +59,7 @@ func Level1() string {
 `
 }
 
-func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
+func LevelFromString(level string) (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
 	row := -1
 	col := 0
 	maxCol := 0
@@ -77,7 +77,7 @@ func LevelFromString(level string) (m Matrix, pos1 []Pt, pos2 []Pt) {
 	if col > 0 {
 		row++
 	}
-	m = NewMatrix(IPt(maxCol, row))
+	m = NewMatrix[Int](IPt(maxCol, row))
 
 	row = -1
 	col = 0

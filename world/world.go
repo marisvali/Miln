@@ -36,8 +36,8 @@ type World struct {
 	Player           Player
 	Enemies          []Enemy
 	Beam             Beam
-	Obstacles        Matrix
-	AttackableTiles  Matrix
+	Obstacles        Matrix[Int]
+	AttackableTiles  Matrix[Int]
 	TimeStep         Int
 	BeamMax          Int
 	beamPts          []Pt
@@ -86,7 +86,7 @@ func NewWorld(seed Int) (w World) {
 	RSeed(seed)
 
 	m, _, _ := LevelFromString(LevelX())
-	w.Obstacles = NewMatrix(m.Size())
+	w.Obstacles = NewMatrix[Int](m.Size())
 	for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
 		for x := ZERO; x.Lt(m.Size().X); x.Inc() {
 			if m.Get(Pt{x, y}) != ZERO {
@@ -163,7 +163,7 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 
 func (w *World) computeAttackableTiles() {
 	// Compute which tiles are attackable.
-	w.AttackableTiles = NewMatrix(w.Obstacles.Size())
+	w.AttackableTiles = NewMatrix[Int](w.Obstacles.Size())
 
 	rows := w.Obstacles.Size().Y
 	cols := w.Obstacles.Size().X
@@ -269,8 +269,8 @@ func (w *World) Step(input PlayerInput) {
 	}
 }
 
-func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
-	m = NewMatrix(IPt(10, 10))
+func RandomLevel1() (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
+	m = NewMatrix[Int](IPt(10, 10))
 	for i := 0; i < 10; i++ {
 		var pt Pt
 		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
@@ -282,9 +282,9 @@ func RandomLevel1() (m Matrix, pos1 []Pt, pos2 []Pt) {
 	return
 }
 
-func RandomLevel2() (m Matrix) {
+func RandomLevel2() (m Matrix[Int]) {
 	// Create matrix with obstacles.
-	m = NewMatrix(IPt(10, 10))
+	m = NewMatrix[Int](IPt(10, 10))
 	for i := 0; i < 0; i++ {
 		m.Set(m.RandomPos(), ONE)
 	}

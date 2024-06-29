@@ -4,16 +4,16 @@ import (
 	"slices"
 )
 
-type Pathfinding struct {
+type Pathfinding[T comparable] struct {
 	neighbors []int
 	visited   []bool
 	parents   []int
 	queue     []int
 	nDirs     int
-	m         Matrix
+	m         Matrix[T]
 }
 
-func (p *Pathfinding) Initialize(m Matrix) {
+func (p *Pathfinding[T]) Initialize(m Matrix[T], emptyVal T) {
 	// Keep reference to Matrix in order to transform Pts to ints and ints to
 	// Pts in the FindPath method.
 	p.m = m
@@ -47,7 +47,7 @@ func (p *Pathfinding) Initialize(m Matrix) {
 			ns := p.neighbors[index : index+p.nDirs]
 			for i := range dirs {
 				neighbor := pt.Plus(dirs[i])
-				if m.InBounds(neighbor) && m.Get(neighbor).Eq(I(0)) {
+				if m.InBounds(neighbor) && m.Get(neighbor) == emptyVal {
 					ns[i] = m.PtToIndex(neighbor).ToInt()
 				} else {
 					ns[i] = -1
@@ -63,7 +63,7 @@ func (p *Pathfinding) Initialize(m Matrix) {
 	p.parents = make([]int, len(p.neighbors)/p.nDirs)
 }
 
-func (p *Pathfinding) computePath(parents []int, end int) (path []Pt) {
+func (p *Pathfinding[T]) computePath(parents []int, end int) (path []Pt) {
 	node := end
 	for node >= 0 {
 		path = append(path, p.m.IndexToPt(I(node)))
@@ -73,7 +73,7 @@ func (p *Pathfinding) computePath(parents []int, end int) (path []Pt) {
 	return
 }
 
-func (p *Pathfinding) FindPath(startPt, endPt Pt) []Pt {
+func (p *Pathfinding[T]) FindPath(startPt, endPt Pt) []Pt {
 	// Convert Pts to ints.
 	start := p.m.PtToIndex(startPt).ToInt()
 	end := p.m.PtToIndex(endPt).ToInt()
@@ -113,8 +113,8 @@ func (p *Pathfinding) FindPath(startPt, endPt Pt) []Pt {
 	return []Pt{}
 }
 
-func FindPath(startPt, endPt Pt, m Matrix) []Pt {
-	var pathfinding Pathfinding
-	pathfinding.Initialize(m)
+func FindPath[T comparable](startPt, endPt Pt, m Matrix[T], emptyVal T) []Pt {
+	var pathfinding Pathfinding[T]
+	pathfinding.Initialize(m, emptyVal)
 	return pathfinding.FindPath(startPt, endPt)
 }
