@@ -146,21 +146,36 @@ func (g *Gui) UpdateGameOngoing() {
 
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		input.Move = true
-		tilePos := g.ScreenToTile(g.mousePt)
-		if tilePos.X.IsNegative() {
-			tilePos.X = ZERO
+		// See what is the closest distance to the center of an attackable tile.
+		closestPos := Pt{}
+		minDist := I(math.MaxInt64)
+		m := g.world.AttackableTiles.Clone()
+		m2 := g.world.Obstacles
+		pt := Pt{}
+
+		w := &g.world
+		for i := range w.Enemies {
+			m.Set(w.Enemies[i].Pos(), ZERO)
 		}
-		if tilePos.X.Geq(g.world.Obstacles.Size().X) {
-			tilePos.X = g.world.Obstacles.Size().X.Minus(ONE)
+
+		for pt.Y = ZERO; pt.Y.Lt(m.Size().Y); pt.Y.Inc() {
+			for pt.X = ZERO; pt.X.Lt(m.Size().X); pt.X.Inc() {
+				if g.world.Player.OnMap && m.Get(pt) != ZERO && m2.Get(pt) == ZERO ||
+					!g.world.Player.OnMap {
+					dist := g.TileToScreen(pt).To(g.mousePt).Len()
+					if dist.Lt(minDist) {
+						minDist = dist
+						closestPos = pt
+					}
+				}
+			}
 		}
-		if tilePos.Y.IsNegative() {
-			tilePos.Y = ZERO
+
+		closeEnough := minDist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
+		if closeEnough {
+			input.Move = true
+			input.MovePt = closestPos
 		}
-		if tilePos.Y.Geq(g.world.Obstacles.Size().Y) {
-			tilePos.Y = g.world.Obstacles.Size().Y.Minus(ONE)
-		}
-		input.MovePt = tilePos
 	}
 
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
@@ -189,7 +204,7 @@ func (g *Gui) UpdateGameOngoing() {
 			}
 		}
 
-		closeEnough := minDist.Lt(BlockSize.Times(I(220)).DivBy(I(100)))
+		closeEnough := minDist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Shoot = true
 			input.ShootPt = closestPos
@@ -698,7 +713,7 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = false
+	g.recording = true
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 		g.world = NewWorld(I(322))
