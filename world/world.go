@@ -209,6 +209,24 @@ func (w *World) computeAttackableTiles() {
 			}
 		}
 	}
+
+	// Mark all attackable tiles connected to the start with TWO.
+	FloodFill(w.AttackableTiles, w.Player.Pos, TWO)
+
+	// Eliminate tiles which were marked as attackable but are disconnected from
+	// the attackable region that contains the player's position.
+	// This is needed in order to eliminate tiles which are technically
+	// reachable if you respect the math, but which just look weird to people.
+	// Do the elimination by marking ONEs with ZERO and TWOs with ONEs.
+	for y := ZERO; y.Lt(rows); y.Inc() {
+		for x := ZERO; x.Lt(cols); x.Inc() {
+			if w.AttackableTiles.Get(Pt{x, y}) == TWO {
+				w.AttackableTiles.Set(Pt{x, y}, ONE)
+			} else if w.AttackableTiles.Get(Pt{x, y}) == ONE {
+				w.AttackableTiles.Set(Pt{x, y}, ZERO)
+			}
+		}
+	}
 }
 
 func (w *World) Step(input PlayerInput) {
