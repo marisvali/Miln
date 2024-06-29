@@ -220,6 +220,17 @@ func (w *World) computeAttackableTiles() {
 	w.AttackableTiles.IntersectWith(connectedTiles)
 }
 
+func (w *World) EnemyPositions() (m MatBool) {
+	m = NewMatBool(w.Obstacles.Size())
+	for i := range w.Enemies {
+		m.Set(w.Enemies[i].Pos())
+	}
+	for i := range w.SpawnPortals {
+		m.Set(w.SpawnPortals[i].Pos)
+	}
+	return
+}
+
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
 	w.computeAttackableTiles()

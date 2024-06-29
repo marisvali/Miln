@@ -60,9 +60,7 @@ func (e *EnemyBase) goToPlayer(w *World, m MatBool) {
 
 func getObstaclesAndEnemies(w *World) (m MatBool) {
 	m = w.Obstacles.Clone()
-	for _, enemy := range w.Enemies {
-		m.Set(enemy.Pos())
-	}
+	m.Add(w.EnemyPositions())
 	return
 }
 

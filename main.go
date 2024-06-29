@@ -146,28 +146,16 @@ func (g *Gui) UpdateGameOngoing() {
 
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		// See what is the closest distance to the center of an attackable tile.
+		// See what is the closest distance to the center of a free tile.
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
-		attackable := g.world.AttackableTiles.Clone()
-		obstacles := g.world.Obstacles
-		pt := Pt{}
 
-		w := &g.world
-		for i := range w.Enemies {
-			attackable.Clear(w.Enemies[i].Pos())
-		}
-
-		for pt.Y = ZERO; pt.Y.Lt(attackable.Size().Y); pt.Y.Inc() {
-			for pt.X = ZERO; pt.X.Lt(attackable.Size().X); pt.X.Inc() {
-				if g.world.Player.OnMap && attackable.At(pt) && !obstacles.At(pt) ||
-					!g.world.Player.OnMap {
-					dist := g.TileToScreen(pt).To(g.mousePt).Len()
-					if dist.Lt(minDist) {
-						minDist = dist
-						closestPos = pt
-					}
-				}
+		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
+		for _, pos := range freePositions {
+			dist := g.TileToScreen(pos).To(g.mousePt).Len()
+			if dist.Lt(minDist) {
+				minDist = dist
+				closestPos = pos
 			}
 		}
 
@@ -182,25 +170,13 @@ func (g *Gui) UpdateGameOngoing() {
 		// See what is the closest distance to an enemy, from the click point.
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
-		for i := range g.world.Enemies {
-			if g.world.AttackableTiles.At(g.world.Enemies[i].Pos()) {
-				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos())
-				dist := enemyPos.To(g.mousePt).Len()
-				if dist.Lt(minDist) {
-					minDist = dist
-					closestPos = g.world.Enemies[i].Pos()
-				}
-			}
-		}
 
-		for i := range g.world.SpawnPortals {
-			if g.world.AttackableTiles.At(g.world.SpawnPortals[i].Pos) {
-				enemyPos := g.TileToScreen(g.world.SpawnPortals[i].Pos)
-				dist := enemyPos.To(g.mousePt).Len()
-				if dist.Lt(minDist) {
-					minDist = dist
-					closestPos = g.world.SpawnPortals[i].Pos
-				}
+		attackablePositions := g.world.EnemyPositions().ToSlice()
+		for _, pos := range attackablePositions {
+			dist := g.TileToScreen(pos).To(g.mousePt).Len()
+			if dist.Lt(minDist) {
+				minDist = dist
+				closestPos = pos
 			}
 		}
 

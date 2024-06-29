@@ -25,6 +25,21 @@ func NewPlayer() (p Player) {
 	return
 }
 
+// ComputeFreePositions returns a matrix that indicates the positions where the
+// player can move to from his current state.
+func (p *Player) ComputeFreePositions(w *World) (free MatBool) {
+	if p.OnMap {
+		free = w.AttackableTiles.Clone()
+	} else {
+		free = NewMatBool(w.Obstacles.Size())
+		free.SetAll()
+	}
+
+	free.Subtract(w.Obstacles)
+	free.Subtract(w.EnemyPositions())
+	return
+}
+
 func (p *Player) Step(w *World, input PlayerInput) {
 	// See about the beam.
 	if w.Beam.Idx.Gt(ZERO) {
@@ -36,42 +51,34 @@ func (p *Player) Step(w *World, input PlayerInput) {
 		return
 	}
 
-	onEnemy := false
-	for i := range w.Enemies {
-		if w.Enemies[i].Pos() == input.MovePt {
-			onEnemy = true
-			break
-		}
-	}
+	if input.Move {
+		free := p.ComputeFreePositions(w)
+		if free.At(input.MovePt) {
+			p.Pos = input.MovePt
+			p.OnMap = true
 
-	if input.Move &&
-		!w.Obstacles.At(input.MovePt) &&
-		(w.AttackableTiles.At(input.MovePt) || !w.Player.OnMap) &&
-		!onEnemy {
-		p.Pos = input.MovePt
-		p.OnMap = true
-
-		// Collect ammos.
-		newAmmos := make([]Ammo, 0)
-		for i := range w.Ammos {
-			if w.Ammos[i].Pos == w.Player.Pos {
-				w.Player.AmmoCount.Add(w.Ammos[i].Count)
-			} else {
-				newAmmos = append(newAmmos, w.Ammos[i])
+			// Collect ammos.
+			newAmmos := make([]Ammo, 0)
+			for i := range w.Ammos {
+				if w.Ammos[i].Pos == w.Player.Pos {
+					w.Player.AmmoCount.Add(w.Ammos[i].Count)
+				} else {
+					newAmmos = append(newAmmos, w.Ammos[i])
+				}
 			}
-		}
-		w.Ammos = newAmmos
+			w.Ammos = newAmmos
 
-		// Collect keys.
-		newKeys := make([]Key, 0)
-		for i := range w.Keys {
-			if w.Keys[i].Pos == p.Pos {
-				p.HitPermissions.Add(w.Keys[i].Permissions)
-			} else {
-				newKeys = append(newKeys, w.Keys[i])
+			// Collect keys.
+			newKeys := make([]Key, 0)
+			for i := range w.Keys {
+				if w.Keys[i].Pos == p.Pos {
+					p.HitPermissions.Add(w.Keys[i].Permissions)
+				} else {
+					newKeys = append(newKeys, w.Keys[i])
+				}
 			}
+			w.Keys = newKeys
 		}
-		w.Keys = newKeys
 	}
 
 	if input.Shoot &&

@@ -26,8 +26,20 @@ func (m *MatBool) Set(pos Pt) {
 	m.Matrix.Set(pos, true)
 }
 
+func (m *MatBool) SetAll() {
+	for i := range m.cells {
+		m.cells[i] = true
+	}
+}
+
 func (m *MatBool) Clear(pos Pt) {
 	m.Matrix.Set(pos, false)
+}
+
+func (m *MatBool) ClearAll() {
+	for i := range m.cells {
+		m.cells[i] = false
+	}
 }
 
 // Add performs the union operation between the two sets represented by the
@@ -41,6 +53,20 @@ func (m *MatBool) Add(other MatBool) {
 
 	for i := range m.cells {
 		m.cells[i] = m.cells[i] || other.cells[i]
+	}
+}
+
+// Subtract performs the subtraction operation between the two sets represented
+// by the matrices. As in, what's true in other becomes false in m.
+func (m *MatBool) Subtract(other MatBool) {
+	if m.size != other.size {
+		Check(fmt.Errorf("trying to combine matrices of different sizes: "+
+			"(%d, %d) and (%d, %d)", m.size.X.ToInt(), m.size.Y.ToInt(),
+			other.size.X.ToInt(), other.size.Y.ToInt()))
+	}
+
+	for i := range m.cells {
+		m.cells[i] = m.cells[i] && !other.cells[i]
 	}
 }
 
@@ -58,7 +84,16 @@ func (m *MatBool) IntersectWith(other MatBool) {
 	}
 }
 
-func (m *MatBool) RandomUnoccupiedPos() (p Pt) {
+// Negate changes the matrix so that each position has the opposite value (true
+// becomes false, false becomes true).
+func (m *MatBool) Negate() {
+	for i := range m.cells {
+		m.cells[i] = !m.cells[i]
+	}
+	return
+}
+
+func (m MatBool) RandomUnoccupiedPos() (p Pt) {
 	for {
 		p = m.RandomPos()
 		if !m.Get(p) {
@@ -97,4 +132,20 @@ func (m MatBool) ConnectedPositions(start Pt) (res MatBool) {
 		}
 	}
 	return
+}
+
+func (m MatBool) ToSlice() (s []Pt) {
+	nCols := m.size.X.ToInt()
+	for i := range m.cells {
+		if m.cells[i] {
+			s = append(s, IPt(i%nCols, i/nCols))
+		}
+	}
+	return
+}
+
+func (m *MatBool) FromSlice(s []Pt) {
+	for i := range s {
+		m.Set(s[i])
+	}
 }
