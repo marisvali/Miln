@@ -23,12 +23,12 @@ func TestZip(t *testing.T) {
 func TestMatrixFromString(t *testing.T) {
 	mapping := map[byte]Int{'x': ONE}
 
-	expected1 := NewMatrix(IPt(3, 2))
+	expected1 := NewMatrix[Int](IPt(3, 2))
 	expected1.Set(IPt(0, 1), ONE)
 	result1 := MatrixFromString("\nabc\nxyz", mapping)
 	assert.Equal(t, expected1, result1)
 
-	expected2 := NewMatrix(IPt(7, 3))
+	expected2 := NewMatrix[Int](IPt(7, 3))
 	expected2.Set(IPt(4, 0), ONE)
 	expected2.Set(IPt(2, 1), ONE)
 	result2 := MatrixFromString(`
