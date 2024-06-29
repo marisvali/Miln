@@ -3,52 +3,6 @@ package world
 import . "github.com/marisvali/miln/gamelib"
 
 func Level1() string {
-	//	return `
-	//xxxxxxxxxxxxxxx
-	//x           x x
-	//x xx  1  x xx x
-	//x x    xxx x  x
-	//xxxx          x
-	//x  x xxxx     x
-	//x         x   x
-	//x xxx   xxx   x
-	//x     x   x   x
-	//x   xxx   xxx x
-	//x     x       x
-	//x     xxxx    x
-	//x xx   x2  xx x
-	//x  x          x
-	//xxxxxxxxxxxxxxx
-	//`
-	//	return `
-	//xxxxxxxxxxxxxxx
-	//x             x
-	//x     1       x
-	//x        x    x
-	//x        x    x
-	//x   xxxxxx    x
-	//x             x
-	//x      xx     x
-	//x       x     x
-	//x       x     x
-	//x       xx    x
-	//x xxx         x
-	//x   x   2     x
-	//x             x
-	//xxxxxxxxxxxxxxx
-	//`
-	//	return `
-	//
-	//     1
-	//        x
-	//        x
-	//   xxxxxx
-	//
-	//      xx
-	//       x
-	//      2x
-	//       xx
-	//`
 	return `
    1  
  xxxxx

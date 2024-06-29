@@ -29,16 +29,16 @@ type BigStruct struct {
 }
 
 func TestCopy(t *testing.T) {
-	//var a, b BigStruct
+	// var a, b BigStruct
 	var v []BigStruct
 	v = append(v, BigStruct{})
 	v = append(v, BigStruct{})
-	for i, _ := range v {
-		//for i := range v {
-		//for i := 0; i < len(v); i++ {
+	for i := range v {
+		// for i := range v {
+		// for i := 0; i < len(v); i++ {
 		print(i)
 		print(v[i].v2)
-		//print(c.v2)
+		// print(c.v2)
 	}
 	assert.True(t, true)
 }
@@ -59,7 +59,7 @@ func TestMapOfType(t *testing.T) {
 	v["b"] = 5
 	println(v["b"])
 
-	//m := []reflect.Kind{reflect.String, reflect.Int, reflect.Float32}
+	// m := []reflect.Kind{reflect.String, reflect.Int, reflect.Float32}
 	var m map[reflect.Kind]int
 	m = make(map[reflect.Kind]int)
 	m[reflect.Int] = 2
@@ -68,7 +68,7 @@ func TestMapOfType(t *testing.T) {
 
 	m2 := make(map[reflect.Type]int)
 	m2[reflect.TypeOf(A{})] = 13
-	//m2[A] = 13
+	// m2[A] = 13
 
 	m3 := make(map[interface{}]int)
 	m3[A{}] = 4

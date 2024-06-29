@@ -1,5 +1,7 @@
+package gamelib
+
 /*
-ints provides integer operations that check for overflow.
+Int provides integer operations that check for overflow.
 
 The general problem:
 You want to do integer operations and you want to make sure you never overflow.
@@ -73,7 +75,7 @@ Pros:
 - I can use algorithms to analyze the information.
 Cons:
 - I can only see things like the position of every item and character at a
-certain moment. I can't see the state of every algorithm (pathfinding, AI etc).
+certain moment. I can't see the state of every algorithm (pathfinding, AI etc.).
 That would require a full memory dump at every frame, which would very
 expensive.
 
@@ -91,7 +93,6 @@ insight. So now you are spying on a lot of people so that you get a little bit
 of insight from each one, instead of deeply analyzing a few people and getting
 most of your insight that way.
 */
-package gamelib
 
 import (
 	"fmt"
@@ -192,7 +193,7 @@ func (a *Int) Dec() {
 	a.Val--
 }
 
-// Inc() when a > 0, Dec() when a < 0
+// EnlargeByOne does Inc() when a > 0, Dec() when a < 0
 func (a *Int) EnlargeByOne() {
 	if a.Val >= 0 {
 		a.Inc()
@@ -326,11 +327,11 @@ func sqrt(a uint64) uint32 {
 
 func (a Int) Sqrt() Int {
 	// float square root - faster but (potential) non-deterministic
-	//res := math.Sqrt(float64(a.Val))
-	//if math.IsNaN(res) {
+	// res := math.Sqrt(float64(a.Val))
+	// if math.IsNaN(res) {
 	//	panic(fmt.Errorf("sqrt failed (got NaN) for: %d", a.Val))
-	//}
-	//return Int{int64(res)}
+	// }
+	// return Int{int64(res)}
 
 	// int square root - 5 times slower than floats, but deterministic
 	if a.Val < 0 {

@@ -52,19 +52,3 @@ func (m *Matrix[T]) RandomPos() Pt {
 	pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
 	return pt
 }
-
-func (m *Matrix[T]) RandomUnoccupiedPos(occupiedVal T) (p Pt) {
-	for {
-		p = m.RandomPos()
-		if m.Get(p) != occupiedVal {
-			return
-		}
-	}
-}
-
-// TODO: Should probably create a new type of matrix, a bool one, and give it this occupied logic
-func (m *Matrix[T]) NewlyOccupiedRandomPos() (p Pt, occupiedVal T) {
-	p = m.RandomUnoccupiedPos(occupiedVal)
-	m.Set(p, occupiedVal)
-	return
-}

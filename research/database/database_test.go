@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -41,7 +42,7 @@ func TestDatabase(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 	// Loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
 		var c1, c2, c3, c4 int
@@ -95,7 +96,7 @@ func TestDatabaseBytes(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
+	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 	// Loop through rows, using Scan to assign column data to struct fields.
 	for rows.Next() {
 		var data []byte
@@ -111,7 +112,9 @@ func TestDatabaseBytes(t *testing.T) {
 
 func TestDatabaseUtils(t *testing.T) {
 	db := ConnectToDB()
-	AddDataToDB(db, []byte("what do you mean"))
+	id := uuid.New()
+	InitializeIdInDB(db, id)
+	UploadDataToDB(db, id, []byte("what do you mean"))
 	InspectDataFromDB(db)
 	assert.True(t, true)
 }

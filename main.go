@@ -20,7 +20,7 @@ import (
 	"slices"
 )
 
-var BlockSize Int = I(80)
+var BlockSize = I(80)
 
 //go:embed data/*
 var embeddedFiles embed.FS
@@ -182,7 +182,7 @@ func (g *Gui) UpdateGameOngoing() {
 		// See what is the closest distance to an enemy, from the click point.
 		closestPos := Pt{}
 		minDist := I(math.MaxInt64)
-		for i, _ := range g.world.Enemies {
+		for i := range g.world.Enemies {
 			if g.world.AttackableTiles.Get(g.world.Enemies[i].Pos()).IsPositive() {
 				enemyPos := g.TileToScreen(g.world.Enemies[i].Pos())
 				dist := enemyPos.To(g.mousePt).Len()
@@ -394,7 +394,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	for i := range g.world.SpawnPortals {
 		p := &g.world.SpawnPortals[i]
 		g.DrawTile(screen, g.imgSpawnPortal, p.Pos)
-		g.DrawHealth(screen, g.imgEnemyHealth, p.MaxHealth, p.Health, p.Pos)
+		g.DrawHealth(screen, g.imgEnemyHealth, p.Health, p.Pos)
 	}
 
 	// Draw ammo.
@@ -450,17 +450,17 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw background.
 	// percent starts from 100 and goes down to 0
-	//percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
+	// percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
 
 	// gray needs to be at 80 when percent is at 0 and 0 when percent is at 100.
-	//var gray Int
-	//if percent.Gt(ZERO) {
+	// var gray Int
+	// if percent.Gt(ZERO) {
 	//	gray = (I(100).Minus(percent)).Times(I(30)).DivBy(I(100))
-	//} else {
+	// } else {
 	//	gray = I(50)
-	//}
-	//v := uint8(gray.ToInt())
-	//screen.Fill(color.RGBA{v, v, v, 255})
+	// }
+	// v := uint8(gray.ToInt())
+	// screen.Fill(color.RGBA{v, v, v, 255})
 	screen.Fill(color.RGBA{0, 0, 0, 255})
 
 	{
@@ -471,11 +471,11 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		g.DrawPlayRegion(playRegion)
 	}
 
-	//buttonRegionX := I(screen.Bounds().Dx()).Minus(g.buttonRegionWidth)
+	// buttonRegionX := I(screen.Bounds().Dx()).Minus(g.buttonRegionWidth)
 	screenSize := IPt(screen.Bounds().Dx(), screen.Bounds().Dy())
 	{
 		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight)}
-		//lowerRight := upperLeft.Plus(Pt{buttonRegionX, g.textHeight.DivBy(TWO)})
+		// lowerRight := upperLeft.Plus(Pt{buttonRegionX, g.textHeight.DivBy(TWO)})
 		lowerRight := Pt{screenSize.X, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		textRegion.Fill(color.RGBA{215, 215, 15, 255})
@@ -483,8 +483,8 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	{
-		//upperLeft := Pt{buttonRegionX, I(screen.Bounds().Dy()).Minus(g.textHeight)}
-		//lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
+		// upperLeft := Pt{buttonRegionX, I(screen.Bounds().Dy()).Minus(g.textHeight)}
+		// lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
 		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		lowerRight := Pt{screenSize.X, screenSize.Y}
 		buttonRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
@@ -493,7 +493,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Output TPS (ticks per second, which is like frames per second).
-	//ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+	// ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) DrawButtons(screen *ebiten.Image) {
@@ -533,7 +533,7 @@ func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
 	} else if g.state == GameLost {
 		message = "You lost."
 	} else if g.state == Playback {
-		//message = fmt.Sprintf("Playing back frame %d / %d", g.frameIdx, len(g.playerInputs))
+		// message = fmt.Sprintf("Playing back frame %d / %d", g.frameIdx, len(g.playerInputs))
 	} else {
 		Check(fmt.Errorf("unhandled game state: %d", g.state))
 	}
@@ -607,7 +607,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	}
 
 	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
-	g.DrawHealth(screen, g.imgEnemyHealth, e.MaxHealth(), e.Health(), e.Pos())
+	g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 }
 
 func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
@@ -616,7 +616,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	}
 	mask := ebiten.NewImageFromImage(g.imgPlayer)
 	// Draw mask of move cooldown.
-	//{
+	// {
 	//	percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
 	//	var alpha Int
 	//	if percent.Gt(ZERO) {
@@ -640,13 +640,13 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	//	lineWidth := percent.Times(totalWidth).DivBy(I(100))
 	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
 	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
-	//}
+	// }
 	g.DrawTile(screen, g.imgPlayer, p.Pos)
 	g.DrawTile(screen, mask, p.Pos)
-	g.DrawHealth(screen, g.imgPlayerHealth, p.MaxHealth, p.Health, p.Pos)
+	g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos)
 }
 
-func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, maxHealth Int, currentHealth Int, tilePos Pt) {
+func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, currentHealth Int, tilePos Pt) {
 	g.imgTileOverlay.Clear()
 	blockSize := float64(g.imgEnemyHealth.Bounds().Dy())
 	for i := I(0); i.Lt(currentHealth); i.Inc() {
@@ -679,7 +679,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTree = g.LoadImage("data/tree.png")
 		g.imgPlayer = g.LoadImage("data/player.png")
 		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
-		//g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
+		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
 		g.imgGremlin = g.LoadImage("data/enemy2.png")
 		g.imgPillar = g.LoadImage("data/enemy3.png")
 		g.imgHound = g.LoadImage("data/enemy4.png")
@@ -708,7 +708,7 @@ func (g *Gui) loadGuiData() {
 func main() {
 	var g Gui
 	g.db = ConnectToDB()
-	//g.world = NewWorld(RInt(I(0), I(10000000)))
+	// g.world = NewWorld(RInt(I(0), I(10000000)))
 
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
@@ -720,12 +720,12 @@ func main() {
 		InitializeIdInDB(g.db, g.world.Id)
 		UploadDataToDB(g.db, g.world.Id, g.world.SerializedPlaythrough())
 	} else {
-		//g.recordingFile = GetLatestRecordingFile()
-		//if g.recordingFile != "" {
+		// g.recordingFile = GetLatestRecordingFile()
+		// if g.recordingFile != "" {
 		//	g.playthrough = DeserializePlaythrough(ReadFile(g.recordingFile))
-		//}
+		// }
 
-		//id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
+		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
 		id, err := uuid.Parse("687f5f75-7fdc-43ae-b9c5-31c86b7d5d25")
 		Check(err)
 		g.playthrough = DeserializePlaythrough(DownloadDataFromDB(g.db, id))

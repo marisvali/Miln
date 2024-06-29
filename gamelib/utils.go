@@ -15,6 +15,7 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"io/fs"
 	"math"
 	"os"
 	"path"
@@ -93,23 +94,23 @@ func GetLatestRecordingFile() string {
 }
 
 //
-//func TouchFile(name string) {
+// func TouchFile(name string) {
 //	name = "e:/" + name
 //	file, err := os.OpenFile(name, os.O_RDONLY|os.O_CREATE, 0644)
 //	Check(err)
 //	err = file.Close()
 //	Check(err)
-//}
+// }
 //
-//func FileExists(name string) bool {
+// func FileExists(name string) bool {
 //	name = "e:/" + name
 //	if _, err := os.Stat(name); err == nil {
 //		return true
 //	}
 //	return false
-//}
+// }
 //
-//func WaitForFile(name string) {
+// func WaitForFile(name string) {
 //	name = "e:/" + name
 //	for {
 //		if _, err := os.Stat(name); err == nil {
@@ -126,15 +127,15 @@ func GetLatestRecordingFile() string {
 //			Check(err)
 //		}
 //	}
-//}
+// }
 //
-//func DeleteFile(name string) {
+// func DeleteFile(name string) {
 //	name = "e:/" + name
 //	err := os.Remove(name)
 //	if !errors.Is(err, os.ErrNotExist) {
 //		Check(err)
 //	}
-//}
+// }
 
 func Serialize(w io.Writer, data any) {
 	err := binary.Write(w, binary.LittleEndian, data)
@@ -169,17 +170,17 @@ func Duration(function TimedFunction) float64 {
 func ReadAllText(filename string) string {
 	file, err := os.Open(filename)
 	Check(err)
-	bytes, err := io.ReadAll(file)
+	data, err := io.ReadAll(file)
 	Check(err)
-	return string(bytes)
+	return string(data)
 }
 
 func LoadJSON(filename string, v any) {
 	file, err := os.Open(filename)
 	Check(err)
-	bytes, err := io.ReadAll(file)
+	data, err := io.ReadAll(file)
 	Check(err)
-	err = json.Unmarshal(bytes, v)
+	err = json.Unmarshal(data, v)
 	Check(err)
 }
 
@@ -238,7 +239,7 @@ func Unzip(data []byte) []byte {
 	f := r.File[0]
 	rc, err := f.Open()
 	Check(err)
-	defer rc.Close()
+	defer func(rc io.ReadCloser) { Check(rc.Close()) }(rc)
 
 	// Keep reading bytes, 1024 bytes at a time.
 	buffer := make([]byte, 1024)
@@ -292,7 +293,7 @@ func ZipToFile(filename string, data []byte) {
 
 func LoadImage(str string) *ebiten.Image {
 	file, err := os.Open(str)
-	defer file.Close()
+	defer func(file *os.File) { Check(file.Close()) }(file)
 	Check(err)
 
 	img, _, err := image.Decode(file)
@@ -304,9 +305,9 @@ func LoadImage(str string) *ebiten.Image {
 	return ebiten.NewImageFromImage(img)
 }
 
-func LoadImageEmbedded(str string, fs *embed.FS) *ebiten.Image {
-	file, err := fs.Open(str)
-	defer file.Close()
+func LoadImageEmbedded(str string, efs *embed.FS) *ebiten.Image {
+	file, err := efs.Open(str)
+	defer func(file fs.File) { Check(file.Close()) }(file)
 	Check(err)
 
 	img, _, err := image.Decode(file)
@@ -386,7 +387,7 @@ func UploadDataToDB(db *sql.DB, id uuid.UUID, data []byte) {
 func DownloadDataFromDB(db *sql.DB, id uuid.UUID) (data []byte) {
 	rows, err := db.Query("SELECT playthrough FROM test4 WHERE id = ?", id.String())
 	Check(err)
-	defer rows.Close()
+	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 	if !rows.Next() {
 		Check(fmt.Errorf("id not found: %s", id.String()))
 	}
@@ -398,7 +399,7 @@ func DownloadDataFromDB(db *sql.DB, id uuid.UUID) (data []byte) {
 func InspectDataFromDB(db *sql.DB) {
 	rows, err := db.Query("SELECT * FROM test4")
 	Check(err)
-	defer rows.Close()
+	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 
 	for rows.Next() {
 		var data []byte

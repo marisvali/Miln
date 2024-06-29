@@ -38,7 +38,7 @@ func (p Pt) DivBy(divide Int) Pt {
 	return Pt{p.X.DivBy(divide), p.Y.DivBy(divide)}
 }
 
-// Reflect p around vec.
+// Reflected returns p reflected around vec.
 // We don't assume that vec is normalized.
 func (p Pt) Reflected(vec Pt) Pt {
 	// r = p − 2(p⋅vec)vec

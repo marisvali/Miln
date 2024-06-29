@@ -43,15 +43,15 @@ func TestPt_AddLen_TooSmallToHaveEffect(t *testing.T) {
 	p.AddLen(extraLen)
 	// Because we're working with integers, we won't ever get the exact length
 	// we want. Sometimes it's not possible to keep a vector's direction the
-	// same, expressed in integers and extend it's length by 1.
-	// For vector (800, 130) the length is 810 (real length 810.493..).
+	// same, expressed in integers and extend its length by 1.
+	// For vector (800, 130) the length is 810 (real length 810.493...).
 	// In order to extend the length by 1 I would need to get length 811.
 	// Which means I need a vector with the same direction but with length 811
-	// or 811.999..
+	// or 811.999...
 	// The vector with the same direction and length 811 has coordinates ~=
-	// (800.499.., 130.081..).
+	// (800.499..., 130.081...).
 	// The vector with the same direction and length 811.99 has coordinates ~=
-	// (801.486.., 130.241..).
+	// (801.486..., 130.241...).
 	// So there's no way to get what we want.
 	assert.NotEqual(t, oldLen.Plus(extraLen), p.Len())
 	assert.Equal(t, oldLen, p.Len())
@@ -62,7 +62,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 	// The reasoning for this test is very similar to the one for SetLen.
 	// See that one first.
 
-	//extraLen := I(int64(math.Sqrt(float64(math.MaxInt64)) / 100))
+	// extraLen := I(int64(math.Sqrt(float64(math.MaxInt64)) / 100))
 	extraLen := I(100)
 
 	// Get maximum error for adding length to vectors with coordinates
@@ -75,7 +75,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 				diffs = append(diffs, diff)
 			}
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 8.0) // < 8%
 	}
@@ -90,7 +90,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 				diffs = append(diffs, diff)
 			}
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 3.0) // < 3%
 	}
@@ -105,7 +105,7 @@ func TestPt_AddLen_ErrorTolerance(t *testing.T) {
 			diff := AddLenGetDif(randomPt, extraLen)
 			diffs = append(diffs, diff)
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 3.0) // < 3%
 	}
@@ -191,7 +191,7 @@ func TestPt_SetLen(t *testing.T) {
 				diffs = append(diffs, diff)
 			}
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 7.0) // < 7%
 	}
@@ -206,7 +206,7 @@ func TestPt_SetLen(t *testing.T) {
 				diffs = append(diffs, diff)
 			}
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 0.7) // < 0.7%
 	}
@@ -221,7 +221,7 @@ func TestPt_SetLen(t *testing.T) {
 			diff := SetLenGetDif(randomPt, targetLen)
 			diffs = append(diffs, diff)
 		}
-		//fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
+		// fmt.Println("maximum diff percentage-wise:", slices.Max(diffs))
 		maxDiff := slices.Max(diffs)
 		assert.Less(t, maxDiff, 0.07) // < 0.07%
 	}

@@ -8,7 +8,6 @@ import (
 	"math"
 )
 
-var PlayerMoveCooldown = I(20)
 var GremlinMoveCooldown = I(50)
 var GremlinFreezeCooldown = I(30)
 var GremlinMaxHealth = I(1)
@@ -96,28 +95,28 @@ func NewWorld(seed Int) (w World) {
 	}
 
 	// Obstacles
-	//w.Obstacles = RandomLevel2()
+	// w.Obstacles = RandomLevel2()
 
 	// Place each item at an unoccupied position (and occupy that position).
-	//occ := w.Obstacles.Clone() // Keeps track of occupied positions.
+	// occ := w.Obstacles.Clone() // Keeps track of occupied positions.
 
-	//var limit int
-	//limit = RInt(I(2), I(4)).ToInt()
-	//for i := 0; i < limit; i++ {
+	// var limit int
+	// limit = RInt(I(2), I(4)).ToInt()
+	// for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, occ.NewlyOccupiedRandomPos()))
-	//}
-	//limit = RInt(I(17), I(20)).ToInt()
-	//for i := 0; i < limit; i++ {
+	// }
+	// limit = RInt(I(17), I(20)).ToInt()
+	// for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
-	//}
-	//limit = RInt(I(1), I(1)).ToInt()
-	//for i := 0; i < limit; i++ {
+	// }
+	// limit = RInt(I(1), I(1)).ToInt()
+	// for i := 0; i < limit; i++ {
 	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, occ.NewlyOccupiedRandomPos()))
-	//}
+	// }
 
-	//w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
+	// w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
 
-	//w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
+	// w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
 
 	// Params
 	w.BlockSize = I(1000)
@@ -255,7 +254,7 @@ func (w *World) Step(input PlayerInput) {
 
 	// Cull dead portals.
 	newPortals := []SpawnPortal{}
-	for i, _ := range w.SpawnPortals {
+	for i := range w.SpawnPortals {
 		if w.SpawnPortals[i].Health.IsPositive() {
 			newPortals = append(newPortals, w.SpawnPortals[i])
 		}
@@ -269,24 +268,24 @@ func (w *World) Step(input PlayerInput) {
 	}
 }
 
-func RandomLevel1() (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
-	m = NewMatrix[Int](IPt(10, 10))
-	for i := 0; i < 10; i++ {
-		var pt Pt
-		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
-		pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
-		m.Set(pt, ONE)
-	}
-	pos1 = append(pos1, IPt(0, 0))
-	pos2 = append(pos2, IPt(2, 2))
-	return
-}
-
-func RandomLevel2() (m Matrix[Int]) {
-	// Create matrix with obstacles.
-	m = NewMatrix[Int](IPt(10, 10))
-	for i := 0; i < 0; i++ {
-		m.Set(m.RandomPos(), ONE)
-	}
-	return
-}
+// func RandomLevel1() (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
+// 	m = NewMatrix[Int](IPt(10, 10))
+// 	for i := 0; i < 10; i++ {
+// 		var pt Pt
+// 		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
+// 		pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
+// 		m.Set(pt, ONE)
+// 	}
+// 	pos1 = append(pos1, IPt(0, 0))
+// 	pos2 = append(pos2, IPt(2, 2))
+// 	return
+// }
+//
+// func RandomLevel2() (m Matrix[Int]) {
+// 	// Create matrix with obstacles.
+// 	m = NewMatrix[Int](IPt(10, 10))
+// 	for i := 0; i < 0; i++ {
+// 		m.Set(m.RandomPos(), ONE)
+// 	}
+// 	return
+// }

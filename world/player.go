@@ -78,14 +78,14 @@ func (p *Player) Step(w *World, input PlayerInput) {
 		!w.AttackableTiles.Get(input.ShootPt).IsZero() {
 
 		shotEnemies := []*Enemy{}
-		for i, _ := range w.Enemies {
+		for i := range w.Enemies {
 			if w.Enemies[i].Pos().Eq(input.ShootPt) {
 				shotEnemies = append(shotEnemies, &w.Enemies[i])
 			}
 		}
 
 		shotPortals := []*SpawnPortal{}
-		for i, _ := range w.SpawnPortals {
+		for i := range w.SpawnPortals {
 			if w.SpawnPortals[i].Pos.Eq(input.ShootPt) {
 				shotPortals = append(shotPortals, &w.SpawnPortals[i])
 			}
