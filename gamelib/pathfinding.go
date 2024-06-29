@@ -13,7 +13,7 @@ type Pathfinding[T comparable] struct {
 	m         Matrix[T]
 }
 
-func (p *Pathfinding[T]) Initialize(m Matrix[T], emptyVal T) {
+func NewPathfinding[T comparable](m Matrix[T], emptyVal T) (p Pathfinding[T]) {
 	// Keep reference to Matrix in order to transform Pts to ints and ints to
 	// Pts in the FindPath method.
 	p.m = m
@@ -61,6 +61,7 @@ func (p *Pathfinding[T]) Initialize(m Matrix[T], emptyVal T) {
 	// These slices will never be resized.
 	p.visited = make([]bool, len(p.neighbors)/p.nDirs)
 	p.parents = make([]int, len(p.neighbors)/p.nDirs)
+	return
 }
 
 func (p *Pathfinding[T]) computePath(parents []int, end int) (path []Pt) {
@@ -114,7 +115,6 @@ func (p *Pathfinding[T]) FindPath(startPt, endPt Pt) []Pt {
 }
 
 func FindPath[T comparable](startPt, endPt Pt, m Matrix[T], emptyVal T) []Pt {
-	var pathfinding Pathfinding[T]
-	pathfinding.Initialize(m, emptyVal)
-	return pathfinding.FindPath(startPt, endPt)
+	p := NewPathfinding(m, emptyVal)
+	return p.FindPath(startPt, endPt)
 }
