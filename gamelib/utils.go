@@ -17,6 +17,8 @@ import (
 	"io"
 	"io/fs"
 	"math"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -359,7 +361,46 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 	return mask
 }
 
-func ConnectToDB() *sql.DB {
+func sendDataToDbHttp(id uuid.UUID, data []byte) {
+	url := "https://playful-patterns.com/submit-playthrough.php"
+
+	// Create a buffer to write our multipart form data.
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	err := writer.WriteField("id", id.String())
+	Check(err)
+	if data != nil {
+		part, err := writer.CreateFormFile("playthrough", "rima")
+		Check(err)
+		_, err = part.Write(data)
+		Check(err)
+	}
+	err = writer.Close()
+	Check(err)
+
+	// Create a POST request with the multipart form data.
+	request, err := http.NewRequest("POST", url, &requestBody)
+	Check(err)
+	request.Header.Set("content-type", writer.FormDataContentType())
+
+	// Perform the request.
+	client := &http.Client{}
+	response, err := client.Do(request)
+	Check(err)
+	if response.StatusCode != 200 {
+		Check(fmt.Errorf("http request failed: %d", response.StatusCode))
+	}
+}
+
+func InitializeIdInDbHttp(id uuid.UUID) {
+	sendDataToDbHttp(id, nil)
+}
+
+func UploadDataToDbHttp(id uuid.UUID, data []byte) {
+	sendDataToDbHttp(id, data)
+}
+
+func ConnectToDbSql() *sql.DB {
 	cfg := mysql.Config{
 		User:                 os.Getenv("MILN_DBUSER"),
 		Passwd:               os.Getenv("MILN_DBPASSWORD"),
@@ -371,20 +412,22 @@ func ConnectToDB() *sql.DB {
 
 	db, err := sql.Open("mysql", cfg.FormatDSN())
 	Check(err)
+	err = db.Ping()
+	Check(err)
 	return db
 }
 
-func InitializeIdInDB(db *sql.DB, id uuid.UUID) {
+func InitializeIdInDbSql(db *sql.DB, id uuid.UUID) {
 	_, err := db.Exec("INSERT INTO test4 (id) VALUES (?)", id.String())
 	Check(err)
 }
 
-func UploadDataToDB(db *sql.DB, id uuid.UUID, data []byte) {
+func UploadDataToDbSql(db *sql.DB, id uuid.UUID, data []byte) {
 	_, err := db.Exec("UPDATE test4 SET playthrough = ? WHERE id = ?", data, id.String())
 	Check(err)
 }
 
-func DownloadDataFromDB(db *sql.DB, id uuid.UUID) (data []byte) {
+func DownloadDataFromDbSql(db *sql.DB, id uuid.UUID) (data []byte) {
 	rows, err := db.Query("SELECT playthrough FROM test4 WHERE id = ?", id.String())
 	Check(err)
 	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
@@ -396,7 +439,7 @@ func DownloadDataFromDB(db *sql.DB, id uuid.UUID) (data []byte) {
 	return
 }
 
-func InspectDataFromDB(db *sql.DB) {
+func InspectDataFromDbSql(db *sql.DB) {
 	rows, err := db.Query("SELECT * FROM test4")
 	Check(err)
 	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)

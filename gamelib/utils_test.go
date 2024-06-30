@@ -1,6 +1,7 @@
 package gamelib
 
 import (
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -39,29 +40,41 @@ func TestMatrixFromString(t *testing.T) {
 	assert.Equal(t, expected2, result2)
 }
 
-func TestFloodFill(t *testing.T) {
-	m1 := MatrixFromString(`
+func TestConnectedPositions(t *testing.T) {
+	var m1 MatBool
+	m1.Matrix = MatrixFromString(`
 x---x--
 --x-xx-
 --x----
-`, map[byte]Int{'x': ONE})
+`, map[byte]bool{'x': true})
 
-	expected1 := MatrixFromString(`
+	var expected1 MatBool
+	expected1.Matrix = MatrixFromString(`
 x---x--
 --x-xx-
 --x----
-`, map[byte]Int{'x': ONE, '-': TWO})
+`, map[byte]bool{'x': true, '-': false})
 
-	result1 := m1.Clone()
-	FloodFill(result1, IPt(1, 0), TWO)
+	result1 := m1.ConnectedPositions(IPt(1, 0))
 	assert.Equal(t, expected1, result1)
 
-	expected2 := MatrixFromString(`
+	var expected2 MatBool
+	expected2.Matrix = MatrixFromString(`
 x---a--
 --x-aa-
 --x----
-`, map[byte]Int{'x': ONE, 'a': TWO})
-	result2 := m1.Clone()
-	FloodFill(result2, IPt(5, 1), TWO)
+`, map[byte]bool{'x': true, 'a': false})
+	result2 := m1.ConnectedPositions(IPt(5, 1))
 	assert.Equal(t, expected2, result2)
+}
+
+func TestDbHttp(t *testing.T) {
+	id := uuid.New()
+	// id, err := uuid.Parse("550e8400-e29b-41d4-a716-446655440002")
+	// Check(err)
+	InitializeIdInDbHttp(id)
+	UploadDataToDbHttp(id, []byte("mele 1"))
+	UploadDataToDbHttp(id, []byte("mele 2"))
+	UploadDataToDbHttp(id, []byte("mele totusi, da -------"))
+	assert.Equal(t, true, true)
 }
