@@ -361,13 +361,15 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 	return mask
 }
 
-func sendDataToDbHttp(id uuid.UUID, data []byte) {
+func sendDataToDbHttp(user string, id uuid.UUID, data []byte) {
 	url := "https://playful-patterns.com/submit-playthrough.php"
 
 	// Create a buffer to write our multipart form data.
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
-	err := writer.WriteField("id", id.String())
+	err := writer.WriteField("user", user)
+	Check(err)
+	err = writer.WriteField("id", id.String())
 	Check(err)
 	if data != nil {
 		part, err := writer.CreateFormFile("playthrough", "rima")
@@ -392,12 +394,12 @@ func sendDataToDbHttp(id uuid.UUID, data []byte) {
 	}
 }
 
-func InitializeIdInDbHttp(id uuid.UUID) {
-	sendDataToDbHttp(id, nil)
+func InitializeIdInDbHttp(user string, id uuid.UUID) {
+	sendDataToDbHttp(user, id, nil)
 }
 
-func UploadDataToDbHttp(id uuid.UUID, data []byte) {
-	sendDataToDbHttp(id, data)
+func UploadDataToDbHttp(user string, id uuid.UUID, data []byte) {
+	sendDataToDbHttp(user, id, data)
 }
 
 func ConnectToDbSql() *sql.DB {
@@ -418,17 +420,17 @@ func ConnectToDbSql() *sql.DB {
 }
 
 func InitializeIdInDbSql(db *sql.DB, id uuid.UUID) {
-	_, err := db.Exec("INSERT INTO test4 (id) VALUES (?)", id.String())
+	_, err := db.Exec("INSERT INTO playthroughs (id) VALUES (?)", id.String())
 	Check(err)
 }
 
 func UploadDataToDbSql(db *sql.DB, id uuid.UUID, data []byte) {
-	_, err := db.Exec("UPDATE test4 SET playthrough = ? WHERE id = ?", data, id.String())
+	_, err := db.Exec("UPDATE playthroughs SET playthrough = ? WHERE id = ?", data, id.String())
 	Check(err)
 }
 
 func DownloadDataFromDbSql(db *sql.DB, id uuid.UUID) (data []byte) {
-	rows, err := db.Query("SELECT playthrough FROM test4 WHERE id = ?", id.String())
+	rows, err := db.Query("SELECT playthrough FROM playthroughs WHERE id = ?", id.String())
 	Check(err)
 	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 	if !rows.Next() {
@@ -440,7 +442,7 @@ func DownloadDataFromDbSql(db *sql.DB, id uuid.UUID) (data []byte) {
 }
 
 func InspectDataFromDbSql(db *sql.DB) {
-	rows, err := db.Query("SELECT * FROM test4")
+	rows, err := db.Query("SELECT * FROM playthroughs")
 	Check(err)
 	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 

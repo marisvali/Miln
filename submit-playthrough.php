@@ -29,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     } else {
         LogInfo("Connection succeeded!");
         
+        $user = $_POST['user'];
+        LogInfo("We got user: " . $user);
         $id = $_POST['id'];
         LogInfo("We got id: " . $id);
         if (isset($_FILES['playthrough'])) {
@@ -41,9 +43,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $fileContent = mysqli_real_escape_string($conn, file_get_contents($fileTmpPath));
             LogInfo("Read the file contents!");
             
-            $sql = "UPDATE test4 SET playthrough = '$fileContent' WHERE id = '$id'";
+            $sql = "UPDATE playthroughs SET end_moment=now(), playthrough = '$fileContent' WHERE user = '$user' AND id = '$id'";
         } else {
-            $sql = "INSERT INTO test4 (id) VALUES ('$id')";
+            $sql = "INSERT INTO playthroughs (start_moment, user, id) VALUES (now(), '$user', '$id')";
         }
         
         try {

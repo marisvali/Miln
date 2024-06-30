@@ -71,10 +71,12 @@ type Gui struct {
 	playerHitEffectIdx Int
 	playthrough        Playthrough
 	uploadDataChannel  chan uploadData
+	username           string
 	// db                 *sql.DB
 }
 
 type uploadData struct {
+	user        string
 	id          uuid.UUID
 	playthrough []byte
 }
@@ -112,18 +114,25 @@ func (g *Gui) UserRequestedRestartLevel() bool {
 	return g.JustPressed(ebiten.KeyR) || g.JustClicked(g.buttonRestartLevel)
 }
 
+func (g *Gui) uploadCurrentWorld() {
+	g.uploadDataChannel <- uploadData{g.username, g.world.Id, g.world.SerializedPlaythrough()}
+}
+
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.state = GamePaused
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
 		g.state = GamePaused
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
@@ -142,10 +151,12 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if allEnemiesDead {
 		g.state = GameWon
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
+		g.uploadCurrentWorld()
 		return
 	}
 
@@ -184,7 +195,7 @@ func (g *Gui) UpdateGameOngoing() {
 			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
 		}
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			g.uploadDataChannel <- uploadData{g.world.Id, g.world.SerializedPlaythrough()}
+			g.uploadCurrentWorld()
 		}
 	}
 
@@ -199,13 +210,13 @@ func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.world.Id)
+		InitializeIdInDbHttp(g.username, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.world.Id)
+		InitializeIdInDbHttp(g.username, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -687,12 +698,13 @@ func UploadPlaythroughs(ch chan uploadData) {
 		data := <-ch
 
 		// Upload the data.
-		UploadDataToDbHttp(data.id, data.playthrough)
+		UploadDataToDbHttp(data.user, data.id, data.playthrough)
 	}
 }
 
 func main() {
 	var g Gui
+	g.username = getUsername()
 	g.uploadDataChannel = make(chan uploadData)
 	go UploadPlaythroughs(g.uploadDataChannel)
 	// g.db = ConnectToDbSql()
@@ -701,13 +713,13 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = true
+	g.recording = false
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 		g.world = NewWorld(I(322))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		InitializeIdInDbHttp(g.world.Id)
+		InitializeIdInDbHttp(g.username, g.world.Id)
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -715,7 +727,7 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("a4965b8b-f474-4a64-8ab0-ddc50b3e1e16")
+		id, err := uuid.Parse("4484e16c-4a5c-4082-bac7-2c35addb460b")
 		Check(err)
 		db := ConnectToDbSql()
 		zippedPlaythrough := DownloadDataFromDbSql(db, id)
