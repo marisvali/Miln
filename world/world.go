@@ -48,11 +48,11 @@ type World struct {
 	HoundKeyDropped  bool
 	PortalKeyDropped bool
 	KingSpawned      bool
-	Id               uuid.UUID
 	Playthrough
 }
 
 type Playthrough struct {
+	Id      uuid.UUID
 	Seed    Int
 	History []PlayerInput
 }

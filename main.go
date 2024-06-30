@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	. "github.com/marisvali/miln/gamelib"
@@ -69,7 +70,13 @@ type Gui struct {
 	mousePt            Pt           // mouse position in this frame
 	playerHitEffectIdx Int
 	playthrough        Playthrough
+	uploadDataChannel  chan uploadData
 	// db                 *sql.DB
+}
+
+type uploadData struct {
+	id          uuid.UUID
+	playthrough []byte
 }
 
 type GameState int64
@@ -177,8 +184,7 @@ func (g *Gui) UpdateGameOngoing() {
 			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
 		}
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-			UploadDataToDbHttp(g.world.Id, g.world.SerializedPlaythrough())
+			g.uploadDataChannel <- uploadData{g.world.Id, g.world.SerializedPlaythrough()}
 		}
 	}
 
@@ -462,7 +468,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Output TPS (ticks per second, which is like frames per second).
-	// ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) DrawButtons(screen *ebiten.Image) {
@@ -674,8 +680,21 @@ func (g *Gui) loadGuiData() {
 	CheckCrashes = true
 }
 
+func UploadPlaythroughs(ch chan uploadData) {
+	for {
+		// Receive a playthrough from the channel.
+		// Blocks until a playthrough is received.
+		data := <-ch
+
+		// Upload the data.
+		UploadDataToDbHttp(data.id, data.playthrough)
+	}
+}
+
 func main() {
 	var g Gui
+	g.uploadDataChannel = make(chan uploadData)
+	go UploadPlaythroughs(g.uploadDataChannel)
 	// g.db = ConnectToDbSql()
 	// g.world = NewWorld(RInt(I(0), I(10000000)))
 
@@ -689,7 +708,6 @@ func main() {
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.world.Id)
-		UploadDataToDbHttp(g.world.Id, g.world.SerializedPlaythrough())
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -697,7 +715,7 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("dc3abb37-b354-4ebd-bc92-97360de4ff8f")
+		id, err := uuid.Parse("a4965b8b-f474-4a64-8ab0-ddc50b3e1e16")
 		Check(err)
 		db := ConnectToDbSql()
 		zippedPlaythrough := DownloadDataFromDbSql(db, id)
