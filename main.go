@@ -16,7 +16,6 @@ import (
 	"image"
 	"image/color"
 	_ "image/png"
-	"math"
 	"slices"
 )
 
@@ -146,44 +145,22 @@ func (g *Gui) UpdateGameOngoing() {
 
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		// See what is the closest distance to the center of a free tile.
-		closestPos := Pt{}
-		minDist := I(math.MaxInt64)
-
 		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
-		for _, pos := range freePositions {
-			dist := g.TileToScreen(pos).To(g.mousePt).Len()
-			if dist.Lt(minDist) {
-				minDist = dist
-				closestPos = pos
-			}
-		}
-
-		closeEnough := minDist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
+		tilePos, dist := g.ClosestTileToMouse(freePositions)
+		closeEnough := dist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Move = true
-			input.MovePt = closestPos
+			input.MovePt = tilePos
 		}
 	}
 
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		// See what is the closest distance to an enemy, from the click point.
-		closestPos := Pt{}
-		minDist := I(math.MaxInt64)
-
 		attackablePositions := g.world.EnemyPositions().ToSlice()
-		for _, pos := range attackablePositions {
-			dist := g.TileToScreen(pos).To(g.mousePt).Len()
-			if dist.Lt(minDist) {
-				minDist = dist
-				closestPos = pos
-			}
-		}
-
-		closeEnough := minDist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
+		tilePos, dist := g.ClosestTileToMouse(attackablePositions)
+		closeEnough := dist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Shoot = true
-			input.ShootPt = closestPos
+			input.ShootPt = tilePos
 		}
 	}
 
@@ -327,6 +304,24 @@ func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alp
 func (g *Gui) TileToScreen(pos Pt) Pt {
 	half := BlockSize.DivBy(TWO)
 	return pos.Times(BlockSize).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
+}
+
+func (g *Gui) TilesToScreen(ipt []Pt) (opt []Pt) {
+	for _, pt := range ipt {
+		opt = append(opt, g.TileToScreen(pt))
+	}
+	return
+}
+
+func (g *Gui) ClosestTileToMouse(tiles []Pt) (tile Pt, dist Int) {
+	opt := []Pt{}
+	for _, pt := range tiles {
+		opt = append(opt, g.TileToScreen(pt))
+	}
+	_, closestPt := GetClosestPoint(opt, g.mousePt)
+	tile = g.ScreenToTile(closestPt)
+	dist = closestPt.To(g.mousePt).Len()
+	return
 }
 
 func (g *Gui) TileToPlayRegion(pos Pt) Pt {
