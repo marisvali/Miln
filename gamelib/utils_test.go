@@ -68,6 +68,15 @@ x---a--
 	assert.Equal(t, expected2, result2)
 }
 
+func TestDbSql(t *testing.T) {
+	db := ConnectToDbSql()
+	id := uuid.New()
+	InitializeIdInDbSql(db, id)
+	UploadDataToDbSql(db, id, []byte("what do you mean"))
+	InspectDataFromDbSql(db)
+	assert.True(t, true)
+}
+
 func TestDbHttp(t *testing.T) {
 	id := uuid.New()
 	// id, err := uuid.Parse("550e8400-e29b-41d4-a716-446655440002")

@@ -176,7 +176,7 @@ func (g *Gui) UpdateGameOngoing() {
 	if g.recording && g.recordingFile != "" {
 		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			UploadDataToDB(g.db, g.world.Id, g.world.SerializedPlaythrough())
+			UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		}
 	}
 
@@ -190,12 +190,12 @@ func (g *Gui) UpdateGameOngoing() {
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
-		InitializeIdInDB(g.db, g.world.Id)
+		InitializeIdInDbSql(g.db, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed)
-		InitializeIdInDB(g.db, g.world.Id)
+		InitializeIdInDbSql(g.db, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -672,7 +672,7 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
-	g.db = ConnectToDB()
+	g.db = ConnectToDbSql()
 	// g.world = NewWorld(RInt(I(0), I(10000000)))
 
 	g.textHeight = I(75)
@@ -682,8 +682,8 @@ func main() {
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 		g.world = NewWorld(I(322))
-		InitializeIdInDB(g.db, g.world.Id)
-		UploadDataToDB(g.db, g.world.Id, g.world.SerializedPlaythrough())
+		InitializeIdInDbSql(g.db, g.world.Id)
+		UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -693,7 +693,7 @@ func main() {
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
 		id, err := uuid.Parse("687f5f75-7fdc-43ae-b9c5-31c86b7d5d25")
 		Check(err)
-		g.playthrough = DeserializePlaythrough(DownloadDataFromDB(g.db, id))
+		g.playthrough = DeserializePlaythrough(DownloadDataFromDbSql(g.db, id))
 		g.world = NewWorld(g.playthrough.Seed)
 	}
 

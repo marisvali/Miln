@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
-	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
 	"log"
@@ -107,14 +106,5 @@ func TestDatabaseBytes(t *testing.T) {
 		println(id, string(data))
 	}
 
-	assert.True(t, true)
-}
-
-func TestDatabaseUtils(t *testing.T) {
-	db := ConnectToDB()
-	id := uuid.New()
-	InitializeIdInDB(db, id)
-	UploadDataToDB(db, id, []byte("what do you mean"))
-	InspectDataFromDB(db)
 	assert.True(t, true)
 }
