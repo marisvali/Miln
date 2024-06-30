@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"embed"
 	"fmt"
 	"github.com/google/uuid"
@@ -70,7 +69,7 @@ type Gui struct {
 	mousePt            Pt           // mouse position in this frame
 	playerHitEffectIdx Int
 	playthrough        Playthrough
-	db                 *sql.DB
+	// db                 *sql.DB
 }
 
 type GameState int64
@@ -173,10 +172,13 @@ func (g *Gui) UpdateGameOngoing() {
 
 	g.world.Step(input)
 
-	if g.recording && g.recordingFile != "" {
-		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+	if g.recording {
+		if g.recordingFile != "" {
+			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+		}
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
+			// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
+			UploadDataToDbHttp(g.world.Id, g.world.SerializedPlaythrough())
 		}
 	}
 
@@ -190,12 +192,14 @@ func (g *Gui) UpdateGameOngoing() {
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
-		InitializeIdInDbSql(g.db, g.world.Id)
+		// InitializeIdInDbSql(g.db, g.world.Id)
+		InitializeIdInDbHttp(g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed)
-		InitializeIdInDbSql(g.db, g.world.Id)
+		// InitializeIdInDbSql(g.db, g.world.Id)
+		InitializeIdInDbHttp(g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -672,7 +676,7 @@ func (g *Gui) loadGuiData() {
 
 func main() {
 	var g Gui
-	g.db = ConnectToDbSql()
+	// g.db = ConnectToDbSql()
 	// g.world = NewWorld(RInt(I(0), I(10000000)))
 
 	g.textHeight = I(75)
@@ -682,8 +686,10 @@ func main() {
 	if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 		g.world = NewWorld(I(322))
-		InitializeIdInDbSql(g.db, g.world.Id)
-		UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
+		// InitializeIdInDbSql(g.db, g.world.Id)
+		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
+		InitializeIdInDbHttp(g.world.Id)
+		UploadDataToDbHttp(g.world.Id, g.world.SerializedPlaythrough())
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -691,9 +697,11 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("687f5f75-7fdc-43ae-b9c5-31c86b7d5d25")
+		id, err := uuid.Parse("dc3abb37-b354-4ebd-bc92-97360de4ff8f")
 		Check(err)
-		g.playthrough = DeserializePlaythrough(DownloadDataFromDbSql(g.db, id))
+		db := ConnectToDbSql()
+		zippedPlaythrough := DownloadDataFromDbSql(db, id)
+		g.playthrough = DeserializePlaythrough(zippedPlaythrough)
 		g.world = NewWorld(g.playthrough.Seed)
 	}
 

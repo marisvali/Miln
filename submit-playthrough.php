@@ -20,9 +20,6 @@ function LogError($message) {
 	die();
 }
 
-// Set the default timezone to UTC
-date_default_timezone_set('UTC');
-
 LogInfo("Start.");
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     LogInfo("Attempt to connect to database.");
@@ -41,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             LogInfo("We got file name: " . $fileName);
             $fileTmpPath = $file['tmp_name'];
             LogInfo("We got file tmp path: " . $fileTmpPath);
-            $fileContent = file_get_contents($fileTmpPath);
+            $fileContent = mysqli_real_escape_string($conn, file_get_contents($fileTmpPath));
             LogInfo("Read the file contents!");
             
             $sql = "UPDATE test4 SET playthrough = '$fileContent' WHERE id = '$id'";
