@@ -10,7 +10,7 @@
     }
 
     const go = new Go();
-    window.username = "andrei";
+    window.username = "generic";
     WebAssembly.instantiateStreaming(fetch("https://playful-patterns.com/miln.wasm"), go.importObject).then(result => {
         go.run(result.instance);
     });
