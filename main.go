@@ -16,6 +16,7 @@ import (
 	"image"
 	"image/color"
 	_ "image/png"
+	"os"
 	"slices"
 )
 
@@ -714,12 +715,18 @@ func main() {
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 	g.recording = false
-	if g.recording {
+	if len(os.Args) == 2 {
+		g.recording = false
+		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
+		g.world = NewWorld(g.playthrough.Seed)
+		g.state = GameOngoing
+	} else if g.recording {
 		g.recordingFile = GetNewRecordingFile()
 		g.world = NewWorld(I(322))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, g.world.Id)
+		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -727,12 +734,13 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("4484e16c-4a5c-4082-bac7-2c35addb460b")
+		id, err := uuid.Parse("50d41c1e-efeb-47f2-9d9a-6657f6b86168")
 		Check(err)
 		db := ConnectToDbSql()
 		zippedPlaythrough := DownloadDataFromDbSql(db, id)
 		g.playthrough = DeserializePlaythrough(zippedPlaythrough)
 		g.world = NewWorld(g.playthrough.Seed)
+		g.state = GameOngoing
 	}
 
 	playSize := g.world.Obstacles.Size().Times(BlockSize)
@@ -749,7 +757,6 @@ func main() {
 	}
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
-	g.state = GamePaused
 
 	// font
 	var err error

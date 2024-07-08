@@ -410,6 +410,7 @@ func ConnectToDbSql() *sql.DB {
 		Addr:                 os.Getenv("MILN_DBADDR"),
 		DBName:               os.Getenv("MILN_DBNAME"),
 		AllowNativePasswords: true,
+		ParseTime:            true,
 	}
 
 	db, err := sql.Open("mysql", cfg.FormatDSN())

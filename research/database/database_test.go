@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestDatabase(t *testing.T) {
@@ -104,6 +106,40 @@ func TestDatabaseBytes(t *testing.T) {
 			log.Fatal(err)
 		}
 		println(id, string(data))
+	}
+
+	assert.True(t, true)
+}
+
+type dbRow struct {
+	startMoment time.Time
+	endMoment   time.Time
+	user        string
+	id          uuid.UUID
+	data        []byte
+}
+
+func TestDatabaseSaveRecordings(t *testing.T) {
+	db := ConnectToDbSql()
+	rows, err := db.Query("SELECT start_moment, COALESCE(end_moment, start_moment), user, id, playthrough FROM playthroughs")
+	Check(err)
+	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
+
+	dbRows := []dbRow{}
+	for rows.Next() {
+		row := dbRow{}
+		err := rows.Scan(&row.startMoment, &row.endMoment, &row.user, &row.id, &row.data)
+		Check(err)
+		dbRows = append(dbRows, row)
+	}
+
+	for i := range dbRows {
+		dir := dbRows[i].user
+		_ = os.Mkdir(dir, os.ModeDir)
+		m := dbRows[i].startMoment
+		filename := fmt.Sprintf("%s/%d%02d%02d-%02d%02d%02d.mln", dir, m.Year(),
+			m.Month(), m.Day(), m.Hour(), m.Minute(), m.Second())
+		WriteFile(filename, dbRows[i].data)
 	}
 
 	assert.True(t, true)
