@@ -8,15 +8,27 @@ import (
 	"math"
 )
 
+var nObstaclesMin = I(10)
+var nObstaclesMax = I(25)
+
 var GremlinMoveCooldown = I(50)
 var GremlinFreezeCooldown = I(30)
 var GremlinMaxHealth = I(1)
+var nGremlinMin = I(5)
+var nGremlinMax = I(10)
+
 var HoundMoveCooldown = I(70)
 var HoundFreezeCooldown = I(300)
-var HoundMaxHealth = I(1)
+var HoundMaxHealth = I(4)
+var nHoundMin = I(0)
+var nHoundMax = I(2)
+
 var UltraHoundMoveCooldown = I(100)
 var UltraHoundFreezeCooldown = I(10)
 var UltraHoundMaxHealth = I(1)
+var nUltraHoundMin = I(0)
+var nUltraHoundMax = I(1)
+
 var PillarMoveCooldown = I(100)
 var PillarFreezeCooldown = I(300)
 var PillarMaxHealth = I(1)
@@ -24,7 +36,7 @@ var KingMoveCooldown = I(60)
 var KingFreezeCooldown = I(200)
 var KingMaxHealth = I(3)
 var QuestionMaxHealth = I(1)
-var SpawnPortalCooldown = I(300)
+var SpawnPortalCooldown = I(60)
 
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
@@ -82,7 +94,8 @@ func LevelX() string {
 func RandomLevel() (m MatBool) {
 	// Create matrix with obstacles.
 	m = NewMatBool(IPt(10, 10))
-	for i := 0; i < 10; i++ {
+	lim := RInt(nObstaclesMin, nObstaclesMax).ToInt()
+	for i := 0; i < lim; i++ {
 		m.Set(m.RandomPos())
 	}
 	return
@@ -127,6 +140,7 @@ func NewWorld(seed Int) (w World) {
 	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
 	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
 	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
+	w.SpawnPortals[0].nKingsLeftToSpawn = I(1)
 
 	// w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
 
@@ -135,6 +149,7 @@ func NewWorld(seed Int) (w World) {
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
 	w.Player.HitPermissions.CanHitGremlin = true
+	w.Player.HitPermissions.CanHitHound = true
 	w.Player.HitPermissions.CanHitQuestion = true
 	w.Player.HitPermissions.CanHitKing = true
 
@@ -237,6 +252,11 @@ func (w *World) EnemyPositions() (m MatBool) {
 	for i := range w.Enemies {
 		m.Set(w.Enemies[i].Pos())
 	}
+	return
+}
+
+func (w *World) SpawnPortalPositions() (m MatBool) {
+	m = NewMatBool(w.Obstacles.Size())
 	for i := range w.SpawnPortals {
 		m.Set(w.SpawnPortals[i].Pos)
 	}

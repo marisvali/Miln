@@ -144,8 +144,8 @@ func (g *Gui) UpdateGameOngoing() {
 			allEnemiesDead = false
 		}
 	}
-	for _, enemy := range g.world.SpawnPortals {
-		if enemy.Health.IsPositive() {
+	for _, portal := range g.world.SpawnPortals {
+		if portal.Active() {
 			allEnemiesDead = false
 		}
 	}
@@ -381,7 +381,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	for i := range g.world.SpawnPortals {
 		p := &g.world.SpawnPortals[i]
 		g.DrawTile(screen, g.imgSpawnPortal, p.Pos)
-		g.DrawHealth(screen, g.imgEnemyHealth, p.Health, p.Pos)
 	}
 
 	// Draw ammo.
@@ -562,6 +561,7 @@ func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	var img *ebiten.Image
 	var imgMask *ebiten.Image
+	drawHealth := true
 	switch e.(type) {
 	case *Gremlin:
 		img = g.imgGremlin
@@ -571,6 +571,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		imgMask = g.imgHoundMask
 	case *UltraHound:
 		img = g.imgUltraHound
+		drawHealth = g.world.Player.HitPermissions.CanHitUltraHound
 		imgMask = g.imgUltraHoundMask
 	case *Pillar:
 		img = g.imgPillar
@@ -594,7 +595,9 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	}
 
 	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
-	g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
+	if drawHealth {
+		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
+	}
 }
 
 func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
@@ -722,7 +725,8 @@ func main() {
 		g.state = GameOngoing
 	} else if g.recording {
 		g.recordingFile = GetNewRecordingFile()
-		g.world = NewWorld(I(322))
+		// g.world = NewWorld(I(322))
+		g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, g.world.Id)

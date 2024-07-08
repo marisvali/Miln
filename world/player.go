@@ -37,6 +37,7 @@ func (p *Player) ComputeFreePositions(w *World) (free MatBool) {
 
 	free.Subtract(w.Obstacles)
 	free.Subtract(w.EnemyPositions())
+	free.Subtract(w.SpawnPortalPositions())
 	return
 }
 

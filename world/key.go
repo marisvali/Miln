@@ -43,3 +43,11 @@ func NewGremlinKey(pos Pt) (k Key) {
 	k.Permissions.CanHitGremlin = true
 	return
 }
+
+func NewUltraHoundKey(pos Pt) (k Key) {
+	k.Type = I(1)
+	k.Pos = pos
+	k.Permissions = HitPermissions{}
+	k.Permissions.CanHitUltraHound = true
+	return
+}

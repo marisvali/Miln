@@ -21,9 +21,9 @@ func NewSpawnPortal(pos Pt) (p SpawnPortal) {
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
 	p.MaxTimeout = SpawnPortalCooldown
-	p.nGremlinsLeftToSpawn = I(4)
-	p.nHoundsLeftToSpawn = I(3)
-	p.nUltraHoundsLeftToSpawn = I(1)
+	p.nGremlinsLeftToSpawn = RInt(nGremlinMin, nGremlinMax)
+	p.nHoundsLeftToSpawn = RInt(nHoundMin, nHoundMax)
+	p.nUltraHoundsLeftToSpawn = RInt(nUltraHoundMin, nUltraHoundMax)
 	p.nKingsLeftToSpawn = I(0)
 	return
 }
@@ -53,9 +53,19 @@ func (p *SpawnPortal) Step(w *World) {
 		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
 		p.nUltraHoundsLeftToSpawn.Dec()
 	} else if spawn.Lt(ng.Plus(nh).Plus(nu).Plus(nk)) {
-		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
-		p.nUltraHoundsLeftToSpawn.Dec()
+		w.Enemies = append(w.Enemies, NewKing(p.Pos))
+		p.nKingsLeftToSpawn.Dec()
 	}
 
 	p.TimeoutIdx = p.MaxTimeout
+}
+
+func (p *SpawnPortal) Active() bool {
+	if p.nGremlinsLeftToSpawn.Gt(ZERO) ||
+		p.nHoundsLeftToSpawn.Gt(ZERO) ||
+		p.nUltraHoundsLeftToSpawn.Gt(ZERO) ||
+		p.nKingsLeftToSpawn.Gt(ZERO) {
+		return true
+	}
+	return false
 }

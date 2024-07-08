@@ -25,7 +25,7 @@ func (k *King) Step(w *World) {
 		if w.Player.HitPermissions.CanHitKing {
 			k.health.Dec()
 			if k.health == ZERO {
-				w.Keys = append(w.Keys, NewHoundKey(k.pos))
+				w.Keys = append(w.Keys, NewUltraHoundKey(k.pos))
 			}
 			w.Enemies = append(w.Enemies, NewHound(k.pos))
 		}

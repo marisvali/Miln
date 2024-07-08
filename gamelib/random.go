@@ -3,13 +3,14 @@ package gamelib
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 var randomGenerator *rand.Rand
 
 func init() {
-	randomGenerator = rand.New(rand.NewSource(0))
-	// randomGenerator = rand.New(rand.NewSource(time.Now().Unix()))
+	// randomGenerator = rand.New(rand.NewSource(0))
+	randomGenerator = rand.New(rand.NewSource(time.Now().Unix()))
 }
 
 func RSeed(seed Int) {
