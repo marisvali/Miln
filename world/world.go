@@ -79,20 +79,29 @@ func LevelX() string {
 `
 }
 
+func RandomLevel() (m MatBool) {
+	// Create matrix with obstacles.
+	m = NewMatBool(IPt(10, 10))
+	for i := 0; i < 10; i++ {
+		m.Set(m.RandomPos())
+	}
+	return
+}
+
 func NewWorld(seed Int) (w World) {
 	w.Seed = seed
 	w.Id = uuid.New()
 	RSeed(seed)
 
-	m := MatrixFromString(LevelX(), map[byte]bool{'x': true})
-	w.Obstacles = NewMatBool(m.Size())
-	for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
-		for x := ZERO; x.Lt(m.Size().X); x.Inc() {
-			if m.Get(Pt{x, y}) {
-				w.Enemies = append(w.Enemies, NewQuestion(Pt{x, y}))
-			}
-		}
-	}
+	w.Obstacles = RandomLevel()
+
+	// for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
+	// 	for x := ZERO; x.Lt(m.Size().X); x.Inc() {
+	// 		if m.Get(Pt{x, y}) {
+	// 			w.Enemies = append(w.Enemies, NewQuestion(Pt{x, y}))
+	// 		}
+	// 	}
+	// }
 
 	// Obstacles
 	// w.Obstacles = RandomLevel2()
@@ -114,7 +123,10 @@ func NewWorld(seed Int) (w World) {
 	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, occ.NewlyOccupiedRandomPos()))
 	// }
 
-	// w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.NewlyOccupiedRandomPos()))
+	occ := w.Obstacles.Clone()
+	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
+	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
+	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
 
 	// w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
 

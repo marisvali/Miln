@@ -5,13 +5,15 @@ import (
 )
 
 type SpawnPortal struct {
-	Pos                  Pt
-	Health               Int
-	MaxHealth            Int
-	MaxTimeout           Int
-	TimeoutIdx           Int
-	nGremlinsLeftToSpawn Int
-	nHoundsLeftToSpawn   Int
+	Pos                     Pt
+	Health                  Int
+	MaxHealth               Int
+	MaxTimeout              Int
+	TimeoutIdx              Int
+	nGremlinsLeftToSpawn    Int
+	nHoundsLeftToSpawn      Int
+	nUltraHoundsLeftToSpawn Int
+	nKingsLeftToSpawn       Int
 }
 
 func NewSpawnPortal(pos Pt) (p SpawnPortal) {
@@ -21,78 +23,38 @@ func NewSpawnPortal(pos Pt) (p SpawnPortal) {
 	p.MaxTimeout = SpawnPortalCooldown
 	p.nGremlinsLeftToSpawn = I(4)
 	p.nHoundsLeftToSpawn = I(3)
+	p.nUltraHoundsLeftToSpawn = I(1)
+	p.nKingsLeftToSpawn = I(0)
 	return
 }
 
 func (p *SpawnPortal) Step(w *World) {
-	if w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
-		// I need to structure this stuff differently.
-		beamEndTile := w.WorldPosToTile(w.Beam.End)
-		if beamEndTile.Eq(p.Pos) {
-			// We have been shot.
-			if w.Player.HitPermissions.CanHitPortal {
-				p.Health.Dec()
-			}
-		}
-	}
-
 	if p.TimeoutIdx.IsPositive() {
 		p.TimeoutIdx.Dec()
 		return // Don't spawn.
 	}
 
-	// Spawn guy.
-	// Check if there is already a guy here.
-	occupied := false
-	for _, enemy := range w.Enemies {
-		if enemy.Pos() == p.Pos {
-			occupied = true
-			break
-		}
+	ng := p.nGremlinsLeftToSpawn
+	nh := p.nHoundsLeftToSpawn
+	nu := p.nUltraHoundsLeftToSpawn
+	nk := p.nKingsLeftToSpawn
+	total := ng.Plus(nh).Plus(nu).Plus(nk)
+	if total.IsZero() {
+		return
 	}
-	if occupied {
-		return // Don't spawn.
-	}
-
-	//w.Enemies = append(w.Enemies, NewEnemy(RInt(I(0), I(2)), p.Pos))
-	// Spawn only gremlins.
-	//if p.nGremlinsLeftToSpawn.IsPositive() && p.nHoundsLeftToSpawn.IsPositive() {
-	//	if RInt(I(0), I(4)) == ZERO {
-	//		w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
-	//		p.nHoundsLeftToSpawn.Dec()
-	//	} else {
-	//		w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
-	//		p.nGremlinsLeftToSpawn.Dec()
-	//	}
-	//} else if p.nGremlinsLeftToSpawn.IsPositive() {
-	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, p.Pos))
-	//	p.nGremlinsLeftToSpawn.Dec()
-	//} else if p.nHoundsLeftToSpawn.IsPositive() {
-	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, p.Pos))
-	//	p.nHoundsLeftToSpawn.Dec()
-	//} else {
-	//	if !w.KingSpawned {
-	//		w.Enemies = append(w.Enemies, NewEnemy(I(4), p.Pos))
-	//		w.KingSpawned = true
-	//	}
-	//}
-	//if p.nHoundsLeftToSpawn.IsPositive() {
-	//	w.Enemies = append(w.Enemies, NewHound(p.Pos))
-	//	p.nHoundsLeftToSpawn.Dec()
-	//} else if p.nGremlinsLeftToSpawn.IsPositive() {
-	//	w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
-	//	p.nGremlinsLeftToSpawn.Dec()
-	//} else if !w.KingSpawned {
-	//	w.Enemies = append(w.Enemies, NewKing(p.Pos))
-	//	w.KingSpawned = true
-	//} else {
-	//	w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
-	//}
-	if !w.KingSpawned {
-		w.Enemies = append(w.Enemies, NewKing(p.Pos))
-		w.KingSpawned = true
-	} else {
+	spawn := RInt(ZERO, total.Minus(ONE))
+	if spawn.Lt(ng) {
 		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+		p.nGremlinsLeftToSpawn.Dec()
+	} else if spawn.Lt(ng.Plus(nh)) {
+		w.Enemies = append(w.Enemies, NewHound(p.Pos))
+		p.nHoundsLeftToSpawn.Dec()
+	} else if spawn.Lt(ng.Plus(nh).Plus(nu)) {
+		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
+		p.nUltraHoundsLeftToSpawn.Dec()
+	} else if spawn.Lt(ng.Plus(nh).Plus(nu).Plus(nk)) {
+		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
+		p.nUltraHoundsLeftToSpawn.Dec()
 	}
 
 	p.TimeoutIdx = p.MaxTimeout

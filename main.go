@@ -714,7 +714,7 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = false
+	g.recording = true
 	if len(os.Args) == 2 {
 		g.recording = false
 		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
