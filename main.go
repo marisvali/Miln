@@ -78,6 +78,7 @@ type Gui struct {
 
 type uploadData struct {
 	user        string
+	version     int64
 	id          uuid.UUID
 	playthrough []byte
 }
@@ -116,7 +117,7 @@ func (g *Gui) UserRequestedRestartLevel() bool {
 }
 
 func (g *Gui) uploadCurrentWorld() {
-	g.uploadDataChannel <- uploadData{g.username, g.world.Id, g.world.SerializedPlaythrough()}
+	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, g.world.SerializedPlaythrough()}
 }
 
 func (g *Gui) UpdateGameOngoing() {
@@ -211,13 +212,13 @@ func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -702,7 +703,7 @@ func UploadPlaythroughs(ch chan uploadData) {
 		data := <-ch
 
 		// Upload the data.
-		UploadDataToDbHttp(data.user, data.id, data.playthrough)
+		UploadDataToDbHttp(data.user, data.version, data.id, data.playthrough)
 	}
 }
 
@@ -729,7 +730,7 @@ func main() {
 		g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		InitializeIdInDbHttp(g.username, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
@@ -738,7 +739,7 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("50d41c1e-efeb-47f2-9d9a-6657f6b86168")
+		id, err := uuid.Parse("b02433de-bef5-476b-bbf1-7cf23fe8fcef")
 		Check(err)
 		db := ConnectToDbSql()
 		zippedPlaythrough := DownloadDataFromDbSql(db, id)

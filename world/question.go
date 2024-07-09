@@ -25,7 +25,7 @@ func (q *Question) onDeath(w *World) {
 		}
 	}
 	if nQuestions == ONE {
-		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(q.pos))
+		// w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(q.pos))
 	} else if nQuestions == TWO {
 		w.Keys = append(w.Keys, NewPillarKey(q.pos))
 	} else {

@@ -31,6 +31,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $user = $_POST['user'];
         LogInfo("We got user: " . $user);
+        $version = $_POST['version'];
+        LogInfo("We got version: " . $version);
         $id = $_POST['id'];
         LogInfo("We got id: " . $id);
         if (isset($_FILES['playthrough'])) {
@@ -45,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $sql = "UPDATE playthroughs SET end_moment=now(), playthrough = '$fileContent' WHERE user = '$user' AND id = '$id'";
         } else {
-            $sql = "INSERT INTO playthroughs (start_moment, user, id) VALUES (now(), '$user', '$id')";
+            $sql = "INSERT INTO playthroughs (start_moment, user, version, id) VALUES (now(), '$user', '$version', '$id')";
         }
         
         try {

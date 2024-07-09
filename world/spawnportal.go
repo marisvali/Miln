@@ -16,15 +16,15 @@ type SpawnPortal struct {
 	nKingsLeftToSpawn       Int
 }
 
-func NewSpawnPortal(pos Pt) (p SpawnPortal) {
+func NewSpawnPortal(pos Pt, cooldown Int, nGremlins Int, nHounds Int, nUltraHounds Int, nKings Int) (p SpawnPortal) {
 	p.Pos = pos
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
-	p.MaxTimeout = SpawnPortalCooldown
-	p.nGremlinsLeftToSpawn = RInt(nGremlinMin, nGremlinMax)
-	p.nHoundsLeftToSpawn = RInt(nHoundMin, nHoundMax)
-	p.nUltraHoundsLeftToSpawn = RInt(nUltraHoundMin, nUltraHoundMax)
-	p.nKingsLeftToSpawn = I(0)
+	p.MaxTimeout = cooldown
+	p.nGremlinsLeftToSpawn = nGremlins
+	p.nHoundsLeftToSpawn = nHounds
+	p.nUltraHoundsLeftToSpawn = nUltraHounds
+	p.nKingsLeftToSpawn = nKings
 	return
 }
 
@@ -34,28 +34,42 @@ func (p *SpawnPortal) Step(w *World) {
 		return // Don't spawn.
 	}
 
-	ng := p.nGremlinsLeftToSpawn
-	nh := p.nHoundsLeftToSpawn
-	nu := p.nUltraHoundsLeftToSpawn
-	nk := p.nKingsLeftToSpawn
-	total := ng.Plus(nh).Plus(nu).Plus(nk)
-	if total.IsZero() {
-		return
-	}
-	spawn := RInt(ZERO, total.Minus(ONE))
-	if spawn.Lt(ng) {
-		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
-		p.nGremlinsLeftToSpawn.Dec()
-	} else if spawn.Lt(ng.Plus(nh)) {
-		w.Enemies = append(w.Enemies, NewHound(p.Pos))
-		p.nHoundsLeftToSpawn.Dec()
-	} else if spawn.Lt(ng.Plus(nh).Plus(nu)) {
+	if p.nUltraHoundsLeftToSpawn.IsPositive() {
 		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
 		p.nUltraHoundsLeftToSpawn.Dec()
-	} else if spawn.Lt(ng.Plus(nh).Plus(nu).Plus(nk)) {
+	} else if p.nHoundsLeftToSpawn.IsPositive() {
+		w.Enemies = append(w.Enemies, NewHound(p.Pos))
+		p.nHoundsLeftToSpawn.Dec()
+	} else if p.nGremlinsLeftToSpawn.IsPositive() {
+		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+		p.nGremlinsLeftToSpawn.Dec()
+	} else if p.nKingsLeftToSpawn.IsPositive() {
 		w.Enemies = append(w.Enemies, NewKing(p.Pos))
 		p.nKingsLeftToSpawn.Dec()
 	}
+
+	// ng := p.nGremlinsLeftToSpawn
+	// nh := p.nHoundsLeftToSpawn
+	// nu := p.nUltraHoundsLeftToSpawn
+	// nk := p.nKingsLeftToSpawn
+	// total := ng.Plus(nh).Plus(nu).Plus(nk)
+	// if total.IsZero() {
+	// 	return
+	// }
+	// spawn := RInt(ZERO, total.Minus(ONE))
+	// if spawn.Lt(ng) {
+	// 	w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+	// 	p.nGremlinsLeftToSpawn.Dec()
+	// } else if spawn.Lt(ng.Plus(nh)) {
+	// 	w.Enemies = append(w.Enemies, NewHound(p.Pos))
+	// 	p.nHoundsLeftToSpawn.Dec()
+	// } else if spawn.Lt(ng.Plus(nh).Plus(nu)) {
+	// 	w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
+	// 	p.nUltraHoundsLeftToSpawn.Dec()
+	// } else if spawn.Lt(ng.Plus(nh).Plus(nu).Plus(nk)) {
+	// 	w.Enemies = append(w.Enemies, NewKing(p.Pos))
+	// 	p.nKingsLeftToSpawn.Dec()
+	// }
 
 	p.TimeoutIdx = p.MaxTimeout
 }

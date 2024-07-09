@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -361,13 +362,15 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 	return mask
 }
 
-func sendDataToDbHttp(user string, id uuid.UUID, data []byte) {
+func sendDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
 	url := "https://playful-patterns.com/submit-playthrough.php"
 
 	// Create a buffer to write our multipart form data.
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
 	err := writer.WriteField("user", user)
+	Check(err)
+	err = writer.WriteField("version", strconv.FormatInt(version, 10))
 	Check(err)
 	err = writer.WriteField("id", id.String())
 	Check(err)
@@ -394,12 +397,12 @@ func sendDataToDbHttp(user string, id uuid.UUID, data []byte) {
 	}
 }
 
-func InitializeIdInDbHttp(user string, id uuid.UUID) {
-	sendDataToDbHttp(user, id, nil)
+func InitializeIdInDbHttp(user string, version int64, id uuid.UUID) {
+	sendDataToDbHttp(user, version, id, nil)
 }
 
-func UploadDataToDbHttp(user string, id uuid.UUID, data []byte) {
-	sendDataToDbHttp(user, id, data)
+func UploadDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
+	sendDataToDbHttp(user, version, id, data)
 }
 
 func ConnectToDbSql() *sql.DB {

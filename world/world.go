@@ -11,11 +11,16 @@ import (
 var nObstaclesMin = I(10)
 var nObstaclesMax = I(25)
 
+var nPortalsMin = I(1)
+var nPortalsMax = I(5)
+var SpawnPortalCooldownMin = I(40)
+var SpawnPortalCooldownMax = I(150)
+
 var GremlinMoveCooldown = I(50)
 var GremlinFreezeCooldown = I(30)
 var GremlinMaxHealth = I(1)
-var nGremlinMin = I(5)
-var nGremlinMax = I(10)
+var nGremlinMin = I(3)
+var nGremlinMax = I(7)
 
 var HoundMoveCooldown = I(70)
 var HoundFreezeCooldown = I(300)
@@ -36,12 +41,13 @@ var KingMoveCooldown = I(60)
 var KingFreezeCooldown = I(200)
 var KingMaxHealth = I(3)
 var QuestionMaxHealth = I(1)
-var SpawnPortalCooldown = I(60)
 
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
 	End Pt  // this is the point to where the beam ends
 }
+
+const Version = 2
 
 type World struct {
 	Player           Player
@@ -61,6 +67,7 @@ type World struct {
 	PortalKeyDropped bool
 	KingSpawned      bool
 	Playthrough
+	Seeds
 }
 
 type Playthrough struct {
@@ -91,12 +98,39 @@ func LevelX() string {
 `
 }
 
-func RandomLevel() (m MatBool) {
+func RandomLevel(nObstacles Int) (m MatBool) {
 	// Create matrix with obstacles.
 	m = NewMatBool(IPt(10, 10))
-	lim := RInt(nObstaclesMin, nObstaclesMax).ToInt()
-	for i := 0; i < lim; i++ {
+	for i := ZERO; i.Lt(nObstacles); i.Inc() {
 		m.Set(m.RandomPos())
+	}
+	return
+}
+
+type PortalSeed struct {
+	cooldown     Int
+	nGremlins    Int
+	nHounds      Int
+	nUltraHounds Int
+}
+
+type Seeds struct {
+	nObstacles Int
+	portals    []PortalSeed
+}
+
+func GenerateSeeds(seed Int) (s Seeds) {
+	RSeed(seed)
+	s.nObstacles = RInt(nObstaclesMin, nObstaclesMax)
+	nPortals := RInt(nPortalsMin, nPortalsMax)
+
+	for i := ZERO; i.Lt(nPortals); i.Inc() {
+		var portal PortalSeed
+		portal.cooldown = RInt(SpawnPortalCooldownMin, SpawnPortalCooldownMax)
+		portal.nGremlins = RInt(nGremlinMin, nGremlinMax)
+		portal.nHounds = RInt(nHoundMin, nHoundMax)
+		portal.nUltraHounds = RInt(nUltraHoundMin, nUltraHoundMax)
+		s.portals = append(s.portals, portal)
 	}
 	return
 }
@@ -104,45 +138,19 @@ func RandomLevel() (m MatBool) {
 func NewWorld(seed Int) (w World) {
 	w.Seed = seed
 	w.Id = uuid.New()
-	RSeed(seed)
-
-	w.Obstacles = RandomLevel()
-
-	// for y := ZERO; y.Lt(m.Size().Y); y.Inc() {
-	// 	for x := ZERO; x.Lt(m.Size().X); x.Inc() {
-	// 		if m.Get(Pt{x, y}) {
-	// 			w.Enemies = append(w.Enemies, NewQuestion(Pt{x, y}))
-	// 		}
-	// 	}
-	// }
-
-	// Obstacles
-	// w.Obstacles = RandomLevel2()
-
-	// Place each item at an unoccupied position (and occupy that position).
-	// occ := w.Obstacles.Clone() // Keeps track of occupied positions.
-
-	// var limit int
-	// limit = RInt(I(2), I(4)).ToInt()
-	// for i := 0; i < limit; i++ {
-	//	w.Enemies = append(w.Enemies, NewEnemy(ZERO, occ.NewlyOccupiedRandomPos()))
-	// }
-	// limit = RInt(I(17), I(20)).ToInt()
-	// for i := 0; i < limit; i++ {
-	//	w.Enemies = append(w.Enemies, NewQuestion(occ.NewlyOccupiedRandomPos()))
-	// }
-	// limit = RInt(I(1), I(1)).ToInt()
-	// for i := 0; i < limit; i++ {
-	//	w.Enemies = append(w.Enemies, NewEnemy(TWO, occ.NewlyOccupiedRandomPos()))
-	// }
-
+	w.Seeds = GenerateSeeds(seed)
+	w.Obstacles = RandomLevel(w.nObstacles)
 	occ := w.Obstacles.Clone()
-	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
-	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
-	w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(occ.OccupyRandomPos()))
+	for _, portal := range w.portals {
+		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
+			occ.OccupyRandomPos(),
+			portal.cooldown,
+			portal.nGremlins,
+			portal.nHounds,
+			portal.nUltraHounds,
+			I(0)))
+	}
 	w.SpawnPortals[0].nKingsLeftToSpawn = I(1)
-
-	// w.Enemies = append(w.Enemies, NewEnemy(I(4), occ.NewlyOccupiedRandomPos()))
 
 	// Params
 	w.BlockSize = I(1000)
@@ -163,6 +171,7 @@ func NewWorld(seed Int) (w World) {
 
 func (w *World) SerializedPlaythrough() []byte {
 	buf := new(bytes.Buffer)
+	Serialize(buf, int64(Version))
 	Serialize(buf, w.Seed.ToInt64())
 	SerializeSlice(buf, w.History)
 	return Zip(buf.Bytes())
@@ -171,6 +180,13 @@ func (w *World) SerializedPlaythrough() []byte {
 func DeserializePlaythrough(data []byte) (p Playthrough) {
 	buf := bytes.NewBuffer(Unzip(data))
 	var token int64
+	Deserialize(buf, &token)
+	if token != Version {
+		Check(fmt.Errorf("this code can't simulate this playthrough "+
+			"correctly - we are version %d and playthrough was generated "+
+			"with version %d",
+			Version, token))
+	}
 	Deserialize(buf, &token)
 	p.Seed = I64(token)
 	DeserializeSlice(buf, &p.History)
