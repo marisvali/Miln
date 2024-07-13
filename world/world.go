@@ -108,29 +108,29 @@ func RandomLevel(nObstacles Int) (m MatBool) {
 }
 
 type PortalSeed struct {
-	cooldown     Int
-	nGremlins    Int
-	nHounds      Int
-	nUltraHounds Int
+	Cooldown     Int
+	NGremlins    Int
+	NHounds      Int
+	NUltraHounds Int
 }
 
 type Seeds struct {
-	nObstacles Int
-	portals    []PortalSeed
+	NObstacles Int
+	Portals    []PortalSeed
 }
 
 func GenerateSeeds(seed Int) (s Seeds) {
 	RSeed(seed)
-	s.nObstacles = RInt(nObstaclesMin, nObstaclesMax)
+	s.NObstacles = RInt(nObstaclesMin, nObstaclesMax)
 	nPortals := RInt(nPortalsMin, nPortalsMax)
 
 	for i := ZERO; i.Lt(nPortals); i.Inc() {
 		var portal PortalSeed
-		portal.cooldown = RInt(SpawnPortalCooldownMin, SpawnPortalCooldownMax)
-		portal.nGremlins = RInt(nGremlinMin, nGremlinMax)
-		portal.nHounds = RInt(nHoundMin, nHoundMax)
-		portal.nUltraHounds = RInt(nUltraHoundMin, nUltraHoundMax)
-		s.portals = append(s.portals, portal)
+		portal.Cooldown = RInt(SpawnPortalCooldownMin, SpawnPortalCooldownMax)
+		portal.NGremlins = RInt(nGremlinMin, nGremlinMax)
+		portal.NHounds = RInt(nHoundMin, nHoundMax)
+		portal.NUltraHounds = RInt(nUltraHoundMin, nUltraHoundMax)
+		s.Portals = append(s.Portals, portal)
 	}
 	return
 }
@@ -139,15 +139,15 @@ func NewWorld(seed Int) (w World) {
 	w.Seed = seed
 	w.Id = uuid.New()
 	w.Seeds = GenerateSeeds(seed)
-	w.Obstacles = RandomLevel(w.nObstacles)
+	w.Obstacles = RandomLevel(w.NObstacles)
 	occ := w.Obstacles.Clone()
-	for _, portal := range w.portals {
+	for _, portal := range w.Portals {
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
 			occ.OccupyRandomPos(),
-			portal.cooldown,
-			portal.nGremlins,
-			portal.nHounds,
-			portal.nUltraHounds,
+			portal.Cooldown,
+			portal.NGremlins,
+			portal.NHounds,
+			portal.NUltraHounds,
 			I(0)))
 	}
 	w.SpawnPortals[0].nKingsLeftToSpawn = I(1)
@@ -298,12 +298,12 @@ func (w *World) Step(input PlayerInput) {
 	}
 	w.Enemies = newEnemies
 
-	// Step portals.
+	// Step Portals.
 	for i := range w.SpawnPortals {
 		w.SpawnPortals[i].Step(w)
 	}
 
-	// Cull dead portals.
+	// Cull dead Portals.
 	newPortals := []SpawnPortal{}
 	for i := range w.SpawnPortals {
 		if w.SpawnPortals[i].Health.IsPositive() {

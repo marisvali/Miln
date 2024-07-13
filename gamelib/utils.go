@@ -40,6 +40,10 @@ func Check(e error) {
 	}
 }
 
+func CloseFile(f *os.File) {
+	Check(f.Close())
+}
+
 func WriteFile(name string, data []byte) {
 	err := os.WriteFile(name, data, 0644)
 	Check(err)

@@ -115,20 +115,21 @@ type dbRow struct {
 	startMoment time.Time
 	endMoment   time.Time
 	user        string
+	version     int64
 	id          uuid.UUID
 	data        []byte
 }
 
 func TestDatabaseSaveRecordings(t *testing.T) {
 	db := ConnectToDbSql()
-	rows, err := db.Query("SELECT start_moment, COALESCE(end_moment, start_moment), user, id, playthrough FROM playthroughs")
+	rows, err := db.Query("SELECT start_moment, COALESCE(end_moment, start_moment), user, version, id, playthrough FROM playthroughs")
 	Check(err)
 	defer func(rows *sql.Rows) { Check(rows.Close()) }(rows)
 
 	dbRows := []dbRow{}
 	for rows.Next() {
 		row := dbRow{}
-		err := rows.Scan(&row.startMoment, &row.endMoment, &row.user, &row.id, &row.data)
+		err := rows.Scan(&row.startMoment, &row.endMoment, &row.user, &row.version, &row.id, &row.data)
 		Check(err)
 		dbRows = append(dbRows, row)
 	}
@@ -137,8 +138,8 @@ func TestDatabaseSaveRecordings(t *testing.T) {
 		dir := dbRows[i].user
 		_ = os.Mkdir(dir, os.ModeDir)
 		m := dbRows[i].startMoment
-		filename := fmt.Sprintf("%s/%d%02d%02d-%02d%02d%02d.mln", dir, m.Year(),
-			m.Month(), m.Day(), m.Hour(), m.Minute(), m.Second())
+		filename := fmt.Sprintf("%s/%d%02d%02d-%02d%02d%02d-%03d.mln", dir, m.Year(),
+			m.Month(), m.Day(), m.Hour(), m.Minute(), m.Second(), dbRows[i].version)
 		WriteFile(filename, dbRows[i].data)
 	}
 
