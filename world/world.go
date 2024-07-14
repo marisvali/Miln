@@ -135,10 +135,32 @@ func GenerateSeeds(seed Int) (s Seeds) {
 	return
 }
 
+func GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
+	RSeed(seed)
+	for {
+		s = GenerateSeeds(RInt(ZERO, I(1000000)))
+		difficulty := ZERO
+		difficulty.Add(s.NObstacles)
+		difficulty.Add(I(len(s.Portals)))
+		for _, p := range s.Portals {
+			difficulty.Add(p.NGremlins)
+			difficulty.Add(p.NHounds)
+			difficulty.Add(p.NUltraHounds)
+			difficulty.Add(p.Cooldown.Times(I(2)).DivBy(I(100)))
+		}
+		dif := target.Minus(difficulty)
+		if dif.Abs().Leq(I(5)) {
+			s.NObstacles.Add(dif)
+			return
+		}
+	}
+}
+
 func NewWorld(seed Int) (w World) {
 	w.Seed = seed
 	w.Id = uuid.New()
-	w.Seeds = GenerateSeeds(seed)
+	// w.Seeds = GenerateSeeds(seed)
+	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(62))
 	w.Obstacles = RandomLevel(w.NObstacles)
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
