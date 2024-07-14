@@ -163,7 +163,7 @@ func NewWorld(seed Int) (w World) {
 	w.Seed = seed
 	w.Id = uuid.New()
 	// w.Seeds = GenerateSeeds(seed)
-	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(60))
+	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(53))
 	w.Obstacles = RandomLevel(w.NObstacles)
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
