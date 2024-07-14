@@ -1,4 +1,4 @@
-package database
+package analysis
 
 import (
 	"database/sql"
@@ -26,7 +26,7 @@ func TestDatabase(t *testing.T) {
 		AllowNativePasswords: true,
 	}
 
-	// Get a database handle.
+	// Get a analysis handle.
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
@@ -74,7 +74,7 @@ func TestDatabaseBytes(t *testing.T) {
 		AllowNativePasswords: true,
 	}
 
-	// Get a database handle.
+	// Get a analysis handle.
 	var err error
 	db, err = sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
