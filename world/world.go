@@ -47,7 +47,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 2
+const Version = 4
 
 type World struct {
 	Player           Player
