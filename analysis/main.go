@@ -17,12 +17,6 @@ func main() {
 		dir := os.Args[2]
 		Extract(dir)
 	} else if action == "updatever" {
-		// start := os.Args[2]
-		// end := os.Args[3]
-		// version := os.Args[4]
-		start := "2024-07-14 08:31:44"
-		end := "2024-07-14 09:12:26"
-		version := "3"
-		UpdateVersion(start, end, version)
+		UpdateVersion()
 	}
 }
