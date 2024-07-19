@@ -36,7 +36,7 @@ func DownloadRecordings() {
 		dir := dbRows[i].user
 		_ = os.Mkdir(dir, os.ModeDir)
 		m := dbRows[i].startMoment
-		filename := fmt.Sprintf("%s/%d%02d%02d-%02d%02d%02d-%03d.mln", dir, m.Year(),
+		filename := fmt.Sprintf("%s/%d%02d%02d-%02d%02d%02d.mln%03d", dir, m.Year(),
 			m.Month(), m.Day(), m.Hour(), m.Minute(), m.Second(), dbRows[i].version)
 		WriteFile(filename, dbRows[i].data)
 	}
