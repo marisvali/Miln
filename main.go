@@ -718,7 +718,7 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = true
+	g.recording = false
 	if len(os.Args) == 2 {
 		g.recording = false
 		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
@@ -739,11 +739,12 @@ func main() {
 		// }
 
 		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		id, err := uuid.Parse("b02433de-bef5-476b-bbf1-7cf23fe8fcef")
-		Check(err)
-		db := ConnectToDbSql()
-		zippedPlaythrough := DownloadDataFromDbSql(db, id)
-		g.playthrough = DeserializePlaythrough(zippedPlaythrough)
+		// id, err := uuid.Parse("b02433de-bef5-476b-bbf1-7cf23fe8fcef")
+		// Check(err)
+		// db := ConnectToDbSql()
+		// zippedPlaythrough := DownloadDataFromDbSql(db, id)
+		// g.playthrough = DeserializePlaythrough(zippedPlaythrough)
+		g.playthrough = DeserializePlaythrough(ReadFile("world/playthroughs/20240714-120933.mln006"))
 		g.world = NewWorld(g.playthrough.Seed)
 		g.state = GameOngoing
 	}
