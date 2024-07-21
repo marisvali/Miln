@@ -8,6 +8,9 @@ import (
 type Vision struct {
 	blockSize                 Int
 	cachedRelativeRelevantPts Matrix[[]Pt]
+	previousStart             Pt
+	previousObstacles         MatBool
+	previousAttackableTiles   MatBool
 }
 
 func NewVision(size Pt) (v Vision) {
@@ -144,6 +147,11 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 }
 
 func (v *Vision) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) {
+	if start == v.previousStart && obstacles.Equal(v.previousObstacles) {
+		attackableTiles = v.previousAttackableTiles
+		return
+	}
+
 	attackableTiles = NewMatBool(obstacles.Size())
 
 	sz := obstacles.Size()
@@ -165,5 +173,9 @@ func (v *Vision) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) 
 	// reachable if you respect the math, but which just look weird to people.
 	// Do the elimination by intersecting sets.
 	attackableTiles.IntersectWith(connectedTiles)
+
+	v.previousStart = start
+	v.previousObstacles = obstacles.Clone()
+	v.previousAttackableTiles = attackableTiles
 	return
 }
