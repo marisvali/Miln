@@ -3,9 +3,11 @@ package gamelib
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/sha256"
 	"database/sql"
 	"embed"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -513,4 +515,21 @@ func MatrixFromString[T comparable](str string, vals map[byte]T) (m Matrix[T]) {
 		col++
 	}
 	return
+}
+
+// HashBytes receives a byte array and returns its SHA-256 hash as a hex string.
+func HashBytes(input []byte) string {
+	// Create a new SHA-256 hash
+	hash := sha256.New()
+
+	// Write the byte slice to the hash
+	hash.Write(input)
+
+	// Get the resulting hash as a byte slice
+	hashBytes := hash.Sum(nil)
+
+	// Convert the byte slice to a hex string
+	hashHex := hex.EncodeToString(hashBytes)
+
+	return hashHex
 }
