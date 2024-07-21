@@ -166,7 +166,7 @@ func NewWorld(seed Int) (w World) {
 	// w.Seeds = GenerateSeeds(seed)
 	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(60))
 	w.Obstacles = RandomLevel(w.NObstacles)
-	w.vision = NewVision2(w.Obstacles.Size())
+	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
@@ -344,16 +344,6 @@ func (w *World) computeAttackableTiles() {
 		obstacles.Set(enemy.Pos())
 	}
 	w.AttackableTiles = w.vision.Compute(w.Player.Pos, obstacles)
-
-	// Get all attackable tiles connected to the player's pos.
-	connectedTiles := w.AttackableTiles.ConnectedPositions(w.Player.Pos)
-
-	// Eliminate tiles which were marked as attackable but are disconnected from
-	// the attackable region that contains the player's position.
-	// This is needed in order to eliminate tiles which are technically
-	// reachable if you respect the math, but which just look weird to people.
-	// Do the elimination by intersecting sets.
-	w.AttackableTiles.IntersectWith(connectedTiles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
