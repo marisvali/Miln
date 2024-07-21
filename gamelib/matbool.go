@@ -11,13 +11,13 @@ type MatBool struct {
 
 func NewMatBool(size Pt) (m MatBool) {
 	m.size = size
-	m.cells = make([]bool, size.Y.Times(size.X).ToInt64())
+	m.Cells = make([]bool, size.Y.Times(size.X).ToInt64())
 	return m
 }
 
 func (m *MatBool) Clone() (c MatBool) {
 	c.size = m.size
-	c.cells = append(c.cells, m.cells...)
+	c.Cells = append(c.Cells, m.Cells...)
 	return
 }
 
@@ -30,8 +30,8 @@ func (m *MatBool) Set(pos Pt) {
 }
 
 func (m *MatBool) SetAll() {
-	for i := range m.cells {
-		m.cells[i] = true
+	for i := range m.Cells {
+		m.Cells[i] = true
 	}
 }
 
@@ -40,8 +40,8 @@ func (m *MatBool) Clear(pos Pt) {
 }
 
 func (m *MatBool) ClearAll() {
-	for i := range m.cells {
-		m.cells[i] = false
+	for i := range m.Cells {
+		m.Cells[i] = false
 	}
 }
 
@@ -54,8 +54,8 @@ func (m *MatBool) Add(other MatBool) {
 			other.size.X.ToInt(), other.size.Y.ToInt()))
 	}
 
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] || other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] || other.Cells[i]
 	}
 }
 
@@ -68,8 +68,8 @@ func (m *MatBool) Subtract(other MatBool) {
 			other.size.X.ToInt(), other.size.Y.ToInt()))
 	}
 
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] && !other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] && !other.Cells[i]
 	}
 }
 
@@ -82,16 +82,16 @@ func (m *MatBool) IntersectWith(other MatBool) {
 			other.size.X.ToInt(), other.size.Y.ToInt()))
 	}
 
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] && other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] && other.Cells[i]
 	}
 }
 
 // Negate changes the matrix so that each position has the opposite value (true
 // becomes false, false becomes true).
 func (m *MatBool) Negate() {
-	for i := range m.cells {
-		m.cells[i] = !m.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = !m.Cells[i]
 	}
 	return
 }
@@ -139,8 +139,8 @@ func (m MatBool) ConnectedPositions(start Pt) (res MatBool) {
 
 func (m MatBool) ToSlice() (s []Pt) {
 	nCols := m.size.X.ToInt()
-	for i := range m.cells {
-		if m.cells[i] {
+	for i := range m.Cells {
+		if m.Cells[i] {
 			s = append(s, IPt(i%nCols, i/nCols))
 		}
 	}
@@ -154,5 +154,5 @@ func (m *MatBool) FromSlice(s []Pt) {
 }
 
 func (m *MatBool) Equal(o MatBool) bool {
-	return m.size == o.size && slices.Equal(m.cells, o.cells)
+	return m.size == o.size && slices.Equal(m.Cells, o.Cells)
 }

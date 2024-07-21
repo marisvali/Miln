@@ -1,28 +1,28 @@
 package gamelib
 
 type Matrix[T any] struct {
-	cells []T
+	Cells []T
 	size  Pt
 }
 
 func (m *Matrix[T]) Clone() (c Matrix[T]) {
 	c.size = m.size
-	c.cells = append(c.cells, m.cells...)
+	c.Cells = append(c.Cells, m.Cells...)
 	return
 }
 
 func NewMatrix[T any](size Pt) (m Matrix[T]) {
 	m.size = size
-	m.cells = make([]T, size.Y.Times(size.X).ToInt64())
+	m.Cells = make([]T, size.Y.Times(size.X).ToInt64())
 	return m
 }
 
 func (m *Matrix[T]) Set(pos Pt, val T) {
-	m.cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()] = val
+	m.Cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()] = val
 }
 
 func (m *Matrix[T]) Get(pos Pt) T {
-	return m.cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()]
+	return m.Cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()]
 }
 
 func (m *Matrix[T]) InBounds(pt Pt) bool {

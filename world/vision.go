@@ -1,6 +1,7 @@
 package world
 
 import (
+	"bytes"
 	. "github.com/marisvali/miln/gamelib"
 	"slices"
 )
@@ -16,6 +17,7 @@ type Vision struct {
 func NewVision(size Pt) (v Vision) {
 	v.blockSize = I(1000)
 	v.cachedRelativeRelevantPts = NewMatrix[[]Pt](size)
+	// v.LoadCache("cache.cache")
 	return
 }
 
@@ -47,8 +49,8 @@ func (v *Vision) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	lineEnd := v.tileToWorldPos(end)
 	l := Line{lineStart, lineEnd}
 
-	for y := start.X; y.Leq(end.Y); y.Inc() {
-		for x := start.Y; x.Leq(end.X); x.Inc() {
+	for y := start.Y; y.Leq(end.Y); y.Inc() {
+		for x := start.X; x.Leq(end.X); x.Inc() {
 			pt := Pt{x, y}
 			if pt == start || pt == end {
 				// The start and end points will of course always block v path
@@ -144,6 +146,48 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 		}
 	}
 	return true
+}
+
+func (v *Vision) BuildCache() {
+	var dif Pt
+	sz := v.cachedRelativeRelevantPts.Size()
+	for dif.Y = ZERO; dif.Y.Lt(sz.Y); dif.Y.Inc() {
+		for dif.X = ZERO; dif.X.Lt(sz.X); dif.X.Inc() {
+			v.computeRelativeRelevantPts(dif)
+		}
+	}
+}
+
+func serializeMatrixOfPtList(m Matrix[[]Pt]) []byte {
+	buf := new(bytes.Buffer)
+	Serialize(buf, m.Size())
+	Serialize(buf, int64(len(m.Cells)))
+	for i := range m.Cells {
+		SerializeSlice(buf, m.Cells[i])
+	}
+	return Zip(buf.Bytes())
+}
+
+func deserializeMatrixOfPtList(data []byte) (m Matrix[[]Pt]) {
+	buf := bytes.NewBuffer(Unzip(data))
+	var mSize Pt
+	Deserialize(buf, &mSize)
+	m = NewMatrix[[]Pt](mSize)
+	var nSlices int64
+	Deserialize(buf, &nSlices)
+	for i := int64(0); i < nSlices; i++ {
+		DeserializeSlice(buf, &m.Cells[i])
+	}
+	return
+}
+
+func (v *Vision) SaveCache(filename string) {
+	WriteFile(filename, serializeMatrixOfPtList(v.cachedRelativeRelevantPts))
+}
+
+func (v *Vision) LoadCache(filename string) {
+	data := ReadFile(filename)
+	v.cachedRelativeRelevantPts = deserializeMatrixOfPtList(data)
 }
 
 func (v *Vision) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) {
