@@ -20,3 +20,17 @@ func Test_WorldRegression1(t *testing.T) {
 
 	assert.Equal(t, expected, w.RegressionId())
 }
+
+func RunPlaythrough(p Playthrough) {
+	w := NewWorld(p.Seed)
+	for _, input := range p.History {
+		w.Step(input)
+	}
+}
+
+func BenchmarkPlaythroughSpeed(b *testing.B) {
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20240714-120933.mln006"))
+	for n := 0; n < b.N; n++ {
+		RunPlaythrough(playthrough)
+	}
+}
