@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestRelevantPts(t *testing.T) {
+func TestRelevantPts2(t *testing.T) {
 	obstacles := NewMatBool(Pt{I(50), I(50)})
 	obstacles.Set(Pt{I(1), I(1)})
 
@@ -14,7 +14,7 @@ func TestRelevantPts(t *testing.T) {
 	// println()
 	// println()
 
-	a := NewAttackableTiles()
+	a := NewAttackableTiles2(obstacles.Size())
 
 	dummy := ZERO
 	sz := obstacles.Size()

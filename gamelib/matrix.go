@@ -1,6 +1,6 @@
 package gamelib
 
-type Matrix[T comparable] struct {
+type Matrix[T any] struct {
 	cells []T
 	size  Pt
 }
@@ -11,7 +11,7 @@ func (m *Matrix[T]) Clone() (c Matrix[T]) {
 	return
 }
 
-func NewMatrix[T comparable](size Pt) (m Matrix[T]) {
+func NewMatrix[T any](size Pt) (m Matrix[T]) {
 	m.size = size
 	m.cells = make([]T, size.Y.Times(size.X).ToInt64())
 	return m
