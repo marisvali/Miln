@@ -166,7 +166,7 @@ func NewWorld(seed Int) (w World) {
 	// w.Seeds = GenerateSeeds(seed)
 	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(60))
 	w.Obstacles = RandomLevel(w.NObstacles)
-	w.vision = NewVision1()
+	w.vision = NewVision2(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
