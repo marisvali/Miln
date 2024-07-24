@@ -73,6 +73,7 @@ type Gui struct {
 	playthrough        Playthrough
 	uploadDataChannel  chan uploadData
 	username           string
+	ai                 AI
 	// db                 *sql.DB
 }
 
@@ -190,6 +191,7 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
+	input = g.ai.Step(&g.world)
 	g.world.Step(input)
 
 	if g.recording {
@@ -718,7 +720,7 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = false
+	g.recording = true
 	if len(os.Args) == 2 {
 		g.recording = false
 		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
@@ -731,7 +733,7 @@ func main() {
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GamePaused
+		g.state = GameOngoing
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
