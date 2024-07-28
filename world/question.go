@@ -17,6 +17,11 @@ func NewQuestion(pos Pt) *Question {
 	return &q
 }
 
+func (q *Question) Clone() Enemy {
+	nq := *q
+	return &nq
+}
+
 func (q *Question) onDeath(w *World) {
 	nQuestions := ZERO
 	for i := range w.Enemies {

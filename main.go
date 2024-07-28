@@ -124,18 +124,18 @@ func (g *Gui) uploadCurrentWorld() {
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
-		g.uploadCurrentWorld()
+		g.state = GameOngoing
+		// g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
-		g.uploadCurrentWorld()
+		g.state = GameOngoing
+		// g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
@@ -154,12 +154,12 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if allEnemiesDead {
 		g.state = GameWon
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 
@@ -191,17 +191,17 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
-	input = g.ai.Step(&g.world)
+	// input = g.ai.Step(&g.world)
 	g.world.Step(input)
 
-	if g.recording {
-		if g.recordingFile != "" {
-			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
-		}
-		if g.frameIdx.Mod(I(60)) == ZERO {
-			g.uploadCurrentWorld()
-		}
-	}
+	// if g.recording {
+	// 	if g.recordingFile != "" {
+	// 		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+	// 	}
+	// 	if g.frameIdx.Mod(I(60)) == ZERO {
+	// 		// g.uploadCurrentWorld()
+	// 	}
+	// }
 
 	if g.folderWatcher.FolderContentsChanged() {
 		g.loadGuiData()
@@ -214,13 +214,13 @@ func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		g.world = NewWorld(RInt(I(0), I(10000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -233,12 +233,12 @@ func (g *Gui) UpdateGamePaused() {
 
 func (g *Gui) UpdateGameWon() {
 	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
+		g.state = GameOngoing
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
+		g.state = GameOngoing
 		g.UpdateGamePaused()
 		return
 	}
@@ -246,12 +246,12 @@ func (g *Gui) UpdateGameWon() {
 
 func (g *Gui) UpdateGameLost() {
 	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
+		g.state = GameOngoing
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
+		g.state = GameOngoing
 		g.UpdateGamePaused()
 		return
 	}
@@ -262,6 +262,10 @@ func (g *Gui) UpdatePlayback() {
 }
 
 func (g *Gui) Update() error {
+	if g.JustPressed(ebiten.KeyX) {
+		return ebiten.Termination
+	}
+
 	// One-time initialization. This needs to happen here because I need to
 	// operate on ebiten images and it won't let me before I do RunGame.
 	// TODO: find a better place for this code
@@ -589,12 +593,12 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 
 	g.DrawTile(screen, img, e.Pos())
 
-	percent := e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
-	var alpha Int
-	if percent.Gt(ZERO) {
-		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-	} else {
-		alpha = ZERO
+	alpha := ZERO
+	if e.FreezeCooldown().IsPositive() {
+		percent := e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
+		if percent.Gt(ZERO) {
+			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+		}
 	}
 
 	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
@@ -727,12 +731,12 @@ func main() {
 		g.world = NewWorld(g.playthrough.Seed)
 		g.state = GameOngoing
 	} else if g.recording {
-		g.recordingFile = GetNewRecordingFile()
-		// g.world = NewWorld(I(322))
-		g.world = NewWorld(RInt(I(0), I(1000000)))
+		// g.recordingFile = GetNewRecordingFile()
+		g.world = NewWorld(I(9))
+		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()

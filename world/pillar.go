@@ -19,6 +19,11 @@ func NewPillar(pos Pt) *Pillar {
 	return &p
 }
 
+func (p *Pillar) Clone() Enemy {
+	np := *p
+	return &np
+}
+
 func (p *Pillar) Step(w *World) {
 	if p.beamJustHit(w) {
 		p.freezeCooldownIdx = p.freezeCooldown

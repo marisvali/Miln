@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"math"
+	"slices"
 )
 
 var nObstaclesMin = I(10)
@@ -29,7 +30,7 @@ var nHoundMin = I(0)
 var nHoundMax = I(2)
 
 var UltraHoundMoveCooldown = I(100)
-var UltraHoundFreezeCooldown = I(10)
+var UltraHoundFreezeCooldown = I(0)
 var UltraHoundMaxHealth = I(1)
 var nUltraHoundMin = I(0)
 var nUltraHoundMax = I(1)
@@ -47,7 +48,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 6
+const Version = 999
 
 type World struct {
 	Player           Player
@@ -57,7 +58,6 @@ type World struct {
 	AttackableTiles  MatBool
 	TimeStep         Int
 	BeamMax          Int
-	beamPts          []Pt
 	BlockSize        Int
 	Ammos            []Ammo
 	SpawnPortals     []SpawnPortal
@@ -69,6 +69,22 @@ type World struct {
 	vision           Vision
 	Playthrough
 	Seeds
+}
+
+func (w *World) Clone() World {
+	clone := *w
+	clone.Enemies = []Enemy{}
+	for i := range w.Enemies {
+		clone.Enemies = append(clone.Enemies, w.Enemies[i].Clone())
+	}
+	clone.Obstacles = w.Obstacles.Clone()
+	clone.AttackableTiles = w.AttackableTiles.Clone()
+	clone.Ammos = slices.Clone(w.Ammos)
+	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
+	clone.Keys = slices.Clone(w.Keys)
+	clone.History = slices.Clone(w.History)
+	clone.Portals = slices.Clone(w.Portals)
+	return clone
 }
 
 type Playthrough struct {
@@ -364,8 +380,8 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
-	w.computeAttackableTiles()
 	w.Player.Step(w, input)
+	w.computeAttackableTiles()
 
 	// Step the enemies.
 	for i := range w.Enemies {
