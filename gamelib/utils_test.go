@@ -81,9 +81,9 @@ func TestDbHttp(t *testing.T) {
 	id := uuid.New()
 	// id, err := uuid.Parse("550e8400-e29b-41d4-a716-446655440002")
 	// Check(err)
-	InitializeIdInDbHttp(id)
-	UploadDataToDbHttp(id, []byte("mele 1"))
-	UploadDataToDbHttp(id, []byte("mele 2"))
-	UploadDataToDbHttp(id, []byte("mele totusi, da -------"))
+	InitializeIdInDbHttp("test-user", 19, id)
+	UploadDataToDbHttp("test-user", 19, id, []byte("mele 1"))
+	UploadDataToDbHttp("test-user", 19, id, []byte("mele 2"))
+	UploadDataToDbHttp("test-user", 19, id, []byte("mele totusi, da -------"))
 	assert.Equal(t, true, true)
 }

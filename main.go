@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
+	. "github.com/marisvali/miln/ai"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	"golang.org/x/image/font"
