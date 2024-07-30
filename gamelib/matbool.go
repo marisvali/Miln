@@ -1,6 +1,9 @@
 package gamelib
 
-import "fmt"
+import (
+	"fmt"
+	"slices"
+)
 
 type MatBool struct {
 	Matrix[bool]
@@ -148,4 +151,8 @@ func (m *MatBool) FromSlice(s []Pt) {
 	for i := range s {
 		m.Set(s[i])
 	}
+}
+
+func (m *MatBool) Equal(o MatBool) bool {
+	return m.size == o.size && slices.Equal(m.cells, o.cells)
 }

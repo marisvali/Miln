@@ -67,6 +67,7 @@ type World struct {
 	HoundKeyDropped  bool
 	PortalKeyDropped bool
 	KingSpawned      bool
+	vision           Vision
 	Playthrough
 	Seeds
 }
@@ -157,6 +158,7 @@ func NewWorld(seed Int) (w World) {
 	w.Id = uuid.New()
 	w.Seeds = GenerateSeeds(seed)
 	w.Obstacles = RandomLevel(w.NObstacles)
+	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
@@ -329,62 +331,11 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 
 func (w *World) computeAttackableTiles() {
 	// Compute which tiles are attackable.
-	w.AttackableTiles = NewMatBool(w.Obstacles.Size())
-
-	rows := w.Obstacles.Size().Y
-	cols := w.Obstacles.Size().X
-	w.beamPts = make([]Pt, rows.Times(cols).ToInt64())
-
-	// Get a list of squares.
-	squares := []Square{}
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			pt := Pt{x, y}
-			if w.Obstacles.At(pt) {
-				center := w.TileToWorldPos(pt)
-				size := w.BlockSize.Times(I(98)).DivBy(I(100))
-				squares = append(squares, Square{center, size})
-			}
-		}
-	}
+	obstacles := w.Obstacles.Clone()
 	for _, enemy := range w.Enemies {
-		center := w.TileToWorldPos(enemy.Pos())
-		size := w.BlockSize.Times(I(98)).DivBy(I(100))
-		squares = append(squares, Square{center, size})
+		obstacles.Set(enemy.Pos())
 	}
-
-	// Draw a line from the player's pos to each of the tiles and test if that
-	// line intersects the squares.
-	lineStart := w.TileToWorldPos(w.Player.Pos)
-	for y := ZERO; y.Lt(rows); y.Inc() {
-		for x := ZERO; x.Lt(cols); x.Inc() {
-			// Check if tile can be attacked.
-			lineEnd := w.TileToWorldPos(Pt{x, y})
-			l := Line{lineStart, lineEnd}
-			if intersects, pt := LineSquaresIntersection(l, squares); intersects {
-				obstacleTile := w.WorldPosToTile(pt)
-				if obstacleTile.Eq(Pt{x, y}) {
-					w.AttackableTiles.Set(Pt{x, y})
-				} else {
-					w.AttackableTiles.Clear(Pt{x, y})
-					idx := w.AttackableTiles.PtToIndex(Pt{x, y}).ToInt()
-					w.beamPts[idx] = pt
-				}
-			} else {
-				w.AttackableTiles.Set(Pt{x, y})
-			}
-		}
-	}
-
-	// Get all attackable tiles connected to the player's pos.
-	connectedTiles := w.AttackableTiles.ConnectedPositions(w.Player.Pos)
-
-	// Eliminate tiles which were marked as attackable but are disconnected from
-	// the attackable region that contains the player's position.
-	// This is needed in order to eliminate tiles which are technically
-	// reachable if you respect the math, but which just look weird to people.
-	// Do the elimination by intersecting sets.
-	w.AttackableTiles.IntersectWith(connectedTiles)
+	w.AttackableTiles = w.vision.Compute(w.Player.Pos, obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
@@ -405,8 +356,8 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
-	w.computeAttackableTiles()
 	w.Player.Step(w, input)
+	w.computeAttackableTiles()
 
 	// Step the enemies.
 	for i := range w.Enemies {
