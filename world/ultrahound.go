@@ -19,6 +19,11 @@ func NewUltraHound(pos Pt) *UltraHound {
 	return &h
 }
 
+func (h *UltraHound) Clone() Enemy {
+	nh := *h
+	return &nh
+}
+
 func (h *UltraHound) Step(w *World) {
 	if h.beamJustHit(w) {
 		h.freezeCooldownIdx = h.freezeCooldown

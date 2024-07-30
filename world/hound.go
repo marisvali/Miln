@@ -19,6 +19,11 @@ func NewHound(pos Pt) *Hound {
 	return &h
 }
 
+func (h *Hound) Clone() Enemy {
+	nh := *h
+	return &nh
+}
+
 func (h *Hound) Step(w *World) {
 	if h.beamJustHit(w) {
 		h.freezeCooldownIdx = h.freezeCooldown

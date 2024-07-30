@@ -19,6 +19,11 @@ func NewGremlin(pos Pt) *Gremlin {
 	return &g
 }
 
+func (g *Gremlin) Clone() Enemy {
+	ng := *g
+	return &ng
+}
+
 func (g *Gremlin) Step(w *World) {
 	if g.beamJustHit(w) {
 		g.freezeCooldownIdx = g.freezeCooldown

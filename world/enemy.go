@@ -12,6 +12,7 @@ type Enemy interface {
 	FreezeCooldown() Int
 	Health() Int
 	MaxHealth() Int
+	Clone() Enemy
 }
 
 type EnemyBase struct {

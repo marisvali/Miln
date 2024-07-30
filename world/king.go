@@ -19,6 +19,11 @@ func NewKing(pos Pt) *King {
 	return &k
 }
 
+func (k *King) Clone() Enemy {
+	nk := *k
+	return &nk
+}
+
 func (k *King) Step(w *World) {
 	if k.beamJustHit(w) {
 		k.freezeCooldownIdx = k.freezeCooldown
