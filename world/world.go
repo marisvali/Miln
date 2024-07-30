@@ -356,8 +356,8 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
-	w.Player.Step(w, input)
 	w.computeAttackableTiles()
+	w.Player.Step(w, input)
 
 	// Step the enemies.
 	for i := range w.Enemies {
