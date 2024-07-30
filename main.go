@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
+	. "github.com/marisvali/miln/ai"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	"golang.org/x/image/font"
@@ -73,6 +74,7 @@ type Gui struct {
 	playthrough        Playthrough
 	uploadDataChannel  chan uploadData
 	username           string
+	ai                 AI
 	// db                 *sql.DB
 }
 
@@ -190,6 +192,7 @@ func (g *Gui) UpdateGameOngoing() {
 		}
 	}
 
+	input = g.ai.Step(&g.world)
 	g.world.Step(input)
 
 	if g.recording {
@@ -726,8 +729,8 @@ func main() {
 		g.state = GameOngoing
 	} else if g.recording {
 		g.recordingFile = GetNewRecordingFile()
-		// g.world = NewWorld(I(322))
-		g.world = NewWorld(RInt(I(0), I(1000000)))
+		g.world = NewWorld(I(3301847))
+		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)

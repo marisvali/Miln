@@ -78,17 +78,15 @@ func TestAI_MeanSquaredError(t *testing.T) {
 	expectedOutcomes := []Int{}
 	actualOutcomes := []Int{}
 	for i, entry := range entries {
-		if i >= 3 {
-			break
-		}
-		fmt.Printf("%d\n", i)
 		fullPath := filepath.Join(dir, entry.Name())
 		data := ReadFile(fullPath)
 		playthrough := DeserializePlaythrough(data)
+		fmt.Printf("%d - %s - seed %d", i, entry.Name(), playthrough.Seed)
 		expectedOutcome := RunPlaythrough(playthrough)
+		fmt.Printf(" - expected outcome %d", expectedOutcome)
 		expectedOutcomes = append(expectedOutcomes, expectedOutcome)
-		fmt.Printf("%d etc\n", i)
 		actualOutcome := RunLevelWithAI(playthrough.Seed)
+		fmt.Printf(" - actual outcome %d\n", actualOutcome)
 		actualOutcomes = append(actualOutcomes, actualOutcome)
 	}
 
