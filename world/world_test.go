@@ -7,18 +7,24 @@ import (
 )
 
 func Test_WorldRegression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20240709-150738.mln002"))
-	expected := string(ReadFile("playthroughs/20240709-150738.mln002-hash"))
+	files := []string{
+		"playthroughs/20240709-150738.mln002",
+		"playthroughs/20240710-104535.mln002"}
 
-	// Run the playthrough.
-	w := NewWorld(playthrough.Seed)
-	for _, input := range playthrough.History {
-		w.Step(input)
+	for _, file := range files {
+		playthrough := DeserializePlaythrough(ReadFile(file))
+		expected := string(ReadFile(file + "-hash"))
+
+		// Run the playthrough.
+		w := NewWorld(playthrough.Seed)
+		for _, input := range playthrough.History {
+			w.Step(input)
+		}
+
+		println(w.RegressionId())
+
+		assert.Equal(t, expected, w.RegressionId())
 	}
-
-	println(w.RegressionId())
-
-	assert.Equal(t, expected, w.RegressionId())
 }
 
 func RunPlaythrough(p Playthrough) {
