@@ -42,6 +42,7 @@ func ComputeMeanSquaredError(expectedOutcome []Int, actualOutcome []Int) (error 
 	sum := ZERO
 	for i := range expectedOutcome {
 		sum.Add(expectedOutcome[i].Minus(actualOutcome[i]).Sqr())
+		fmt.Printf("%d %d %d\n", expectedOutcome[i].ToInt(), actualOutcome[i].ToInt(), sum.ToInt())
 	}
 	error = sum.ToFloat64() / float64(len(expectedOutcome))
 	return
@@ -61,12 +62,13 @@ func RunLevelWithAI(seed Int) (playerHealth Int) {
 	return
 }
 
-func RunPlaythrough(p Playthrough) (playerHealth Int) {
+func RunPlaythrough(p Playthrough) (playerHealth Int, isGameOver bool) {
 	w := NewWorld(p.Seed)
 	for _, input := range p.History {
 		w.Step(input)
 	}
 	playerHealth = w.Player.Health
+	isGameOver = IsGameOver(&w)
 	return
 }
 
@@ -81,8 +83,11 @@ func TestAI_MeanSquaredError(t *testing.T) {
 		fullPath := filepath.Join(dir, entry.Name())
 		data := ReadFile(fullPath)
 		playthrough := DeserializePlaythrough(data)
+		expectedOutcome, isGameOver := RunPlaythrough(playthrough)
+		if !isGameOver {
+			continue
+		}
 		fmt.Printf("%d - %s - seed %d", i, entry.Name(), playthrough.Seed)
-		expectedOutcome := RunPlaythrough(playthrough)
 		fmt.Printf(" - expected outcome %d", expectedOutcome)
 		expectedOutcomes = append(expectedOutcomes, expectedOutcome)
 		actualOutcome := RunLevelWithAI(playthrough.Seed)
@@ -91,6 +96,39 @@ func TestAI_MeanSquaredError(t *testing.T) {
 	}
 
 	meanSquaredError := ComputeMeanSquaredError(expectedOutcomes, actualOutcomes)
+
+	for _, e := range actualOutcomes {
+		fmt.Println(e.ToInt())
+	}
 	fmt.Printf("mean squared error: %f\n", meanSquaredError)
+	assert.True(t, true)
+}
+
+func BoolToInt(val bool) int {
+	if val {
+		return 1
+	} else {
+		return 0
+	}
+}
+
+func TestAI_PlayerStats(t *testing.T) {
+	inputFilename := "d:\\gms\\Miln\\analysis\\2024-07-29 - set benchmark for AI\\data-set-1\\playthroughs\\20240709-112511.mln002"
+
+	playthrough := DeserializePlaythrough(ReadFile(inputFilename))
+	// Create a new CSV file
+	outFile, err := os.Create("output.csv")
+	Check(err)
+	defer CloseFile(outFile)
+
+	_, err = outFile.WriteString("frame_idx,moved,shot\n")
+	Check(err)
+	for frameIdx, input := range playthrough.History {
+		if input.Move || input.Shoot {
+
+			_, err = outFile.WriteString(fmt.Sprintf("%d,%d,%d\n", frameIdx, BoolToInt(input.Move), BoolToInt(input.Shoot)))
+			Check(err)
+		}
+	}
 	assert.True(t, true)
 }
