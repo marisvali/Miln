@@ -34,7 +34,7 @@ func CanAttackEnemy(w *World, e Enemy) bool {
 
 func InDangerZone(w *World, pos Pt) bool {
 	for _, e := range w.Enemies {
-		if e.Pos().Minus(pos).Len().Lt(TWO) {
+		if e.Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
 			return true
 		}
 	}
@@ -132,13 +132,17 @@ func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
 	return
 }
 
+const FramesBetweenMoves = 50
+const FramesBetweenShots = 30
+const DistanceToDangerZone = 3
+
 func (a *AI) Step(w *World) (input PlayerInput) {
 	a.frameIdx.Inc()
 	freePos := w.Player.ComputeFreePositions(w)
 	freePts := freePos.ToSlice()
 
 	// Try to move once in a while.
-	if a.frameIdx.Mod(I(10)).Eq(ZERO) {
+	if a.frameIdx.Mod(I(FramesBetweenMoves)).Eq(ZERO) {
 		input.Move = true
 
 		// At first, move to the tile that's furthest away from everyone.
@@ -189,7 +193,7 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	}
 
 	// Try to shoot once in a while.
-	if a.frameIdx.Mod(I(4)).Eq(ZERO) && !input.Move {
+	if a.frameIdx.Mod(I(FramesBetweenShots)).Eq(ZERO) && !input.Move {
 		// Shoot at the closest guy that isn't frozen.
 		if closestEnemy := ClosestAttackableEnemy(w); closestEnemy != nil {
 			input.Shoot = true
