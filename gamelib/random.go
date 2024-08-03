@@ -31,3 +31,8 @@ func RInt(min Int, max Int) Int {
 	randomValue := I64(randomGenerator.Int63())
 	return randomValue.Mod(dif).Plus(min)
 }
+
+// RElem returns a random element from a slice.
+func RElem[T any](s []T) T {
+	return s[RInt(I(0), I(len(s)-1)).ToInt()]
+}

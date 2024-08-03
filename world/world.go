@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"math"
+	"slices"
 )
 
 var nObstaclesMin = I(10)
@@ -68,6 +69,22 @@ type World struct {
 	KingSpawned      bool
 	Playthrough
 	Seeds
+}
+
+func (w *World) Clone() World {
+	clone := *w
+	clone.Enemies = []Enemy{}
+	for i := range w.Enemies {
+		clone.Enemies = append(clone.Enemies, w.Enemies[i].Clone())
+	}
+	clone.Obstacles = w.Obstacles.Clone()
+	clone.AttackableTiles = w.AttackableTiles.Clone()
+	clone.Ammos = slices.Clone(w.Ammos)
+	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
+	clone.Keys = slices.Clone(w.Keys)
+	clone.History = slices.Clone(w.History)
+	clone.Portals = slices.Clone(w.Portals)
+	return clone
 }
 
 type Playthrough struct {
