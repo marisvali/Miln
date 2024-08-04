@@ -6,8 +6,10 @@ import (
 	. "github.com/marisvali/miln/world"
 	"github.com/stretchr/testify/assert"
 	_ "image/png"
+	"math/rand"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 )
 
@@ -47,8 +49,8 @@ func ComputeMeanSquaredError(expectedOutcome []Int, actualOutcome []Int) (error 
 	return
 }
 
-func RunLevelWithAI(seed Int) (playerHealth Int) {
-	w := NewWorld(seed)
+func RunLevelWithAI(seed Int, targetDifficulty Int) (playerHealth Int) {
+	w := NewWorld(seed, targetDifficulty)
 	ai := AI{}
 	for {
 		input := ai.Step(&w)
@@ -62,7 +64,7 @@ func RunLevelWithAI(seed Int) (playerHealth Int) {
 }
 
 func RunPlaythrough(p Playthrough) (playerHealth Int) {
-	w := NewWorld(p.Seed)
+	w := NewWorld(p.Seed, p.TargetDifficulty)
 	for _, input := range p.History {
 		w.Step(input)
 	}
@@ -83,11 +85,35 @@ func TestAI_Step(t *testing.T) {
 		playthrough := DeserializePlaythrough(data)
 		expectedOutcome := RunPlaythrough(playthrough)
 		expectedOutcomes = append(expectedOutcomes, expectedOutcome)
-		actualOutcome := RunLevelWithAI(playthrough.Seed)
+		actualOutcome := RunLevelWithAI(playthrough.Seed, playthrough.TargetDifficulty)
 		actualOutcomes = append(actualOutcomes, actualOutcome)
 	}
 
 	meanSquaredError := ComputeMeanSquaredError(expectedOutcomes, actualOutcomes)
 	fmt.Printf("mean squared error: %f", meanSquaredError)
+	assert.True(t, true)
+}
+
+func TestAI_GeneratePlaySequence(t *testing.T) {
+	originalSequence := []int{}
+	for i := 52; i <= 70; i = i + 2 {
+		originalSequence = append(originalSequence, i)
+	}
+
+	finalSequence := []int{}
+	for i := 0; i < 10; i++ {
+		s := slices.Clone(originalSequence)
+		rand.Shuffle(len(s), func(i, j int) { s[i], s[j] = s[j], s[i] })
+		finalSequence = append(finalSequence, s...)
+	}
+
+	// seed := 15
+	content := ""
+	for i := range finalSequence {
+		line := fmt.Sprintf("%d %d\n", finalSequence[i]*3+7, finalSequence[i])
+		content = content + line
+	}
+	filename := "play-sequence.txt"
+	WriteFile(filename, []byte(content))
 	assert.True(t, true)
 }

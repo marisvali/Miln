@@ -48,7 +48,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 999
+const Version = 7
 
 type World struct {
 	Player           Player
@@ -88,9 +88,10 @@ func (w *World) Clone() World {
 }
 
 type Playthrough struct {
-	Id      uuid.UUID
-	Seed    Int
-	History []PlayerInput
+	Id               uuid.UUID
+	Seed             Int
+	TargetDifficulty Int
+	History          []PlayerInput
 }
 
 type PlayerInput struct {
@@ -176,11 +177,12 @@ func GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
 	}
 }
 
-func NewWorld(seed Int) (w World) {
+func NewWorld(seed Int, difficulty Int) (w World) {
 	w.Seed = seed
+	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
 	// w.Seeds = GenerateSeeds(seed)
-	w.Seeds = GenerateSeedsTargetDifficulty(seed, I(60))
+	w.Seeds = GenerateSeedsTargetDifficulty(seed, difficulty)
 	w.Obstacles = RandomLevel(w.NObstacles)
 	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
@@ -323,6 +325,7 @@ func (w *World) SerializedPlaythrough() []byte {
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
 	Serialize(buf, w.Seed.ToInt64())
+	Serialize(buf, w.TargetDifficulty.ToInt64())
 	SerializeSlice(buf, w.History)
 	return Zip(buf.Bytes())
 }
@@ -339,6 +342,8 @@ func DeserializePlaythrough(data []byte) (p Playthrough) {
 	}
 	Deserialize(buf, &token)
 	p.Seed = I64(token)
+	Deserialize(buf, &token)
+	p.TargetDifficulty = I64(token)
 	DeserializeSlice(buf, &p.History)
 	return
 }

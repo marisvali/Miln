@@ -19,6 +19,7 @@ import (
 	_ "image/png"
 	"os"
 	"slices"
+	"strconv"
 )
 
 var BlockSize = I(80)
@@ -125,18 +126,18 @@ func (g *Gui) uploadCurrentWorld() {
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.state = GameOngoing
-		// g.uploadCurrentWorld()
+		g.state = GamePaused
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GameOngoing
-		// g.uploadCurrentWorld()
+		g.state = GamePaused
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
@@ -155,12 +156,12 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if allEnemiesDead {
 		g.state = GameWon
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 
@@ -195,14 +196,14 @@ func (g *Gui) UpdateGameOngoing() {
 	// input = g.ai.Step(&g.world)
 	g.world.Step(input)
 
-	// if g.recording {
-	// 	if g.recordingFile != "" {
-	// 		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
-	// 	}
-	// 	if g.frameIdx.Mod(I(60)) == ZERO {
-	// 		// g.uploadCurrentWorld()
-	// 	}
-	// }
+	if g.recording {
+		if g.recordingFile != "" {
+			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+		}
+		if g.frameIdx.Mod(I(60)) == ZERO {
+			g.uploadCurrentWorld()
+		}
+	}
 
 	if g.folderWatcher.FolderContentsChanged() {
 		g.loadGuiData()
@@ -213,15 +214,17 @@ func (g *Gui) UpdateGameOngoing() {
 
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
-		g.world = NewWorld(RInt(I(0), I(10000000)))
+		seed, targetDifficulty := GetNextLevel(g.username)
+		g.world = NewWorld(seed, targetDifficulty)
+		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed)
+		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
@@ -234,12 +237,12 @@ func (g *Gui) UpdateGamePaused() {
 
 func (g *Gui) UpdateGameWon() {
 	if g.UserRequestedRestartLevel() {
-		g.state = GameOngoing
+		g.state = GamePaused
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GameOngoing
+		g.state = GamePaused
 		g.UpdateGamePaused()
 		return
 	}
@@ -714,6 +717,23 @@ func UploadPlaythroughs(ch chan uploadData) {
 	}
 }
 
+func GetNextLevel(user string) (seed Int, targetDifficulty Int) {
+	// Get index and increment it.
+	filenameIndex := user + "-index.txt"
+	index, _ := strconv.Atoi(string(ReadFile(filenameIndex)))
+	WriteFile(filenameIndex, []byte(strconv.Itoa(index+1)))
+
+	// Get the seed and target difficulty for the current index.
+	filenameLevels := user + "-levels.txt"
+	lines := SplitInLines(ReadFile(filenameLevels))
+	line := lines[index%len(lines)]
+	var token1, token2 int
+	fmt.Sscanf(line, "%d %d", &token1, &token2)
+	seed = I(token1)
+	targetDifficulty = I(token2)
+	return
+}
+
 func main() {
 	var g Gui
 	g.username = getUsername()
@@ -729,16 +749,17 @@ func main() {
 	if len(os.Args) == 2 {
 		g.recording = false
 		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
-		g.world = NewWorld(g.playthrough.Seed)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty)
 		g.state = GameOngoing
 	} else if g.recording {
 		// g.recordingFile = GetNewRecordingFile()
-		g.world = NewWorld(I(9))
+		seed, targetDifficulty := GetNextLevel(g.username)
+		g.world = NewWorld(seed, targetDifficulty)
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GameOngoing
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {
@@ -752,7 +773,7 @@ func main() {
 		// zippedPlaythrough := DownloadDataFromDbSql(db, id)
 		// g.playthrough = DeserializePlaythrough(zippedPlaythrough)
 		g.playthrough = DeserializePlaythrough(ReadFile("world/playthroughs/20240714-120933.mln006"))
-		g.world = NewWorld(g.playthrough.Seed)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty)
 		g.state = GameOngoing
 	}
 

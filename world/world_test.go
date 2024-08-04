@@ -11,7 +11,7 @@ func Test_WorldRegression1(t *testing.T) {
 	expected := string(ReadFile("playthroughs/20240714-120933.mln006-hash"))
 
 	// Run the playthrough.
-	w := NewWorld(playthrough.Seed)
+	w := NewWorld(playthrough.Seed, playthrough.TargetDifficulty)
 	for _, input := range playthrough.History {
 		w.Step(input)
 	}
@@ -22,7 +22,7 @@ func Test_WorldRegression1(t *testing.T) {
 }
 
 func RunPlaythrough(p Playthrough) {
-	w := NewWorld(p.Seed)
+	w := NewWorld(p.Seed, p.TargetDifficulty)
 	for _, input := range p.History {
 		w.Step(input)
 	}

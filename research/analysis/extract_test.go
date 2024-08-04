@@ -21,7 +21,7 @@ func TestExtract(t *testing.T) {
 		if len(data) > 0 { // Games that never start are null.
 			playthrough := DeserializePlaythrough(data)
 
-			w := NewWorld(playthrough.Seed)
+			w := NewWorld(playthrough.Seed, playthrough.TargetDifficulty)
 			for _, input := range playthrough.History {
 				w.Step(input)
 			}

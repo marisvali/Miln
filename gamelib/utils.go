@@ -533,3 +533,19 @@ func HashBytes(input []byte) string {
 
 	return hashHex
 }
+
+func SplitInLines(content []byte) (lines []string) {
+	lastI := 0
+	for i := 0; i < len(content); i++ {
+		if content[i] == '\n' {
+			line := string(content[lastI:i])
+			lines = append(lines, line)
+			lastI = i + 1
+		}
+	}
+	if len(content) > lastI {
+		line := string(content[lastI:])
+		lines = append(lines, line)
+	}
+	return
+}
