@@ -34,7 +34,7 @@ func CanAttackEnemy(w *World, e Enemy) bool {
 
 func InDangerZone(w *World, pos Pt) bool {
 	for _, e := range w.Enemies {
-		if e.Pos().Minus(pos).Len().Lt(TWO) {
+		if e.Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
 			return true
 		}
 	}
@@ -51,9 +51,7 @@ func OnlyUltrahoundsLeft(w *World) bool {
 	return true
 }
 
-func (a *AI) Step(w *World) (input PlayerInput) {
-	a.frameIdx.Inc()
-
+func (a *AI) MoveRandomly(w *World) (input PlayerInput) {
 	// Move and shoot randomly.
 	input.Move = a.frameIdx.Mod(TWO).Eq(ZERO)
 	input.MovePt = Pt{RInt(I(0), w.Obstacles.Size().X.Minus(ONE)),
@@ -61,101 +59,110 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	input.Shoot = !input.Move
 	input.ShootPt = Pt{RInt(I(0), w.Obstacles.Size().X.Minus(ONE)),
 		RInt(I(0), w.Obstacles.Size().Y.Minus(ONE))}
+	return
+}
 
-	// Move to a random attackable tile.
-	freePos := w.Player.ComputeFreePositions(w)
-	freePts := freePos.ToSlice()
+func (a *AI) MoveToRandomAttackableTile(freePts []Pt) (input PlayerInput) {
 	if len(freePts) > 0 {
 		input.MovePt = RElem(freePts)
 	} else {
 		input.Move = false
 	}
+	return
+}
 
-	// Move to the tile that's furthest away from everyone.
-	// For each attackable tile compute how far it is from all other enemies.
-	if len(w.Enemies) > 0 {
-		maxDist := I(0)
-		maxPt := input.MovePt
-		for _, pt := range freePts {
-			e := ClosestEnemy(pt, w)
-			dist := pt.Minus(e.Pos()).SquaredLen()
-			if dist.Gt(maxDist) {
-				maxDist = dist
-				maxPt = pt
-			}
-		}
-		input.MovePt = maxPt
+func PointFurthestFromEnemies(w *World, pts []Pt, defaultPt Pt) (maxPt Pt) {
+	maxPt = defaultPt
+	maxDist := I(0)
+	if len(w.Enemies) == 0 {
+		return
 	}
 
-	// Move to the tile that's furthest away from everyone, from which an enemy
-	// can be shot.
-	// Compute from which free points an enemy can be shot.
-	if a.frameIdx.Mod(I(50)).Eq(ZERO) {
-		attackPts := []Pt{}
-		for _, pt := range freePts {
-			// Move to this point and see if anything is attackable after moving
-			// there.
-			cloneW := w.Clone()
-			var moveInput PlayerInput
-			moveInput.Move = true
-			moveInput.MovePt = pt
-			cloneW.Step(moveInput)
-
-			for _, e := range cloneW.Enemies {
-				if CanAttackEnemy(&cloneW, e) {
-					attackPts = append(attackPts, pt)
-				}
-			}
+	for _, pt := range pts {
+		e := ClosestEnemy(pt, w)
+		dist := pt.Minus(e.Pos()).SquaredLen()
+		if dist.Gt(maxDist) {
+			maxDist = dist
+			maxPt = pt
 		}
+	}
+	return
+}
 
-		// For each tile that permits an attack compute how far it is from all
-		// other enemies.
-		if len(w.Enemies) > 0 {
-			maxDist := I(0)
-			maxPt := input.MovePt
-			for _, pt := range attackPts {
-				e := ClosestEnemy(pt, w)
-				dist := pt.Minus(e.Pos()).Len()
-				if dist.Gt(maxDist) {
-					maxDist = dist
-					maxPt = pt
-				}
-			}
-			if maxDist.Gt(I(1)) {
-				input.MovePt = maxPt
+func GetPointsFromWhichPlayerCanAttack(w *World, freePts []Pt) (attackPts []Pt) {
+	for _, pt := range freePts {
+		// Move to this point and see if anything is attackable after moving
+		// there.
+		cloneW := w.Clone()
+		var moveInput PlayerInput
+		moveInput.Move = true
+		moveInput.MovePt = pt
+		cloneW.Step(moveInput)
+		// Compensate for annoying bug that I can't fix in order to keep
+		// perfect reproducibility and step again without doing anything.
+		// The attackable tiles are not computed correctly in the world,
+		// they are computed before the player moves, so they are always
+		// behind with 1 frame.
+		// This is not noticeable for a human player, but for AI it is
+		// noticeable because the AI looks at the world 1 frame after it
+		// makes a move.
+		cloneW.Step(PlayerInput{})
+
+		for _, e := range cloneW.Enemies {
+			if CanAttackEnemy(&cloneW, e) {
+				attackPts = append(attackPts, pt)
 			}
 		}
 	}
+	return
+}
 
-	// Shoot at the closest guy that isn't frozen.
+func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
 	minDist := I(math.MaxInt64)
-	minI := -1
-	for i, e := range w.Enemies {
+	closestEnemy = nil
+	for _, e := range w.Enemies {
 		if CanAttackEnemy(w, e) {
 			dist := e.Pos().Minus(w.Player.Pos).SquaredLen()
 			if dist.Lt(minDist) {
 				minDist = dist
-				minI = i
+				closestEnemy = e
 			}
 		}
 	}
-	if minI >= 0 {
-		input.ShootPt = w.Enemies[minI].Pos()
-	} else {
-		input.Shoot = false
+	return
+}
+
+var MinFramesBetweenActions = 27
+var DistanceToDangerZone = 3
+
+func (a *AI) Step(w *World) (input PlayerInput) {
+	a.frameIdx.Inc()
+	if a.frameIdx.Mod(I(MinFramesBetweenActions)).Neq(ZERO) {
+		return
 	}
 
-	// Move to get key if it exists and is reachable.
-	if len(w.Keys) > 0 && freePos.At(w.Keys[0].Pos) {
-		tooClose := false
-		for _, e := range w.Enemies {
-			if e.Pos().Minus(w.Keys[0].Pos).Len().Lt(TWO) {
-				tooClose = true
-				break
-			}
-		}
-		if !tooClose {
-			input.MovePt = w.Keys[0].Pos
+	freePos := w.Player.ComputeFreePositions(w)
+	freePts := freePos.ToSlice()
+
+	// Compute the best point to move to, if we were to move.
+	input.Move = true
+
+	// At first, move to the tile that's furthest away from everyone.
+	input.MovePt = PointFurthestFromEnemies(w, freePts, w.Player.Pos)
+
+	// Try to find the tile that's furthest from everyone, from which an
+	// enemy can be shot.
+	attackPts := GetPointsFromWhichPlayerCanAttack(w, freePts)
+	maxPt := PointFurthestFromEnemies(w, attackPts, w.Player.Pos)
+	if !InDangerZone(w, maxPt) {
+		input.MovePt = maxPt
+	}
+
+	// Get the key if it exists and is reachable.
+	if len(w.Keys) > 0 {
+		keyPos := w.Keys[0].Pos
+		if freePos.At(keyPos) && !InDangerZone(w, keyPos) {
+			input.MovePt = keyPos
 		}
 	}
 
@@ -163,10 +170,10 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	// dodging them, but not getting the key.
 	// In this case, do a random safe move in an effort to be within key
 	// range at some point.
-	// But don't do this every frame, otherwise it might keep ultrahounds almost
+	// Don't do this often, otherwise it might keep ultrahounds almost
 	// in the same place near the key and we keep jumping around them.
 	if len(w.Keys) > 0 && !freePos.At(w.Keys[0].Pos) && OnlyUltrahoundsLeft(w) {
-		if a.frameIdx.Minus(a.lastRandomMoveIdx).Gt(I(120)) {
+		if a.frameIdx.Minus(a.lastRandomMoveIdx).Gt(I(240)) {
 			// Only try a maximum number of times, because such a position might
 			// not exist and I don't want to get stuck in an infinite loop.
 			for i := 0; i < 10; i++ {
@@ -185,5 +192,48 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 			}
 		}
 	}
+
+	// Compute the best target to shoot if we were to shoot.
+	// Shoot at the closest guy that isn't frozen.
+	if closestEnemy := ClosestAttackableEnemy(w); closestEnemy != nil {
+		input.Shoot = true
+		input.ShootPt = closestEnemy.Pos()
+	} else {
+		input.Shoot = false
+	}
+
+	// Don't shoot king when he's over a spawn portal, because he'll drop the
+	// key on a place that we can't reach.
+	for _, e := range w.Enemies {
+		if _, isKing := e.(*King); isKing {
+			if e.Pos() == input.ShootPt {
+				for _, sp := range w.SpawnPortals {
+					if sp.Pos == e.Pos() {
+						input.Shoot = false
+						break
+					}
+				}
+			}
+			break
+		}
+	}
+
+	// Decide if we move or shoot.
+	// We should move if we are in a danger zone and we have a better option.
+	if !w.Player.OnMap ||
+		input.Move &&
+			InDangerZone(w, w.Player.Pos) &&
+			!InDangerZone(w, input.MovePt) {
+		// Suppress shooting.
+		input.Shoot = false
+	} else {
+		// Shoot if we have something to shoot at.
+		// Otherwise, leave move as it is.
+		if input.Shoot {
+			// Suppress moving.
+			input.Move = false
+		}
+	}
+
 	return
 }
