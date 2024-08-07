@@ -111,7 +111,7 @@ func ComputeMeanSquaredErrorOnDataset(dir string, odds bool) float64 {
 }
 
 func TestAI_MeanSquaredError(t *testing.T) {
-	dir := "d:\\gms\\Miln\\analysis\\2024-08-03 - data\\data-set-5\\playthroughs"
+	dir := "d:\\gms\\Miln\\analysis\\2024-08-03 - 3. can AI distinguish between levels of ostensibly the same difficulty\\data-set-5\\playthroughs"
 	// for i := 20; i <= 40; i++ {
 	// 	MinFramesBetweenActions = i
 	// 	meanSquaredError := ComputeMeanSquaredErrorOnDataset(dir, true)
