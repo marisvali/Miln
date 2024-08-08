@@ -35,7 +35,7 @@ func IsGameOver(w *World) bool {
 	return IsGameWon(w) || IsGameLost(w)
 }
 
-func ComputeMeanSquaredError(expectedOutcome []float64, actualOutcome []Int) (error float64) {
+func ComputeMeanSquaredError(expectedOutcome []float64, actualOutcome []float64) (error float64) {
 	if len(expectedOutcome) != len(actualOutcome) {
 		Check(fmt.Errorf("expected equal lengths, got %d %d",
 			len(expectedOutcome), len(actualOutcome)))
@@ -43,7 +43,7 @@ func ComputeMeanSquaredError(expectedOutcome []float64, actualOutcome []Int) (er
 
 	sum := float64(0)
 	for i := range expectedOutcome {
-		dif := expectedOutcome[i] - actualOutcome[i].ToFloat64()
+		dif := expectedOutcome[i] - actualOutcome[i]
 		sum += dif * dif
 		// fmt.Printf("%d %d %d\n", expectedOutcome[i].ToInt(), actualOutcome[i].ToInt(), sum.ToInt())
 	}
@@ -75,8 +75,7 @@ func RunPlaythrough(p Playthrough) (playerHealth Int, isGameOver bool) {
 	return
 }
 
-func ComputeMeanSquaredErrorOnDataset2(dir string, files []string, expectedOutcomes []float64) float64 {
-	actualOutcomes := []Int{}
+func ComputeMeanSquaredErrorOnDataset2(dir string, files []string) (actualOutcomes []float64) {
 	for _, file := range files {
 		fullPath := filepath.Join(dir, file)
 		data := ReadFile(fullPath)
@@ -88,12 +87,10 @@ func ComputeMeanSquaredErrorOnDataset2(dir string, files []string, expectedOutco
 		fmt.Printf("%d", playthrough.TargetDifficulty.ToInt())
 		actualOutcome := RunLevelWithAI(playthrough.Seed, playthrough.TargetDifficulty)
 		fmt.Printf(", %d\n", actualOutcome.ToInt())
-		actualOutcomes = append(actualOutcomes, actualOutcome)
+		actualOutcomes = append(actualOutcomes, actualOutcome.ToFloat64())
 	}
 
-	meanSquaredError := ComputeMeanSquaredError(expectedOutcomes, actualOutcomes)
-
-	return meanSquaredError
+	return actualOutcomes
 }
 
 func TestAI_MeanSquaredError(t *testing.T) {
@@ -134,11 +131,29 @@ func TestAI_MeanSquaredError(t *testing.T) {
 		0,
 		0.2}
 
-	for i := 25; i <= 40; i++ {
+	allActualOutcomes := [][]float64{}
+	for i := 25; i <= 31; i++ {
 		MinFramesBetweenActions = i
-		meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, all, allExpectedOutcomes)
-		fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
+		actualOutcomes := ComputeMeanSquaredErrorOnDataset2(dir, all)
+		allActualOutcomes = append(allActualOutcomes, actualOutcomes)
 	}
+
+	sumsOutcomes := make([]float64, len(allActualOutcomes[0]))
+	for i := range allActualOutcomes {
+		for j := range allActualOutcomes[i] {
+			sumsOutcomes[j] += allActualOutcomes[i][j]
+		}
+	}
+	avgOutcomes := make([]float64, len(sumsOutcomes))
+	for i := range sumsOutcomes {
+		avgOutcomes[i] = sumsOutcomes[i] / float64(len(allActualOutcomes))
+	}
+	for i := range avgOutcomes {
+		fmt.Printf("%f\n", avgOutcomes[i])
+	}
+
+	meanSquaredError := ComputeMeanSquaredError(allExpectedOutcomes, avgOutcomes)
+	fmt.Printf("%f\n", meanSquaredError)
 
 	assert.True(t, true)
 }
