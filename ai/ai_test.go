@@ -75,14 +75,6 @@ func RunPlaythrough(p Playthrough) (playerHealth Int, isGameOver bool) {
 	return
 }
 
-type RowsSubset int
-
-const (
-	all RowsSubset = iota
-	onlyOdds
-	onlyEvens
-)
-
 func ComputeMeanSquaredErrorOnDataset2(dir string, files []string, expectedOutcomes []float64) float64 {
 	actualOutcomes := []Int{}
 	for _, file := range files {
@@ -118,21 +110,35 @@ func TestAI_MeanSquaredError(t *testing.T) {
 	// 68, 20240804-063754.mln007
 	// 70, 20240804-063920.mln007
 
-	// half1 := []string{"20240804-064317.mln007", "20240804-063847.mln007", "20240804-064120.mln007", "20240804-064422.mln007", "20240804-063754.mln007"}
-	// half1ExpectedOutcomes := []float64{1.181818182, 1.272727273, 1.272727273, 0.272727273, 0}
+	all := []string{
+		"20240804-064317.mln007",
+		"20240804-064006.mln007",
+		"20240804-063847.mln007",
+		"20240804-063509.mln007",
+		"20240804-064120.mln007",
+		"20240804-063624.mln007",
+		"20240804-064422.mln007",
+		"20240804-064228.mln007",
+		"20240804-063754.mln007",
+		"20240804-063920.mln007"}
 
-	// for i := 10; i <= 40; i++ {
-	// 	MinFramesBetweenActions = i
-	// 	meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, half1, half1ExpectedOutcomes)
-	// 	fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
-	// }
+	allExpectedOutcomes := []float64{
+		0.666666667,
+		2.6,
+		1.333333333,
+		0.8,
+		1.333333333,
+		1,
+		0.333333333,
+		0.2,
+		0,
+		0.2}
 
-	half2 := []string{"20240804-064006.mln007", "20240804-063509.mln007", "20240804-063624.mln007", "20240804-064228.mln007", "20240804-063920.mln007"}
-	half2ExpectedOutcomes := []float64{2.363636364, 0.818181818, 0.727272727, 0.272727273, 0.090909091}
-
-	MinFramesBetweenActions = 27
-	meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, half2, half2ExpectedOutcomes)
-	fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
+	for i := 25; i <= 40; i++ {
+		MinFramesBetweenActions = i
+		meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, all, allExpectedOutcomes)
+		fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
+	}
 
 	assert.True(t, true)
 }
