@@ -35,18 +35,19 @@ func IsGameOver(w *World) bool {
 	return IsGameWon(w) || IsGameLost(w)
 }
 
-func ComputeMeanSquaredError(expectedOutcome []Int, actualOutcome []Int) (error float64) {
+func ComputeMeanSquaredError(expectedOutcome []float64, actualOutcome []Int) (error float64) {
 	if len(expectedOutcome) != len(actualOutcome) {
 		Check(fmt.Errorf("expected equal lengths, got %d %d",
 			len(expectedOutcome), len(actualOutcome)))
 	}
 
-	sum := ZERO
+	sum := float64(0)
 	for i := range expectedOutcome {
-		sum.Add(expectedOutcome[i].Minus(actualOutcome[i]).Sqr())
+		dif := expectedOutcome[i] - actualOutcome[i].ToFloat64()
+		sum += dif * dif
 		// fmt.Printf("%d %d %d\n", expectedOutcome[i].ToInt(), actualOutcome[i].ToInt(), sum.ToInt())
 	}
-	error = sum.ToFloat64() / float64(len(expectedOutcome))
+	error = sum / float64(len(expectedOutcome))
 	return
 }
 
@@ -82,48 +83,17 @@ const (
 	onlyEvens
 )
 
-func ComputeMeanSquaredErrorOnDataset(dir string, subset RowsSubset) float64 {
-	entries, err := os.ReadDir(dir)
-	Check(err)
-
-	// for i, entry := range entries {
-	// 	fullPath := filepath.Join(dir, entry.Name())
-	// 	data := ReadFile(fullPath)
-	// 	playthrough := DeserializePlaythrough(data)
-	// 	expectedOutcome, isGameOver := RunPlaythrough(playthrough)
-	// 	if !isGameOver {
-	// 		continue
-	// 	}
-	// 	fmt.Printf("%d - %s - seed %d - target difficulty %d", i, entry.Name(), playthrough.Seed, playthrough.TargetDifficulty)
-	// 	fmt.Printf(" - expected outcome %d\n", expectedOutcome)
-	// }
-
-	expectedOutcomes := []Int{}
+func ComputeMeanSquaredErrorOnDataset2(dir string, files []string, expectedOutcomes []float64) float64 {
 	actualOutcomes := []Int{}
-	for i, entry := range entries {
-		if i >= 11 {
-			break
-		}
-		// Skip evens if we want only odds.
-		if subset == onlyOdds && (i+1)%2 == 0 {
-			continue
-		}
-
-		// Skip odds if we want only evens.
-		if subset == onlyEvens && (i+1)%2 == 1 {
-			continue
-		}
-
-		fullPath := filepath.Join(dir, entry.Name())
+	for _, file := range files {
+		fullPath := filepath.Join(dir, file)
 		data := ReadFile(fullPath)
 		playthrough := DeserializePlaythrough(data)
-		expectedOutcome, isGameOver := RunPlaythrough(playthrough)
+		_, isGameOver := RunPlaythrough(playthrough)
 		if !isGameOver {
-			continue
+			Check(fmt.Errorf("not cool"))
 		}
 		fmt.Printf("%d", playthrough.TargetDifficulty.ToInt())
-		// fmt.Printf(" - expected outcome %d", expectedOutcome)
-		expectedOutcomes = append(expectedOutcomes, expectedOutcome)
 		actualOutcome := RunLevelWithAI(playthrough.Seed, playthrough.TargetDifficulty)
 		fmt.Printf(", %d\n", actualOutcome.ToInt())
 		actualOutcomes = append(actualOutcomes, actualOutcome)
@@ -131,22 +101,37 @@ func ComputeMeanSquaredErrorOnDataset(dir string, subset RowsSubset) float64 {
 
 	meanSquaredError := ComputeMeanSquaredError(expectedOutcomes, actualOutcomes)
 
-	// for _, e := range actualOutcomes {
-	// 	fmt.Println(e.ToInt())
-	// }
-	// fmt.Printf("mean squared error: %f\n", meanSquaredError)
 	return meanSquaredError
 }
 
 func TestAI_MeanSquaredError(t *testing.T) {
-	dir := "d:\\gms\\Miln\\analysis\\2024-08-04 - 10 levels played 10 times each\\data-set-6\\playthroughs"
-	// for i := 27; i <= 34; i++ {
+	dir := "d:\\gms\\Miln\\analysis\\2024-08-04 - 4. how do AI and statistics perform when the same levels are played multiple times\\data-set-6\\playthroughs"
+	// level difficulty, file
+	// 52, 20240804-064317.mln007
+	// 54, 20240804-064006.mln007
+	// 56, 20240804-063847.mln007
+	// 58, 20240804-063509.mln007
+	// 60, 20240804-064120.mln007
+	// 62, 20240804-063624.mln007
+	// 64, 20240804-064422.mln007
+	// 66, 20240804-064228.mln007
+	// 68, 20240804-063754.mln007
+	// 70, 20240804-063920.mln007
+
+	// half1 := []string{"20240804-064317.mln007", "20240804-063847.mln007", "20240804-064120.mln007", "20240804-064422.mln007", "20240804-063754.mln007"}
+	// half1ExpectedOutcomes := []float64{1.181818182, 1.272727273, 1.272727273, 0.272727273, 0}
+
+	// for i := 10; i <= 40; i++ {
 	// 	MinFramesBetweenActions = i
-	// 	meanSquaredError := ComputeMeanSquaredErrorOnDataset(dir, all)
+	// 	meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, half1, half1ExpectedOutcomes)
 	// 	fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
 	// }
+
+	half2 := []string{"20240804-064006.mln007", "20240804-063509.mln007", "20240804-063624.mln007", "20240804-064228.mln007", "20240804-063920.mln007"}
+	half2ExpectedOutcomes := []float64{2.363636364, 0.818181818, 0.727272727, 0.272727273, 0.090909091}
+
 	MinFramesBetweenActions = 27
-	meanSquaredError := ComputeMeanSquaredErrorOnDataset(dir, all)
+	meanSquaredError := ComputeMeanSquaredErrorOnDataset2(dir, half2, half2ExpectedOutcomes)
 	fmt.Printf("%d\t= %f\n", MinFramesBetweenActions, meanSquaredError)
 
 	assert.True(t, true)
