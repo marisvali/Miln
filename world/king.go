@@ -25,7 +25,7 @@ func (k *King) Clone() Enemy {
 }
 
 func (k *King) Step(w *World) {
-	if k.beamJustHit(w) {
+	if k.Vulnerable(w) && k.beamJustHit(w) {
 		k.freezeCooldownIdx = k.freezeCooldown
 		if w.Player.HitPermissions.CanHitKing {
 			k.health.Dec()
@@ -42,4 +42,11 @@ func (k *King) Step(w *World) {
 	}
 
 	k.move(w, getObstaclesAndEnemies(w))
+}
+
+func (k *King) Vulnerable(w *World) bool {
+	if k.freezeCooldownIdx.IsPositive() {
+		return false
+	}
+	return w.Player.HitPermissions.CanHitKing
 }

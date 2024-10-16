@@ -25,7 +25,7 @@ func (p *Pillar) Clone() Enemy {
 }
 
 func (p *Pillar) Step(w *World) {
-	if p.beamJustHit(w) {
+	if p.Vulnerable(w) && p.beamJustHit(w) {
 		p.freezeCooldownIdx = p.freezeCooldown
 		if w.Player.HitPermissions.CanHitPillar {
 			p.health.Dec()
@@ -42,4 +42,11 @@ func (p *Pillar) Step(w *World) {
 	}
 
 	p.move(w, getObstaclesAndEnemies(w))
+}
+
+func (p *Pillar) Vulnerable(w *World) bool {
+	if p.freezeCooldownIdx.IsPositive() {
+		return false
+	}
+	return w.Player.HitPermissions.CanHitGremlin
 }

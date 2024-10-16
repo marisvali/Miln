@@ -25,7 +25,7 @@ func (h *Hound) Clone() Enemy {
 }
 
 func (h *Hound) Step(w *World) {
-	if h.beamJustHit(w) {
+	if h.Vulnerable(w) && h.beamJustHit(w) {
 		h.freezeCooldownIdx = h.freezeCooldown
 		if w.Player.HitPermissions.CanHitHound {
 			h.health.Dec()
@@ -38,4 +38,11 @@ func (h *Hound) Step(w *World) {
 	}
 
 	h.move(w, getObstaclesAndEnemies(w))
+}
+
+func (h *Hound) Vulnerable(w *World) bool {
+	if h.freezeCooldownIdx.IsPositive() {
+		return false
+	}
+	return w.Player.HitPermissions.CanHitHound
 }

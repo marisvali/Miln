@@ -25,7 +25,7 @@ func (h *UltraHound) Clone() Enemy {
 }
 
 func (h *UltraHound) Step(w *World) {
-	if h.beamJustHit(w) {
+	if h.Vulnerable(w) && h.beamJustHit(w) {
 		h.freezeCooldownIdx = h.freezeCooldown
 		if w.Player.HitPermissions.CanHitUltraHound {
 			h.health.Dec()
@@ -46,4 +46,11 @@ func (h *UltraHound) Step(w *World) {
 		}
 	}
 	h.move(w, m)
+}
+
+func (h *UltraHound) Vulnerable(w *World) bool {
+	if h.freezeCooldownIdx.IsPositive() {
+		return false
+	}
+	return w.Player.HitPermissions.CanHitUltraHound
 }

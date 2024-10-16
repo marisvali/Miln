@@ -60,7 +60,7 @@ func (q *Question) onDeath(w *World) {
 }
 
 func (q *Question) Step(w *World) {
-	if q.beamJustHit(w) {
+	if q.Vulnerable(w) && q.beamJustHit(w) {
 		q.freezeCooldownIdx = q.freezeCooldown
 		if w.Player.HitPermissions.CanHitQuestion {
 			q.health.Dec()
@@ -69,4 +69,11 @@ func (q *Question) Step(w *World) {
 			}
 		}
 	}
+}
+
+func (q *Question) Vulnerable(w *World) bool {
+	if q.freezeCooldownIdx.IsPositive() {
+		return false
+	}
+	return w.Player.HitPermissions.CanHitGremlin
 }

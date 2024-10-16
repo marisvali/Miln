@@ -4,16 +4,16 @@ import . "github.com/marisvali/miln/gamelib"
 
 func Level1() string {
 	return `
-   1  
+      
  xxxxx
       
-    xx
+  1xxx
+   2 x
      x
-    2x
 `
 }
 
-func LevelFromString(level string) (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
+func LevelFromString(level string) (m MatBool, pos1 []Pt, pos2 []Pt) {
 	row := -1
 	col := 0
 	maxCol := 0
@@ -31,7 +31,7 @@ func LevelFromString(level string) (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
 	if col > 0 {
 		row++
 	}
-	m = NewMatrix[Int](IPt(maxCol, row))
+	m = NewMatBool(IPt(maxCol, row))
 
 	row = -1
 	col = 0
@@ -42,7 +42,7 @@ func LevelFromString(level string) (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
 			row++
 			continue
 		} else if c == 'x' {
-			m.Set(IPt(col, row), I(1))
+			m.Set(IPt(col, row))
 		} else if c == '1' {
 			pos1 = append(pos1, IPt(col, row))
 		} else if c == '2' {

@@ -13,6 +13,7 @@ type Enemy interface {
 	Health() Int
 	MaxHealth() Int
 	Clone() Enemy
+	Vulnerable(w *World) bool
 }
 
 type EnemyBase struct {
@@ -66,9 +67,6 @@ func getObstaclesAndEnemies(w *World) (m MatBool) {
 }
 
 func (e *EnemyBase) beamJustHit(w *World) bool {
-	if e.freezeCooldownIdx.IsPositive() {
-		return false
-	}
 	if !w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
 		// I need to structure this stuff differently.
 		return false

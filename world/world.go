@@ -17,6 +17,7 @@ var nPortalsMax = I(5)
 var SpawnPortalCooldownMin = I(40)
 var SpawnPortalCooldownMax = I(150)
 
+// var GremlinMoveCooldown = I(500000)
 var GremlinMoveCooldown = I(50)
 var GremlinFreezeCooldown = I(30)
 var GremlinMaxHealth = I(1)
@@ -29,6 +30,7 @@ var HoundMaxHealth = I(4)
 var nHoundMin = I(0)
 var nHoundMax = I(2)
 
+// var UltraHoundMoveCooldown = I(10000000)
 var UltraHoundMoveCooldown = I(100)
 var UltraHoundFreezeCooldown = I(0)
 var UltraHoundMaxHealth = I(1)
@@ -214,6 +216,37 @@ func NewWorld(seed Int, difficulty Int) (w World) {
 	return
 }
 
+func NewWorldFromString(level string) (w World) {
+	var pos1, pos2 []Pt
+	w.Id = uuid.New()
+	w.Obstacles, pos1, pos2 = LevelFromString(level)
+	w.vision = NewVision(w.Obstacles.Size())
+
+	for _, pos := range pos1 {
+		w.Enemies = append(w.Enemies, NewGremlin(pos))
+	}
+
+	for _, pos := range pos2 {
+		w.Enemies = append(w.Enemies, NewUltraHound(pos))
+	}
+
+	// Params
+	w.BlockSize = I(1000)
+	w.BeamMax = I(15)
+	w.Player = NewPlayer()
+	w.Player.HitPermissions.CanHitGremlin = true
+	w.Player.HitPermissions.CanHitHound = true
+	w.Player.HitPermissions.CanHitQuestion = true
+	w.Player.HitPermissions.CanHitKing = true
+
+	// GUI needs this even without the world ever doing a step.
+	// Note: this was true when the player started on the map, so it might not
+	// be relevant now that the player doesn't start on the map. But, keep it
+	// in case things change again.
+	w.computeAttackableTiles()
+	return
+}
+
 // RegressionId returns a string which uniquely identifies the world in this
 // state. It is meant to be used this way:
 // - Compute the RegressionId for the world after a playthrough.
@@ -371,6 +404,16 @@ func (w *World) EnemyPositions() (m MatBool) {
 	m = NewMatBool(w.Obstacles.Size())
 	for i := range w.Enemies {
 		m.Set(w.Enemies[i].Pos())
+	}
+	return
+}
+
+func (w *World) VulnerableEnemyPositions() (m MatBool) {
+	m = NewMatBool(w.Obstacles.Size())
+	for i := range w.Enemies {
+		if w.Enemies[i].Vulnerable(w) {
+			m.Set(w.Enemies[i].Pos())
+		}
 	}
 	return
 }

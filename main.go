@@ -177,7 +177,7 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		attackablePositions := g.world.EnemyPositions().ToSlice()
+		attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(attackablePositions)
 		closeEnough := dist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
@@ -758,7 +758,7 @@ func main() {
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
@@ -772,8 +772,8 @@ func main() {
 		// db := ConnectToDbSql()
 		// zippedPlaythrough := DownloadDataFromDbSql(db, id)
 		// g.playthrough = DeserializePlaythrough(zippedPlaythrough)
-		g.playthrough = DeserializePlaythrough(ReadFile("world/playthroughs/20240714-120933.mln006"))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty)
+		// g.playthrough = DeserializePlaythrough(ReadFile("world/playthroughs/20240714-120933.mln006"))
+		g.world = NewWorldFromString(Level1())
 		g.state = GameOngoing
 	}
 
