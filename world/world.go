@@ -52,7 +52,13 @@ type Beam struct {
 
 const Version = 7
 
+type WorldData struct {
+	NumRows int
+	NumCols int
+}
+
 type World struct {
+	WorldData
 	Player           Player
 	Enemies          []Enemy
 	Beam             Beam
@@ -118,9 +124,9 @@ func LevelX() string {
 `
 }
 
-func RandomLevel(nObstacles Int) (m MatBool) {
+func RandomLevel(nObstacles Int, nRows int, nCols int) (m MatBool) {
 	// Create matrix with obstacles.
-	m = NewMatBool(IPt(10, 10))
+	m = NewMatBool(IPt(nRows, nCols))
 	for i := ZERO; i.Lt(nObstacles); i.Inc() {
 		m.Set(m.RandomPos())
 	}
@@ -179,13 +185,31 @@ func GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
 	}
 }
 
+func loadWorldData() (data WorldData) {
+	// Read from the disk over and over until a full read is possible.
+	// This repetition is meant to avoid crashes due to reading files
+	// while they are still being written.
+	// It's a hack but possibly a quick and very useful one.
+	CheckCrashes = false
+	for {
+		CheckFailed = nil
+		LoadJSON("data/world/world.json", &data)
+		if CheckFailed == nil {
+			break
+		}
+	}
+	CheckCrashes = true
+	return
+}
+
 func NewWorld(seed Int, difficulty Int) (w World) {
+	w.WorldData = loadWorldData()
 	w.Seed = seed
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
-	// w.Seeds = GenerateSeeds(seed)
-	w.Seeds = GenerateSeedsTargetDifficulty(seed, difficulty)
-	w.Obstacles = RandomLevel(w.NObstacles)
+	w.Seeds = GenerateSeeds(seed)
+	// w.Seeds = GenerateSeedsTargetDifficulty(seed, difficulty)
+	w.Obstacles = RandomLevel(w.NObstacles, w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {

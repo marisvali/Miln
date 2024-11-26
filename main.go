@@ -22,12 +22,15 @@ import (
 	"strconv"
 )
 
-var BlockSize = I(80)
-
 //go:embed data/*
 var embeddedFiles embed.FS
 
+type GuiData struct {
+	BlockSize int
+}
+
 type Gui struct {
+	GuiData
 	defaultFont        font.Face
 	imgGround          *ebiten.Image
 	imgTree            *ebiten.Image
@@ -58,7 +61,8 @@ type Gui struct {
 	world              World
 	worldAtStart       World
 	frameIdx           Int
-	folderWatcher      FolderWatcher
+	folderWatcher1     FolderWatcher
+	folderWatcher2     FolderWatcher
 	recording          bool
 	recordingFile      string
 	state              GameState
@@ -169,7 +173,7 @@ func (g *Gui) UpdateGameOngoing() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
 		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(freePositions)
-		closeEnough := dist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(I(g.BlockSize).Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Move = true
 			input.MovePt = tilePos
@@ -179,7 +183,7 @@ func (g *Gui) UpdateGameOngoing() {
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(attackablePositions)
-		closeEnough := dist.Lt(BlockSize.Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(I(g.BlockSize).Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Shoot = true
 			input.ShootPt = tilePos
@@ -203,10 +207,6 @@ func (g *Gui) UpdateGameOngoing() {
 		if g.frameIdx.Mod(I(60)) == ZERO {
 			g.uploadCurrentWorld()
 		}
-	}
-
-	if g.folderWatcher.FolderContentsChanged() {
-		g.loadGuiData()
 	}
 
 	g.frameIdx.Inc()
@@ -266,10 +266,6 @@ func (g *Gui) UpdatePlayback() {
 }
 
 func (g *Gui) Update() error {
-	if g.JustPressed(ebiten.KeyX) {
-		return ebiten.Termination
-	}
-
 	// One-time initialization. This needs to happen here because I need to
 	// operate on ebiten images and it won't let me before I do RunGame.
 	// TODO: find a better place for this code
@@ -282,12 +278,27 @@ func (g *Gui) Update() error {
 		g.imgKingMask = ComputeSpriteMask(g.imgKing)
 	}
 
+	// Updates common to all states.
+	if g.folderWatcher1.FolderContentsChanged() {
+		g.loadGuiData()
+	}
+	if g.folderWatcher2.FolderContentsChanged() {
+		// Reload world, and rely on the fact that this is makes the new world
+		// load the new parameters from world.json.
+		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty)
+		g.updateWindowSize()
+	}
+
 	// Get input once, so we don't need to get it every time we need it in
 	// other functions.
 	g.justPressedKeys = g.justPressedKeys[:0]
 	g.justPressedKeys = inpututil.AppendJustPressedKeys(g.justPressedKeys)
 	x, y := ebiten.CursorPosition()
 	g.mousePt = IPt(x, y)
+
+	if g.JustPressed(ebiten.KeyX) {
+		return ebiten.Termination
+	}
 
 	if g.state == GameOngoing {
 		g.UpdateGameOngoing()
@@ -307,7 +318,7 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	obstaclePositions := g.world.Obstacles.ToSlice()
 	ipts := []Pt{}
 	for _, pt := range obstaclePositions {
-		s := Square{g.TileToScreen(pt), BlockSize.Times(I(90)).DivBy(I(100))}
+		s := Square{g.TileToScreen(pt), I(g.BlockSize).Times(I(90)).DivBy(I(100))}
 		if intersects, ipt := LineSquareIntersection(l, s); intersects {
 			ipts = append(ipts, ipt)
 		}
@@ -318,25 +329,25 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 
 func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	margin := float64(1)
-	pos = pos.Times(BlockSize)
+	pos = pos.Times(I(g.BlockSize))
 	x := pos.X.ToFloat64()
 	y := pos.Y.ToFloat64()
-	tileSize := BlockSize.ToFloat64() - 2*margin
+	tileSize := float64(g.BlockSize) - 2*margin
 	DrawSprite(screen, img, x+margin, y+margin, tileSize, tileSize)
 }
 
 func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alpha uint8) {
 	margin := float64(1)
-	pos = pos.Times(BlockSize)
+	pos = pos.Times(I(g.BlockSize))
 	x := pos.X.ToFloat64()
 	y := pos.Y.ToFloat64()
-	tileSize := BlockSize.ToFloat64() - 2*margin
+	tileSize := float64(g.BlockSize) - 2*margin
 	DrawSpriteAlpha(screen, img, x+margin, y+margin, tileSize, tileSize, alpha)
 }
 
 func (g *Gui) TileToScreen(pos Pt) Pt {
-	half := BlockSize.DivBy(TWO)
-	return pos.Times(BlockSize).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
+	half := I(g.BlockSize).DivBy(TWO)
+	return pos.Times(I(g.BlockSize)).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
 }
 
 func (g *Gui) TilesToScreen(ipt []Pt) (opt []Pt) {
@@ -358,20 +369,20 @@ func (g *Gui) ClosestTileToMouse(tiles []Pt) (tile Pt, dist Int) {
 }
 
 func (g *Gui) TileToPlayRegion(pos Pt) Pt {
-	half := BlockSize.DivBy(TWO)
-	return pos.Times(BlockSize).Plus(Pt{half, half})
+	half := I(g.BlockSize).DivBy(TWO)
+	return pos.Times(I(g.BlockSize)).Plus(Pt{half, half})
 }
 
 func (g *Gui) ScreenToTile(pos Pt) Pt {
-	return pos.Minus(Pt{g.guiMargin, g.guiMargin}).DivBy(BlockSize)
+	return pos.Minus(Pt{g.guiMargin, g.guiMargin}).DivBy(I(g.BlockSize))
 }
 
 func (g *Gui) WorldToGuiPos(pt Pt) Pt {
-	return pt.Times(BlockSize).DivBy(g.world.BlockSize).Plus(Pt{g.guiMargin, g.guiMargin})
+	return pt.Times(I(g.BlockSize)).DivBy(g.world.BlockSize).Plus(Pt{g.guiMargin, g.guiMargin})
 }
 
 func (g *Gui) WorldToPlayRegion(pt Pt) Pt {
-	return pt.Times(BlockSize).DivBy(g.world.BlockSize)
+	return pt.Times(I(g.BlockSize)).DivBy(g.world.BlockSize)
 }
 
 func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
@@ -462,7 +473,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	{
 		upperLeft := Pt{g.guiMargin, g.guiMargin}
-		playSize := g.world.Obstacles.Size().Times(BlockSize)
+		playSize := g.world.Obstacles.Size().Times(I(g.BlockSize))
 		lowerRight := upperLeft.Plus(playSize)
 		playRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		g.DrawPlayRegion(playRegion)
@@ -676,34 +687,46 @@ func (g *Gui) loadGuiData() {
 	CheckCrashes = false
 	for {
 		CheckFailed = nil
-		g.imgGround = g.LoadImage("data/ground.png")
-		g.imgTree = g.LoadImage("data/tree.png")
-		g.imgPlayer = g.LoadImage("data/player.png")
-		g.imgPlayerHealth = g.LoadImage("data/player-health.png")
+		LoadJSON("data/gui/gui.json", &g.GuiData)
+		g.imgGround = g.LoadImage("data/gui/ground.png")
+		g.imgTree = g.LoadImage("data/gui/tree.png")
+		g.imgPlayer = g.LoadImage("data/gui/player.png")
+		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
 		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
-		g.imgGremlin = g.LoadImage("data/enemy2.png")
-		g.imgPillar = g.LoadImage("data/enemy3.png")
-		g.imgHound = g.LoadImage("data/enemy4.png")
-		g.imgUltraHound = g.LoadImage("data/ultra-hound.png")
-		g.imgQuestion = g.LoadImage("data/enemy5.png")
-		g.imgKing = g.LoadImage("data/enemy6.png")
-		g.imgEnemyHealth = g.LoadImage("data/enemy-health.png")
-		g.imgBeam = g.LoadImage("data/beam.png")
-		g.imgShadow = g.LoadImage("data/shadow.png")
-		g.imgTextBackground = g.LoadImage("data/text-background.png")
-		g.imgTextColor = g.LoadImage("data/text-color.png")
-		g.imgAmmo = g.LoadImage("data/ammo.png")
-		g.imgSpawnPortal = g.LoadImage("data/spawn-portal.png")
-		g.imgPlayerHitEffect = g.LoadImage("data/player-hit-effect.png")
-		g.imgKey = append(g.imgKey, g.LoadImage("data/key1.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/key2.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/key3.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/key4.png"))
+		g.imgGremlin = g.LoadImage("data/gui/enemy2.png")
+		g.imgPillar = g.LoadImage("data/gui/enemy3.png")
+		g.imgHound = g.LoadImage("data/gui/enemy4.png")
+		g.imgUltraHound = g.LoadImage("data/gui/ultra-hound.png")
+		g.imgQuestion = g.LoadImage("data/gui/enemy5.png")
+		g.imgKing = g.LoadImage("data/gui/enemy6.png")
+		g.imgEnemyHealth = g.LoadImage("data/gui/enemy-health.png")
+		g.imgBeam = g.LoadImage("data/gui/beam.png")
+		g.imgShadow = g.LoadImage("data/gui/shadow.png")
+		g.imgTextBackground = g.LoadImage("data/gui/text-background.png")
+		g.imgTextColor = g.LoadImage("data/gui/text-color.png")
+		g.imgAmmo = g.LoadImage("data/gui/ammo.png")
+		g.imgSpawnPortal = g.LoadImage("data/gui/spawn-portal.png")
+		g.imgPlayerHitEffect = g.LoadImage("data/gui/player-hit-effect.png")
+		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key1.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key2.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key3.png"))
+		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key4.png"))
 		if CheckFailed == nil {
 			break
 		}
 	}
 	CheckCrashes = true
+
+	g.updateWindowSize()
+}
+
+func (g *Gui) updateWindowSize() {
+	playSize := g.world.Obstacles.Size().Times(I(g.BlockSize))
+	windowSize := playSize
+	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
+	windowSize.Y.Add(g.textHeight)
+	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
+	ebiten.SetWindowTitle("Miln")
 }
 
 func UploadPlaythroughs(ch chan uploadData) {
@@ -735,6 +758,8 @@ func GetNextLevel(user string) (seed Int, targetDifficulty Int) {
 }
 
 func main() {
+	ebiten.SetWindowPosition(100, 100)
+
 	var g Gui
 	g.username = getUsername()
 	g.uploadDataChannel = make(chan uploadData)
@@ -777,20 +802,14 @@ func main() {
 		g.state = GameOngoing
 	}
 
-	playSize := g.world.Obstacles.Size().Times(BlockSize)
-	windowSize := playSize
-	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
-	windowSize.Y.Add(g.textHeight)
-	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
-	ebiten.SetWindowTitle("Miln")
-	ebiten.SetWindowPosition(100, 100)
-
 	g.useEmbedded = !FileExists("data")
 	if !g.useEmbedded {
-		g.folderWatcher.Folder = "data"
+		g.folderWatcher1.Folder = "data/gui"
+		g.folderWatcher2.Folder = "data/world"
 	}
 	g.loadGuiData()
-	g.imgTileOverlay = ebiten.NewImage(BlockSize.ToInt(), BlockSize.ToInt())
+
+	g.imgTileOverlay = ebiten.NewImage(g.BlockSize, g.BlockSize)
 
 	// font
 	var err error
