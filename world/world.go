@@ -16,43 +16,57 @@ type Beam struct {
 
 const Version = 7
 
-type WorldData struct {
-	NumRows Int
-	NumCols Int
-
+type NEntities struct {
 	NObstaclesMin Int
 	NObstaclesMax Int
 
-	NPortalsMin            Int
-	NPortalsMax            Int
+	NPortalsMin Int
+	NPortalsMax Int
+
+	NGremlinMin Int
+	NGremlinMax Int
+
+	NHoundMin Int
+	NHoundMax Int
+
+	NUltraHoundMin Int
+	NUltraHoundMax Int
+}
+
+type EnemyParams struct {
 	SpawnPortalCooldownMin Int
 	SpawnPortalCooldownMax Int
 
 	GremlinMoveCooldown   Int
 	GremlinFreezeCooldown Int
 	GremlinMaxHealth      Int
-	NGremlinMin           Int
-	NGremlinMax           Int
 
 	HoundMoveCooldown   Int
 	HoundFreezeCooldown Int
 	HoundMaxHealth      Int
-	NHoundMin           Int
-	NHoundMax           Int
 
 	UltraHoundMoveCooldown   Int
 	UltraHoundFreezeCooldown Int
 	UltraHoundMaxHealth      Int
-	NUltraHoundMin           Int
-	NUltraHoundMax           Int
 
 	PillarMoveCooldown   Int
 	PillarFreezeCooldown Int
 	PillarMaxHealth      Int
-	KingMoveCooldown     Int
-	KingFreezeCooldown   Int
-	KingMaxHealth        Int
-	QuestionMaxHealth    Int
+
+	KingMoveCooldown   Int
+	KingFreezeCooldown Int
+	KingMaxHealth      Int
+
+	QuestionMaxHealth Int
+}
+
+type WorldData struct {
+	NumRows         Int
+	NumCols         Int
+	NEntitiesPath   string
+	EnemyParamsPath string
+	NEntities
+	EnemyParams
 }
 
 type World struct {
@@ -192,6 +206,8 @@ func loadWorldData() (data WorldData) {
 	for {
 		CheckFailed = nil
 		LoadJSON("data/world/world.json", &data)
+		LoadJSON("data/world/"+data.NEntitiesPath, &data.NEntities)
+		LoadJSON("data/world/"+data.EnemyParamsPath, &data.EnemyParams)
 		if CheckFailed == nil {
 			break
 		}
