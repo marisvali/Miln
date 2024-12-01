@@ -131,6 +131,20 @@ func (g *Gui) uploadCurrentWorld() {
 	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, g.world.SerializedPlaythrough()}
 }
 
+func (g *Gui) GetMoveTarget() (valid bool, target Pt) {
+	freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
+	tilePos, dist := g.ClosestTileToMouse(freePositions)
+	closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+	return closeEnough, tilePos
+}
+
+func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
+	attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
+	tilePos, dist := g.ClosestTileToMouse(attackablePositions)
+	closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+	return closeEnough, tilePos
+}
+
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
@@ -175,23 +189,11 @@ func (g *Gui) UpdateGameOngoing() {
 
 	var input PlayerInput
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
-		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
-		tilePos, dist := g.ClosestTileToMouse(freePositions)
-		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
-		if closeEnough {
-			input.Move = true
-			input.MovePt = tilePos
-		}
+		input.Move, input.MovePt = g.GetMoveTarget()
 	}
 
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
-		attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
-		tilePos, dist := g.ClosestTileToMouse(attackablePositions)
-		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
-		if closeEnough {
-			input.Shoot = true
-			input.ShootPt = tilePos
-		}
+		input.Shoot, input.ShootPt = g.GetAttackTarget()
 	}
 
 	if !g.recording {
