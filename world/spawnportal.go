@@ -14,9 +14,10 @@ type SpawnPortal struct {
 	nHoundsLeftToSpawn      Int
 	nUltraHoundsLeftToSpawn Int
 	nKingsLeftToSpawn       Int
+	worldData               WorldData
 }
 
-func NewSpawnPortal(pos Pt, cooldown Int, nGremlins Int, nHounds Int, nUltraHounds Int, nKings Int) (p SpawnPortal) {
+func NewSpawnPortal(w WorldData, pos Pt, cooldown Int, nGremlins Int, nHounds Int, nUltraHounds Int, nKings Int) (p SpawnPortal) {
 	p.Pos = pos
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
@@ -25,6 +26,7 @@ func NewSpawnPortal(pos Pt, cooldown Int, nGremlins Int, nHounds Int, nUltraHoun
 	p.nHoundsLeftToSpawn = nHounds
 	p.nUltraHoundsLeftToSpawn = nUltraHounds
 	p.nKingsLeftToSpawn = nKings
+	p.worldData = w
 	return
 }
 
@@ -35,16 +37,16 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if p.nUltraHoundsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewUltraHound(p.Pos))
+		w.Enemies = append(w.Enemies, NewUltraHound(p.worldData, p.Pos))
 		p.nUltraHoundsLeftToSpawn.Dec()
 	} else if p.nHoundsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewHound(p.Pos))
+		w.Enemies = append(w.Enemies, NewHound(p.worldData, p.Pos))
 		p.nHoundsLeftToSpawn.Dec()
 	} else if p.nGremlinsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewGremlin(p.Pos))
+		w.Enemies = append(w.Enemies, NewGremlin(p.worldData, p.Pos))
 		p.nGremlinsLeftToSpawn.Dec()
 	} else if p.nKingsLeftToSpawn.IsPositive() {
-		w.Enemies = append(w.Enemies, NewKing(p.Pos))
+		w.Enemies = append(w.Enemies, NewKing(p.worldData, p.Pos))
 		p.nKingsLeftToSpawn.Dec()
 	}
 

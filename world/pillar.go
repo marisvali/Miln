@@ -8,13 +8,13 @@ type Pillar struct {
 	EnemyBase
 }
 
-func NewPillar(pos Pt) *Pillar {
+func NewPillar(w WorldData, pos Pt) *Pillar {
 	var p Pillar
 	p.pos = pos
-	p.maxHealth = PillarMaxHealth
+	p.maxHealth = w.PillarMaxHealth
 	p.health = p.maxHealth
-	p.freezeCooldown = PillarFreezeCooldown
-	p.moveCooldown = PillarMoveCooldown
+	p.freezeCooldown = w.PillarFreezeCooldown
+	p.moveCooldown = w.PillarMoveCooldown
 	p.moveCooldownIdx = p.moveCooldown.DivBy(TWO)
 	return &p
 }

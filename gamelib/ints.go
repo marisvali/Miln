@@ -95,6 +95,7 @@ most of your insight that way.
 */
 
 import (
+	"encoding/json"
 	"fmt"
 	"math"
 )
@@ -362,4 +363,8 @@ func Max(a, b Int) Int {
 	} else {
 		return a
 	}
+}
+
+func (a *Int) UnmarshalJSON(b []byte) error {
+	return json.Unmarshal(b, &a.Val)
 }

@@ -8,13 +8,13 @@ type UltraHound struct {
 	EnemyBase
 }
 
-func NewUltraHound(pos Pt) *UltraHound {
+func NewUltraHound(w WorldData, pos Pt) *UltraHound {
 	var h UltraHound
 	h.pos = pos
-	h.maxHealth = UltraHoundMaxHealth
+	h.maxHealth = w.UltraHoundMaxHealth
 	h.health = h.maxHealth
-	h.freezeCooldown = UltraHoundFreezeCooldown
-	h.moveCooldown = UltraHoundMoveCooldown
+	h.freezeCooldown = w.UltraHoundFreezeCooldown
+	h.moveCooldown = w.UltraHoundMoveCooldown
 	h.moveCooldownIdx = h.moveCooldown.DivBy(TWO)
 	return &h
 }

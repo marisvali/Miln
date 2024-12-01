@@ -8,13 +8,13 @@ type Hound struct {
 	EnemyBase
 }
 
-func NewHound(pos Pt) *Hound {
+func NewHound(w WorldData, pos Pt) *Hound {
 	var h Hound
 	h.pos = pos
-	h.maxHealth = HoundMaxHealth
+	h.maxHealth = w.HoundMaxHealth
 	h.health = h.maxHealth
-	h.freezeCooldown = HoundFreezeCooldown
-	h.moveCooldown = HoundMoveCooldown
+	h.freezeCooldown = w.HoundFreezeCooldown
+	h.moveCooldown = w.HoundMoveCooldown
 	h.moveCooldownIdx = h.moveCooldown.DivBy(TWO)
 	return &h
 }

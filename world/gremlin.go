@@ -8,13 +8,13 @@ type Gremlin struct {
 	EnemyBase
 }
 
-func NewGremlin(pos Pt) *Gremlin {
+func NewGremlin(w WorldData, pos Pt) *Gremlin {
 	var g Gremlin
 	g.pos = pos
-	g.maxHealth = GremlinMaxHealth
+	g.maxHealth = w.GremlinMaxHealth
 	g.health = g.maxHealth
-	g.freezeCooldown = GremlinFreezeCooldown
-	g.moveCooldown = GremlinMoveCooldown
+	g.freezeCooldown = w.GremlinFreezeCooldown
+	g.moveCooldown = w.GremlinMoveCooldown
 	g.moveCooldownIdx = g.moveCooldown.DivBy(TWO)
 	return &g
 }

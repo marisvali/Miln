@@ -1,4 +1,37 @@
 {
   "NumRows": 8,
-  "NumCols": 8
+  "NumCols": 8,
+
+  "NObstaclesMin": 10,
+  "NObstaclesMax": 25,
+  "NPortalsMin": 1,
+  "NPortalsMax": 5,
+  "SpawnPortalCooldownMin": 40,
+  "SpawnPortalCooldownMax": 150,
+
+  "GremlinMoveCooldown": 50,
+  "GremlinFreezeCooldown": 30,
+  "GremlinMaxHealth": 1,
+  "nGremlinMin": 3,
+  "nGremlinMax": 7,
+
+  "HoundMoveCooldown": 70,
+  "HoundFreezeCooldown": 300,
+  "HoundMaxHealth": 4,
+  "nHoundMin": 0,
+  "nHoundMax": 2,
+
+  "UltraHoundMoveCooldown": 100,
+  "UltraHoundFreezeCooldown": 0,
+  "UltraHoundMaxHealth": 1,
+  "nUltraHoundMin": 0,
+  "nUltraHoundMax": 1,
+
+  "PillarMoveCooldown": 100,
+  "PillarFreezeCooldown": 300,
+  "PillarMaxHealth": 1,
+  "KingMoveCooldown": 60,
+  "KingFreezeCooldown": 200,
+  "KingMaxHealth": 3,
+  "QuestionMaxHealth": 1
 }

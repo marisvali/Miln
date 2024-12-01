@@ -9,42 +9,6 @@ import (
 	"slices"
 )
 
-var nObstaclesMin = I(10)
-var nObstaclesMax = I(25)
-
-var nPortalsMin = I(1)
-var nPortalsMax = I(5)
-var SpawnPortalCooldownMin = I(40)
-var SpawnPortalCooldownMax = I(150)
-
-// var GremlinMoveCooldown = I(500000)
-var GremlinMoveCooldown = I(50)
-var GremlinFreezeCooldown = I(30)
-var GremlinMaxHealth = I(1)
-var nGremlinMin = I(3)
-var nGremlinMax = I(7)
-
-var HoundMoveCooldown = I(70)
-var HoundFreezeCooldown = I(300)
-var HoundMaxHealth = I(4)
-var nHoundMin = I(0)
-var nHoundMax = I(2)
-
-// var UltraHoundMoveCooldown = I(10000000)
-var UltraHoundMoveCooldown = I(100)
-var UltraHoundFreezeCooldown = I(0)
-var UltraHoundMaxHealth = I(1)
-var nUltraHoundMin = I(0)
-var nUltraHoundMax = I(1)
-
-var PillarMoveCooldown = I(100)
-var PillarFreezeCooldown = I(300)
-var PillarMaxHealth = I(1)
-var KingMoveCooldown = I(60)
-var KingFreezeCooldown = I(200)
-var KingMaxHealth = I(3)
-var QuestionMaxHealth = I(1)
-
 type Beam struct {
 	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
 	End Pt  // this is the point to where the beam ends
@@ -55,6 +19,40 @@ const Version = 7
 type WorldData struct {
 	NumRows int
 	NumCols int
+
+	NObstaclesMin Int
+	NObstaclesMax Int
+
+	NPortalsMin            Int
+	NPortalsMax            Int
+	SpawnPortalCooldownMin Int
+	SpawnPortalCooldownMax Int
+
+	GremlinMoveCooldown   Int
+	GremlinFreezeCooldown Int
+	GremlinMaxHealth      Int
+	NGremlinMin           Int
+	NGremlinMax           Int
+
+	HoundMoveCooldown   Int
+	HoundFreezeCooldown Int
+	HoundMaxHealth      Int
+	NHoundMin           Int
+	NHoundMax           Int
+
+	UltraHoundMoveCooldown   Int
+	UltraHoundFreezeCooldown Int
+	UltraHoundMaxHealth      Int
+	NUltraHoundMin           Int
+	NUltraHoundMax           Int
+
+	PillarMoveCooldown   Int
+	PillarFreezeCooldown Int
+	PillarMaxHealth      Int
+	KingMoveCooldown     Int
+	KingFreezeCooldown   Int
+	KingMaxHealth        Int
+	QuestionMaxHealth    Int
 }
 
 type World struct {
@@ -145,26 +143,26 @@ type Seeds struct {
 	Portals    []PortalSeed
 }
 
-func GenerateSeeds(seed Int) (s Seeds) {
+func (w *World) GenerateSeeds(seed Int) (s Seeds) {
 	RSeed(seed)
-	s.NObstacles = RInt(nObstaclesMin, nObstaclesMax)
-	nPortals := RInt(nPortalsMin, nPortalsMax)
+	s.NObstacles = RInt(w.NObstaclesMin, w.NObstaclesMax)
+	nPortals := RInt(w.NPortalsMin, w.NPortalsMax)
 
 	for i := ZERO; i.Lt(nPortals); i.Inc() {
 		var portal PortalSeed
-		portal.Cooldown = RInt(SpawnPortalCooldownMin, SpawnPortalCooldownMax)
-		portal.NGremlins = RInt(nGremlinMin, nGremlinMax)
-		portal.NHounds = RInt(nHoundMin, nHoundMax)
-		portal.NUltraHounds = RInt(nUltraHoundMin, nUltraHoundMax)
+		portal.Cooldown = RInt(w.SpawnPortalCooldownMin, w.SpawnPortalCooldownMax)
+		portal.NGremlins = RInt(w.NGremlinMin, w.NGremlinMax)
+		portal.NHounds = RInt(w.NHoundMin, w.NHoundMax)
+		portal.NUltraHounds = RInt(w.NUltraHoundMin, w.NUltraHoundMax)
 		s.Portals = append(s.Portals, portal)
 	}
 	return
 }
 
-func GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
+func (w *World) GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
 	RSeed(seed)
 	for {
-		s = GenerateSeeds(RInt(ZERO, I(1000000)))
+		s = w.GenerateSeeds(RInt(ZERO, I(1000000)))
 		difficulty := ZERO
 		difficulty.Add(s.NObstacles)
 		difficulty.Add(I(len(s.Portals)))
@@ -207,13 +205,14 @@ func NewWorld(seed Int, difficulty Int) (w World) {
 	w.Seed = seed
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
-	w.Seeds = GenerateSeeds(seed)
+	w.Seeds = w.GenerateSeeds(seed)
 	// w.Seeds = GenerateSeedsTargetDifficulty(seed, difficulty)
 	w.Obstacles = RandomLevel(w.NObstacles, w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.Portals {
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
+			w.WorldData,
 			occ.OccupyRandomPos(),
 			portal.Cooldown,
 			portal.NGremlins,
@@ -247,11 +246,11 @@ func NewWorldFromString(level string) (w World) {
 	w.vision = NewVision(w.Obstacles.Size())
 
 	for _, pos := range pos1 {
-		w.Enemies = append(w.Enemies, NewGremlin(pos))
+		w.Enemies = append(w.Enemies, NewGremlin(w.WorldData, pos))
 	}
 
 	for _, pos := range pos2 {
-		w.Enemies = append(w.Enemies, NewUltraHound(pos))
+		w.Enemies = append(w.Enemies, NewUltraHound(w.WorldData, pos))
 	}
 
 	// Params

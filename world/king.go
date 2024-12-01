@@ -6,16 +6,18 @@ import (
 
 type King struct {
 	EnemyBase
+	worldData WorldData
 }
 
-func NewKing(pos Pt) *King {
+func NewKing(w WorldData, pos Pt) *King {
 	var k King
 	k.pos = pos
-	k.maxHealth = KingMaxHealth
-	k.health = KingMaxHealth
-	k.freezeCooldown = KingFreezeCooldown
-	k.moveCooldown = KingMoveCooldown
+	k.maxHealth = w.KingMaxHealth
+	k.health = w.KingMaxHealth
+	k.freezeCooldown = w.KingFreezeCooldown
+	k.moveCooldown = w.KingMoveCooldown
 	k.moveCooldownIdx = k.moveCooldown.DivBy(TWO)
+	k.worldData = w
 	return &k
 }
 
@@ -32,7 +34,7 @@ func (k *King) Step(w *World) {
 			if k.health == ZERO {
 				w.Keys = append(w.Keys, NewUltraHoundKey(k.pos))
 			}
-			w.Enemies = append(w.Enemies, NewHound(k.pos))
+			w.Enemies = append(w.Enemies, NewHound(k.worldData, k.pos))
 		}
 	}
 

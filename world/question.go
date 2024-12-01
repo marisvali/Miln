@@ -6,14 +6,16 @@ import (
 
 type Question struct {
 	EnemyBase
+	worldData WorldData
 }
 
-func NewQuestion(pos Pt) *Question {
+func NewQuestion(w WorldData, pos Pt) *Question {
 	var q Question
 	q.pos = pos
-	q.maxHealth = QuestionMaxHealth
+	q.maxHealth = w.QuestionMaxHealth
 	q.health = q.maxHealth
 	q.freezeCooldown = I(1)
+	q.worldData = w
 	return &q
 }
 
@@ -49,9 +51,9 @@ func (q *Question) onDeath(w *World) {
 				}
 			}
 			if nHounds.Lt(ONE) && (RInt(I(0), I(100)).Leq(I(40)) || nQuestions.Leq(I(4))) {
-				w.Enemies = append(w.Enemies, NewUltraHound(q.pos))
+				w.Enemies = append(w.Enemies, NewUltraHound(q.worldData, q.pos))
 			} else {
-				w.Enemies = append(w.Enemies, NewPillar(q.pos))
+				w.Enemies = append(w.Enemies, NewPillar(q.worldData, q.pos))
 			}
 		} else {
 			w.Obstacles.Set(q.pos)
