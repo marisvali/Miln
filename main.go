@@ -26,7 +26,7 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize       int
+	BlockSize       Int
 	ShowHoverShadow bool
 }
 
@@ -177,7 +177,7 @@ func (g *Gui) UpdateGameOngoing() {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
 		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(freePositions)
-		closeEnough := dist.Lt(I(g.BlockSize).Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Move = true
 			input.MovePt = tilePos
@@ -187,7 +187,7 @@ func (g *Gui) UpdateGameOngoing() {
 	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(attackablePositions)
-		closeEnough := dist.Lt(I(g.BlockSize).Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
 		if closeEnough {
 			input.Shoot = true
 			input.ShootPt = tilePos
@@ -322,7 +322,7 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 	obstaclePositions := g.world.Obstacles.ToSlice()
 	ipts := []Pt{}
 	for _, pt := range obstaclePositions {
-		s := Square{g.TileToScreen(pt), I(g.BlockSize).Times(I(90)).DivBy(I(100))}
+		s := Square{g.TileToScreen(pt), g.BlockSize.Times(I(90)).DivBy(I(100))}
 		if intersects, ipt := LineSquareIntersection(l, s); intersects {
 			ipts = append(ipts, ipt)
 		}
@@ -333,25 +333,25 @@ func (g *Gui) LineObstaclesIntersection(l Line) (bool, Pt) {
 
 func (g *Gui) DrawTile(screen *ebiten.Image, img *ebiten.Image, pos Pt) {
 	margin := float64(1)
-	pos = pos.Times(I(g.BlockSize))
+	pos = pos.Times(g.BlockSize)
 	x := pos.X.ToFloat64()
 	y := pos.Y.ToFloat64()
-	tileSize := float64(g.BlockSize) - 2*margin
+	tileSize := g.BlockSize.ToFloat64() - 2*margin
 	DrawSprite(screen, img, x+margin, y+margin, tileSize, tileSize)
 }
 
 func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alpha uint8) {
 	margin := float64(1)
-	pos = pos.Times(I(g.BlockSize))
+	pos = pos.Times(g.BlockSize)
 	x := pos.X.ToFloat64()
 	y := pos.Y.ToFloat64()
-	tileSize := float64(g.BlockSize) - 2*margin
+	tileSize := g.BlockSize.ToFloat64() - 2*margin
 	DrawSpriteAlpha(screen, img, x+margin, y+margin, tileSize, tileSize, alpha)
 }
 
 func (g *Gui) TileToScreen(pos Pt) Pt {
-	half := I(g.BlockSize).DivBy(TWO)
-	return pos.Times(I(g.BlockSize)).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
+	half := g.BlockSize.DivBy(TWO)
+	return pos.Times(g.BlockSize).Plus(Pt{half, half}).Plus(Pt{g.guiMargin, g.guiMargin})
 }
 
 func (g *Gui) TilesToScreen(ipt []Pt) (opt []Pt) {
@@ -373,20 +373,20 @@ func (g *Gui) ClosestTileToMouse(tiles []Pt) (tile Pt, dist Int) {
 }
 
 func (g *Gui) TileToPlayRegion(pos Pt) Pt {
-	half := I(g.BlockSize).DivBy(TWO)
-	return pos.Times(I(g.BlockSize)).Plus(Pt{half, half})
+	half := g.BlockSize.DivBy(TWO)
+	return pos.Times(g.BlockSize).Plus(Pt{half, half})
 }
 
 func (g *Gui) ScreenToTile(pos Pt) Pt {
-	return pos.Minus(Pt{g.guiMargin, g.guiMargin}).DivBy(I(g.BlockSize))
+	return pos.Minus(Pt{g.guiMargin, g.guiMargin}).DivBy(g.BlockSize)
 }
 
 func (g *Gui) WorldToGuiPos(pt Pt) Pt {
-	return pt.Times(I(g.BlockSize)).DivBy(g.world.BlockSize).Plus(Pt{g.guiMargin, g.guiMargin})
+	return pt.Times(g.BlockSize).DivBy(g.world.BlockSize).Plus(Pt{g.guiMargin, g.guiMargin})
 }
 
 func (g *Gui) WorldToPlayRegion(pt Pt) Pt {
-	return pt.Times(I(g.BlockSize)).DivBy(g.world.BlockSize)
+	return pt.Times(g.BlockSize).DivBy(g.world.BlockSize)
 }
 
 func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
@@ -492,7 +492,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	{
 		upperLeft := Pt{g.guiMargin, g.guiMargin}
-		playSize := g.world.Obstacles.Size().Times(I(g.BlockSize))
+		playSize := g.world.Obstacles.Size().Times(g.BlockSize)
 		lowerRight := upperLeft.Plus(playSize)
 		playRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		g.DrawPlayRegion(playRegion)
@@ -743,7 +743,7 @@ func (g *Gui) loadGuiData() {
 }
 
 func (g *Gui) updateWindowSize() {
-	playSize := g.world.Obstacles.Size().Times(I(g.BlockSize))
+	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
 	windowSize := playSize
 	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
 	windowSize.Y.Add(g.textHeight)
@@ -831,7 +831,7 @@ func main() {
 	}
 	g.loadGuiData()
 
-	g.imgTileOverlay = ebiten.NewImage(g.BlockSize, g.BlockSize)
+	g.imgTileOverlay = ebiten.NewImage(g.BlockSize.ToInt(), g.BlockSize.ToInt())
 
 	// font
 	var err error

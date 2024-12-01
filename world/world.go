@@ -17,8 +17,8 @@ type Beam struct {
 const Version = 7
 
 type WorldData struct {
-	NumRows int
-	NumCols int
+	NumRows Int
+	NumCols Int
 
 	NObstaclesMin Int
 	NObstaclesMax Int
@@ -122,9 +122,9 @@ func LevelX() string {
 `
 }
 
-func RandomLevel(nObstacles Int, nRows int, nCols int) (m MatBool) {
+func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 	// Create matrix with obstacles.
-	m = NewMatBool(IPt(nRows, nCols))
+	m = NewMatBool(Pt{nRows, nCols})
 	for i := ZERO; i.Lt(nObstacles); i.Inc() {
 		m.Set(m.RandomPos())
 	}
