@@ -26,7 +26,8 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize int
+	BlockSize       int
+	ShowHoverShadow bool
 }
 
 type Gui struct {
@@ -57,6 +58,9 @@ type Gui struct {
 	imgAmmo            *ebiten.Image
 	imgSpawnPortal     *ebiten.Image
 	imgPlayerHitEffect *ebiten.Image
+	imgHoverMoveOk     *ebiten.Image
+	imgHoverMoveNotOk  *ebiten.Image
+	imgHoverAttackOk   *ebiten.Image
 	imgKey             []*ebiten.Image
 	world              World
 	worldAtStart       World
@@ -445,6 +449,21 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		}
 	}
 
+	// Draw hover
+	if g.ShowHoverShadow {
+		tilePos := g.ScreenToTile(g.mousePt)
+		if g.world.Obstacles.InBounds(tilePos) {
+			vulnerableEnemy := g.world.VulnerableEnemyPositions()
+			if vulnerableEnemy.At(tilePos) {
+				g.DrawTile(screen, g.imgHoverAttackOk, tilePos)
+			} else if g.world.AttackableTiles.At(tilePos) {
+				g.DrawTile(screen, g.imgHoverMoveOk, tilePos)
+			} else {
+				g.DrawTile(screen, g.imgHoverMoveNotOk, tilePos)
+			}
+		}
+	}
+
 	// Draw hit effect.
 	p := &g.world.Player
 	if p.CooldownAfterGettingHitIdx.IsPositive() {
@@ -711,6 +730,9 @@ func (g *Gui) loadGuiData() {
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key2.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key3.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key4.png"))
+		g.imgHoverMoveOk = g.LoadImage("data/gui/hover-move-ok.png")
+		g.imgHoverMoveNotOk = g.LoadImage("data/gui/hover-move-not-ok.png")
+		g.imgHoverAttackOk = g.LoadImage("data/gui/hover-attack-ok.png")
 		if CheckFailed == nil {
 			break
 		}

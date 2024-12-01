@@ -1,3 +1,4 @@
 {
-  "BlockSize": 50
+  "BlockSize": 100,
+  "ShowHoverShadow": true
 }
