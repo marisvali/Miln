@@ -30,6 +30,8 @@ type GuiData struct {
 	HighlightMoveOk    bool
 	HighlightMoveNotOk bool
 	HighlightAttack    bool
+	AutoAimAttack      bool
+	AutoAimMove        bool
 }
 
 type Gui struct {
@@ -134,19 +136,43 @@ func (g *Gui) uploadCurrentWorld() {
 }
 
 func (g *Gui) GetMoveTarget() (valid bool, target Pt) {
-	freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
-	tilePos, dist := g.ClosestTileToMouse(freePositions)
-	closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
-	return closeEnough, tilePos
+	if g.AutoAimMove {
+		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
+		tilePos, dist := g.ClosestTileToMouse(freePositions)
+		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+		return closeEnough, tilePos
+	} else {
+		freePositions := g.world.Player.ComputeFreePositions(&g.world)
+		tilePos := g.ScreenToTile(g.mousePt)
+		mouseCursorIsOverAFreePosition :=
+			freePositions.InBounds(tilePos) &&
+				freePositions.At(tilePos)
+		return mouseCursorIsOverAFreePosition, tilePos
+	}
+}
+
+func (g *Gui) MouseCursorIsOverATile() bool {
+	return g.world.Obstacles.InBounds(g.ScreenToTile(g.mousePt))
 }
 
 func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
-	attackablePositions := g.world.VulnerableEnemyPositions()
-	attackablePositions.IntersectWith(g.world.AttackableTiles)
-	tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
-	closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
-	attackOk := g.world.Player.OnMap && closeEnough
-	return attackOk, tilePos
+	if g.AutoAimAttack {
+		attackablePositions := g.world.VulnerableEnemyPositions()
+		attackablePositions.IntersectWith(g.world.AttackableTiles)
+		tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
+		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+		attackOk := g.world.Player.OnMap && closeEnough
+		return attackOk, tilePos
+	} else {
+		attackablePositions := g.world.VulnerableEnemyPositions()
+		attackablePositions.IntersectWith(g.world.AttackableTiles)
+		tilePos := g.ScreenToTile(g.mousePt)
+		mouseCursorIsOverAVulnerableEnemy :=
+			attackablePositions.InBounds(tilePos) &&
+				attackablePositions.At(tilePos)
+		attackOk := g.world.Player.OnMap && mouseCursorIsOverAVulnerableEnemy
+		return attackOk, tilePos
+	}
 }
 
 func (g *Gui) UpdateGameOngoing() {
@@ -470,8 +496,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Highlight move not ok
 	if !moveOk && g.HighlightMoveNotOk {
 		tilePos := g.ScreenToTile(g.mousePt)
-		mouseCursorIsOverATile := g.world.Obstacles.InBounds(tilePos)
-		if mouseCursorIsOverATile {
+		if g.MouseCursorIsOverATile() {
 			g.DrawTile(screen, g.imgHighlightMoveNotOk, tilePos)
 		}
 	}

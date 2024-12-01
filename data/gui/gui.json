@@ -2,5 +2,7 @@
   "BlockSize": 100,
   "HighlightMoveOk": true,
   "HighlightMoveNotOk": true,
-  "HighlightAttack": true
+  "HighlightAttack": true,
+  "AutoAimAttack": false,
+  "AutoAimMove": false
 }
