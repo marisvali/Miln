@@ -1,4 +1,6 @@
 {
   "BlockSize": 100,
-  "ShowHoverShadow": true
+  "HighlightMoveOk": true,
+  "HighlightMoveNotOk": true,
+  "HighlightAttack": true
 }

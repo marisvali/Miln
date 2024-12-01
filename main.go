@@ -26,64 +26,66 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize       Int
-	ShowHoverShadow bool
+	BlockSize          Int
+	HighlightMoveOk    bool
+	HighlightMoveNotOk bool
+	HighlightAttack    bool
 }
 
 type Gui struct {
 	GuiData
-	defaultFont        font.Face
-	imgGround          *ebiten.Image
-	imgTree            *ebiten.Image
-	imgPlayer          *ebiten.Image
-	imgPlayerHealth    *ebiten.Image
-	imgGremlin         *ebiten.Image
-	imgGremlinMask     *ebiten.Image
-	imgHound           *ebiten.Image
-	imgHoundMask       *ebiten.Image
-	imgUltraHound      *ebiten.Image
-	imgUltraHoundMask  *ebiten.Image
-	imgPillar          *ebiten.Image
-	imgPillarMask      *ebiten.Image
-	imgQuestion        *ebiten.Image
-	imgQuestionMask    *ebiten.Image
-	imgKing            *ebiten.Image
-	imgKingMask        *ebiten.Image
-	imgEnemyHealth     *ebiten.Image
-	imgTileOverlay     *ebiten.Image
-	imgBeam            *ebiten.Image
-	imgShadow          *ebiten.Image
-	imgTextBackground  *ebiten.Image
-	imgTextColor       *ebiten.Image
-	imgAmmo            *ebiten.Image
-	imgSpawnPortal     *ebiten.Image
-	imgPlayerHitEffect *ebiten.Image
-	imgHoverMoveOk     *ebiten.Image
-	imgHoverMoveNotOk  *ebiten.Image
-	imgHoverAttackOk   *ebiten.Image
-	imgKey             []*ebiten.Image
-	world              World
-	worldAtStart       World
-	frameIdx           Int
-	folderWatcher1     FolderWatcher
-	folderWatcher2     FolderWatcher
-	recording          bool
-	recordingFile      string
-	state              GameState
-	textHeight         Int
-	guiMargin          Int
-	useEmbedded        bool
-	buttonRegionWidth  Int
-	buttonPause        Rectangle
-	buttonNewLevel     Rectangle
-	buttonRestartLevel Rectangle
-	justPressedKeys    []ebiten.Key // keys pressed in this frame
-	mousePt            Pt           // mouse position in this frame
-	playerHitEffectIdx Int
-	playthrough        Playthrough
-	uploadDataChannel  chan uploadData
-	username           string
-	ai                 AI
+	defaultFont           font.Face
+	imgGround             *ebiten.Image
+	imgTree               *ebiten.Image
+	imgPlayer             *ebiten.Image
+	imgPlayerHealth       *ebiten.Image
+	imgGremlin            *ebiten.Image
+	imgGremlinMask        *ebiten.Image
+	imgHound              *ebiten.Image
+	imgHoundMask          *ebiten.Image
+	imgUltraHound         *ebiten.Image
+	imgUltraHoundMask     *ebiten.Image
+	imgPillar             *ebiten.Image
+	imgPillarMask         *ebiten.Image
+	imgQuestion           *ebiten.Image
+	imgQuestionMask       *ebiten.Image
+	imgKing               *ebiten.Image
+	imgKingMask           *ebiten.Image
+	imgEnemyHealth        *ebiten.Image
+	imgTileOverlay        *ebiten.Image
+	imgBeam               *ebiten.Image
+	imgShadow             *ebiten.Image
+	imgTextBackground     *ebiten.Image
+	imgTextColor          *ebiten.Image
+	imgAmmo               *ebiten.Image
+	imgSpawnPortal        *ebiten.Image
+	imgPlayerHitEffect    *ebiten.Image
+	imgHighlightMoveOk    *ebiten.Image
+	imgHighlightMoveNotOk *ebiten.Image
+	imgHighlightAttack    *ebiten.Image
+	imgKey                []*ebiten.Image
+	world                 World
+	worldAtStart          World
+	frameIdx              Int
+	folderWatcher1        FolderWatcher
+	folderWatcher2        FolderWatcher
+	recording             bool
+	recordingFile         string
+	state                 GameState
+	textHeight            Int
+	guiMargin             Int
+	useEmbedded           bool
+	buttonRegionWidth     Int
+	buttonPause           Rectangle
+	buttonNewLevel        Rectangle
+	buttonRestartLevel    Rectangle
+	justPressedKeys       []ebiten.Key // keys pressed in this frame
+	mousePt               Pt           // mouse position in this frame
+	playerHitEffectIdx    Int
+	playthrough           Playthrough
+	uploadDataChannel     chan uploadData
+	username              string
+	ai                    AI
 	// db                 *sql.DB
 }
 
@@ -139,10 +141,12 @@ func (g *Gui) GetMoveTarget() (valid bool, target Pt) {
 }
 
 func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
-	attackablePositions := g.world.VulnerableEnemyPositions().ToSlice()
-	tilePos, dist := g.ClosestTileToMouse(attackablePositions)
+	attackablePositions := g.world.VulnerableEnemyPositions()
+	attackablePositions.IntersectWith(g.world.AttackableTiles)
+	tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
 	closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
-	return closeEnough, tilePos
+	attackOk := g.world.Player.OnMap && closeEnough
+	return attackOk, tilePos
 }
 
 func (g *Gui) UpdateGameOngoing() {
@@ -192,7 +196,7 @@ func (g *Gui) UpdateGameOngoing() {
 		input.Move, input.MovePt = g.GetMoveTarget()
 	}
 
-	if g.world.Player.OnMap && inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
 		input.Shoot, input.ShootPt = g.GetAttackTarget()
 	}
 
@@ -451,18 +455,24 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		}
 	}
 
-	// Draw hover
-	if g.ShowHoverShadow {
+	// Highlight attack
+	attackOk, attackPos := g.GetAttackTarget()
+	if attackOk && g.HighlightAttack {
+		g.DrawTile(screen, g.imgHighlightAttack, attackPos)
+	}
+
+	// Highlight move ok
+	moveOk, movePos := g.GetMoveTarget()
+	if moveOk && g.HighlightMoveOk {
+		g.DrawTile(screen, g.imgHighlightMoveOk, movePos)
+	}
+
+	// Highlight move not ok
+	if !moveOk && g.HighlightMoveNotOk {
 		tilePos := g.ScreenToTile(g.mousePt)
-		if g.world.Obstacles.InBounds(tilePos) {
-			vulnerableEnemy := g.world.VulnerableEnemyPositions()
-			if vulnerableEnemy.At(tilePos) {
-				g.DrawTile(screen, g.imgHoverAttackOk, tilePos)
-			} else if g.world.AttackableTiles.At(tilePos) {
-				g.DrawTile(screen, g.imgHoverMoveOk, tilePos)
-			} else {
-				g.DrawTile(screen, g.imgHoverMoveNotOk, tilePos)
-			}
+		mouseCursorIsOverATile := g.world.Obstacles.InBounds(tilePos)
+		if mouseCursorIsOverATile {
+			g.DrawTile(screen, g.imgHighlightMoveNotOk, tilePos)
 		}
 	}
 
@@ -732,9 +742,9 @@ func (g *Gui) loadGuiData() {
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key2.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key3.png"))
 		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key4.png"))
-		g.imgHoverMoveOk = g.LoadImage("data/gui/hover-move-ok.png")
-		g.imgHoverMoveNotOk = g.LoadImage("data/gui/hover-move-not-ok.png")
-		g.imgHoverAttackOk = g.LoadImage("data/gui/hover-attack-ok.png")
+		g.imgHighlightMoveOk = g.LoadImage("data/gui/highlight-move-ok.png")
+		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
+		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
 		if CheckFailed == nil {
 			break
 		}
