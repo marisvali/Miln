@@ -4,5 +4,9 @@
   "HighlightMoveNotOk": true,
   "HighlightAttack": true,
   "AutoAimAttack": false,
-  "AutoAimMove": false
+  "AutoAimMove": false,
+  "ShowFreezeCooldownAsMask": true,
+  "ShowMoveCooldownAsMask": false,
+  "ShowFreezeCooldownAsBar": false,
+  "ShowMoveCooldownAsBar": true
 }

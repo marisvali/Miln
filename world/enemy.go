@@ -10,6 +10,8 @@ type Enemy interface {
 	Alive() bool
 	FreezeCooldownIdx() Int
 	FreezeCooldown() Int
+	MoveCooldownIdx() Int
+	MoveCooldown() Int
 	Health() Int
 	MaxHealth() Int
 	Clone() Enemy
@@ -36,6 +38,14 @@ func (e *EnemyBase) FreezeCooldownIdx() Int {
 
 func (e *EnemyBase) FreezeCooldown() Int {
 	return e.freezeCooldown
+}
+
+func (e *EnemyBase) MoveCooldownIdx() Int {
+	return e.moveCooldownIdx
+}
+
+func (e *EnemyBase) MoveCooldown() Int {
+	return e.moveCooldown
 }
 
 func (e *EnemyBase) Health() Int {

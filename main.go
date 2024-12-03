@@ -26,12 +26,16 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize          Int
-	HighlightMoveOk    bool
-	HighlightMoveNotOk bool
-	HighlightAttack    bool
-	AutoAimAttack      bool
-	AutoAimMove        bool
+	BlockSize                Int
+	HighlightMoveOk          bool
+	HighlightMoveNotOk       bool
+	HighlightAttack          bool
+	AutoAimAttack            bool
+	AutoAimMove              bool
+	ShowFreezeCooldownAsMask bool
+	ShowMoveCooldownAsMask   bool
+	ShowFreezeCooldownAsBar  bool
+	ShowMoveCooldownAsBar    bool
 }
 
 type Gui struct {
@@ -66,6 +70,7 @@ type Gui struct {
 	imgHighlightMoveNotOk *ebiten.Image
 	imgHighlightAttack    *ebiten.Image
 	imgKey                []*ebiten.Image
+	imgBlack              *ebiten.Image
 	world                 World
 	worldAtStart          World
 	frameIdx              Int
@@ -483,22 +488,28 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 
 	// Highlight attack
 	attackOk, attackPos := g.GetAttackTarget()
-	if attackOk && g.HighlightAttack {
+	highlightedPositions := []Pt{}
+	positionAlreadyHighlighted := slices.Contains(highlightedPositions, attackPos)
+	if attackOk && g.HighlightAttack && !positionAlreadyHighlighted {
 		g.DrawTile(screen, g.imgHighlightAttack, attackPos)
+		highlightedPositions = append(highlightedPositions, attackPos)
 	}
 
 	// Highlight move ok
 	moveOk, movePos := g.GetMoveTarget()
-	if moveOk && g.HighlightMoveOk {
+	positionAlreadyHighlighted = slices.Contains(highlightedPositions, movePos)
+	if moveOk && g.HighlightMoveOk && !positionAlreadyHighlighted {
 		g.DrawTile(screen, g.imgHighlightMoveOk, movePos)
+		highlightedPositions = append(highlightedPositions, movePos)
 	}
 
 	// Highlight move not ok
-	if !moveOk && g.HighlightMoveNotOk {
-		tilePos := g.ScreenToTile(g.mousePt)
-		if g.MouseCursorIsOverATile() {
-			g.DrawTile(screen, g.imgHighlightMoveNotOk, tilePos)
-		}
+	tilePos := g.ScreenToTile(g.mousePt)
+	positionAlreadyHighlighted = slices.Contains(highlightedPositions, tilePos)
+	if !moveOk && g.HighlightMoveNotOk && g.MouseCursorIsOverATile() &&
+		!positionAlreadyHighlighted {
+		g.DrawTile(screen, g.imgHighlightMoveNotOk, tilePos)
+		highlightedPositions = append(highlightedPositions, tilePos)
 	}
 
 	// Draw hit effect.
@@ -664,15 +675,45 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 
 	g.DrawTile(screen, img, e.Pos())
 
-	alpha := ZERO
-	if e.FreezeCooldown().IsPositive() {
-		percent := e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
-		if percent.Gt(ZERO) {
-			alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+	// Show mask fading from dark to nothing.
+	maskPercent := ZERO
+	if g.ShowFreezeCooldownAsMask {
+		if e.FreezeCooldown().IsPositive() {
+			maskPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
 		}
 	}
+	if g.ShowMoveCooldownAsMask {
+		if e.MoveCooldown().IsPositive() {
+			maskPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
+		}
+	}
+	if maskPercent.Gt(ZERO) {
+		alpha := (maskPercent.Plus(I(100))).Times(I(255)).DivBy(I(200))
+		g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
+	}
 
-	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
+	// Show bar on top of the tile going from full to empty.
+	barPercent := ZERO
+	if g.ShowFreezeCooldownAsBar {
+		if e.FreezeCooldown().IsPositive() {
+			barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
+		}
+	}
+	if g.ShowMoveCooldownAsBar {
+		if e.MoveCooldown().IsPositive() {
+			barPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
+		}
+	}
+	if barPercent.Gt(ZERO) {
+		margin := float64(1)
+		pos := e.Pos().Times(g.BlockSize)
+		x := pos.X.ToFloat64()
+		y := pos.Y.ToFloat64()
+		tileSize := g.BlockSize.ToFloat64() - 2*margin
+		width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
+		DrawSprite(screen, g.imgBlack, x+margin, y+margin, width.ToFloat64(), tileSize/10)
+	}
+
 	if drawHealth {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}
@@ -770,6 +811,7 @@ func (g *Gui) loadGuiData() {
 		g.imgHighlightMoveOk = g.LoadImage("data/gui/highlight-move-ok.png")
 		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
 		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
+		g.imgBlack = g.LoadImage("data/gui/black.png")
 		if CheckFailed == nil {
 			break
 		}
