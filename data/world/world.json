@@ -2,5 +2,5 @@
   "NumRows": 8,
   "NumCols": 8,
   "NEntitiesPath": "n_entities_1.json",
-  "EnemyParamsPath": "enemy_params_1.json"
+  "EnemyParamsPath": "enemy_params_slow.json"
 }
