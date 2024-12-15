@@ -122,7 +122,7 @@ func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
 	closestEnemy = nil
 	for _, e := range w.Enemies {
 		if CanAttackEnemy(w, e) {
-			dist := e.Pos().Minus(w.Player.Pos).SquaredLen()
+			dist := e.Pos().Minus(w.Player.Pos()).SquaredLen()
 			if dist.Lt(minDist) {
 				minDist = dist
 				closestEnemy = e
@@ -148,12 +148,12 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	input.Move = true
 
 	// At first, move to the tile that's furthest away from everyone.
-	input.MovePt = PointFurthestFromEnemies(w, freePts, w.Player.Pos)
+	input.MovePt = PointFurthestFromEnemies(w, freePts, w.Player.Pos())
 
 	// Try to find the tile that's furthest from everyone, from which an
 	// enemy can be shot.
 	attackPts := GetPointsFromWhichPlayerCanAttack(w, freePts)
-	maxPt := PointFurthestFromEnemies(w, attackPts, w.Player.Pos)
+	maxPt := PointFurthestFromEnemies(w, attackPts, w.Player.Pos())
 	if !InDangerZone(w, maxPt) {
 		input.MovePt = maxPt
 	}
@@ -187,7 +187,7 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 			}
 		} else {
 			// Just sit in the random position for a while.
-			if !InDangerZone(w, w.Player.Pos) {
+			if !InDangerZone(w, w.Player.Pos()) {
 				input.Move = false
 			}
 		}
@@ -208,7 +208,7 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 		if _, isKing := e.(*King); isKing {
 			if e.Pos() == input.ShootPt {
 				for _, sp := range w.SpawnPortals {
-					if sp.Pos == e.Pos() {
+					if sp.Pos() == e.Pos() {
 						input.Shoot = false
 						break
 					}
@@ -222,7 +222,7 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	// We should move if we are in a danger zone and we have a better option.
 	if !w.Player.OnMap ||
 		input.Move &&
-			InDangerZone(w, w.Player.Pos) &&
+			InDangerZone(w, w.Player.Pos()) &&
 			!InDangerZone(w, input.MovePt) {
 		// Suppress shooting.
 		input.Shoot = false

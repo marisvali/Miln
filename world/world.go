@@ -69,6 +69,10 @@ type WorldData struct {
 	EnemyParams
 }
 
+type WorldObject interface {
+	Pos() Pt
+}
+
 type World struct {
 	WorldData
 	Player           Player
@@ -436,7 +440,7 @@ func (w *World) computeAttackableTiles() {
 	for _, enemy := range w.Enemies {
 		obstacles.Set(enemy.Pos())
 	}
-	w.AttackableTiles = w.vision.Compute(w.Player.Pos, obstacles)
+	w.AttackableTiles = w.vision.Compute(w.Player.Pos(), obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
@@ -460,7 +464,7 @@ func (w *World) VulnerableEnemyPositions() (m MatBool) {
 func (w *World) SpawnPortalPositions() (m MatBool) {
 	m = NewMatBool(w.Obstacles.Size())
 	for i := range w.SpawnPortals {
-		m.Set(w.SpawnPortals[i].Pos)
+		m.Set(w.SpawnPortals[i].pos)
 	}
 	return
 }

@@ -24,7 +24,7 @@ func (w *World) SpawnAmmos() {
 		if w.Obstacles.At(pt) {
 			continue
 		}
-		if w.Player.Pos == pt {
+		if w.Player.Pos() == pt {
 			continue
 		}
 		invalid := false

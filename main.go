@@ -38,61 +38,70 @@ type GuiData struct {
 	ShowMoveCooldownAsBar    bool
 }
 
+type Animations struct {
+	animMoveFailed   Animation
+	animAttackFailed Animation
+	animPlayer       Animation
+}
+
 type Gui struct {
 	GuiData
-	defaultFont           font.Face
-	imgGround             *ebiten.Image
-	imgTree               *ebiten.Image
-	imgPlayer             *ebiten.Image
-	imgPlayerHealth       *ebiten.Image
-	imgGremlin            *ebiten.Image
-	imgGremlinMask        *ebiten.Image
-	imgHound              *ebiten.Image
-	imgHoundMask          *ebiten.Image
-	imgUltraHound         *ebiten.Image
-	imgUltraHoundMask     *ebiten.Image
-	imgPillar             *ebiten.Image
-	imgPillarMask         *ebiten.Image
-	imgQuestion           *ebiten.Image
-	imgQuestionMask       *ebiten.Image
-	imgKing               *ebiten.Image
-	imgKingMask           *ebiten.Image
-	imgEnemyHealth        *ebiten.Image
-	imgTileOverlay        *ebiten.Image
-	imgBeam               *ebiten.Image
-	imgShadow             *ebiten.Image
-	imgTextBackground     *ebiten.Image
-	imgTextColor          *ebiten.Image
-	imgAmmo               *ebiten.Image
-	imgSpawnPortal        *ebiten.Image
-	imgPlayerHitEffect    *ebiten.Image
-	imgHighlightMoveOk    *ebiten.Image
-	imgHighlightMoveNotOk *ebiten.Image
-	imgHighlightAttack    *ebiten.Image
-	imgKey                []*ebiten.Image
-	imgBlack              *ebiten.Image
-	world                 World
-	worldAtStart          World
-	frameIdx              Int
-	folderWatcher1        FolderWatcher
-	folderWatcher2        FolderWatcher
-	recording             bool
-	recordingFile         string
-	state                 GameState
-	textHeight            Int
-	guiMargin             Int
-	useEmbedded           bool
-	buttonRegionWidth     Int
-	buttonPause           Rectangle
-	buttonNewLevel        Rectangle
-	buttonRestartLevel    Rectangle
-	justPressedKeys       []ebiten.Key // keys pressed in this frame
-	mousePt               Pt           // mouse position in this frame
-	playerHitEffectIdx    Int
-	playthrough           Playthrough
-	uploadDataChannel     chan uploadData
-	username              string
-	ai                    AI
+	Animations
+	defaultFont            font.Face
+	imgGround              *ebiten.Image
+	imgTree                *ebiten.Image
+	imgPlayerHealth        *ebiten.Image
+	imgGremlin             *ebiten.Image
+	imgGremlinMask         *ebiten.Image
+	imgHound               *ebiten.Image
+	imgHoundMask           *ebiten.Image
+	imgUltraHound          *ebiten.Image
+	imgUltraHoundMask      *ebiten.Image
+	imgPillar              *ebiten.Image
+	imgPillarMask          *ebiten.Image
+	imgQuestion            *ebiten.Image
+	imgQuestionMask        *ebiten.Image
+	imgKing                *ebiten.Image
+	imgKingMask            *ebiten.Image
+	imgEnemyHealth         *ebiten.Image
+	imgTileOverlay         *ebiten.Image
+	imgBeam                *ebiten.Image
+	imgShadow              *ebiten.Image
+	imgTextBackground      *ebiten.Image
+	imgTextColor           *ebiten.Image
+	imgAmmo                *ebiten.Image
+	imgSpawnPortal         *ebiten.Image
+	imgPlayerHitEffect     *ebiten.Image
+	imgHighlightMoveOk     *ebiten.Image
+	imgHighlightMoveNotOk  *ebiten.Image
+	imgHighlightAttack     *ebiten.Image
+	imgKey                 []*ebiten.Image
+	imgBlack               *ebiten.Image
+	world                  World
+	worldAtStart           World
+	frameIdx               Int
+	folderWatcher1         FolderWatcher
+	folderWatcher2         FolderWatcher
+	recording              bool
+	recordingFile          string
+	state                  GameState
+	textHeight             Int
+	guiMargin              Int
+	useEmbedded            bool
+	buttonRegionWidth      Int
+	buttonPause            Rectangle
+	buttonNewLevel         Rectangle
+	buttonRestartLevel     Rectangle
+	justPressedKeys        []ebiten.Key // keys pressed in this frame
+	mousePt                Pt           // mouse position in this frame
+	leftButtonJustPressed  bool         // left mouse button state in this frame
+	rightButtonJustPressed bool         // right mouse button state in this frame
+	playerHitEffectIdx     Int
+	playthrough            Playthrough
+	uploadDataChannel      chan uploadData
+	username               string
+	ai                     AI
+	visWorld               VisWorld
 	// db                 *sql.DB
 }
 
@@ -223,12 +232,27 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	var input PlayerInput
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+	if g.leftButtonJustPressed {
 		input.Move, input.MovePt = g.GetMoveTarget()
+		if !input.Move && g.HighlightMoveNotOk {
+			// TODO: move this logic to VisWorld
+			moveFailed := TemporaryAnimation{}
+			moveFailed.Animation = g.animMoveFailed
+			moveFailed.NFramesLeft = I(20)
+			moveFailed.ScreenPos = g.mousePt
+			g.visWorld.Temporary = append(g.visWorld.Temporary, &moveFailed)
+		}
 	}
-
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+	if g.rightButtonJustPressed {
 		input.Shoot, input.ShootPt = g.GetAttackTarget()
+		if !input.Shoot && g.HighlightAttack {
+			// TODO: move this logic to VisWorld
+			attackFailed := TemporaryAnimation{}
+			attackFailed.Animation = g.animAttackFailed
+			attackFailed.NFramesLeft = I(20)
+			attackFailed.ScreenPos = g.mousePt
+			g.visWorld.Temporary = append(g.visWorld.Temporary, &attackFailed)
+		}
 	}
 
 	if !g.recording {
@@ -240,6 +264,7 @@ func (g *Gui) UpdateGameOngoing() {
 
 	// input = g.ai.Step(&g.world)
 	g.world.Step(input)
+	g.visWorld.Step(&g.world)
 
 	if g.recording {
 		if g.recordingFile != "" {
@@ -268,8 +293,7 @@ func (g *Gui) UpdateGamePaused() {
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
-	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) ||
-		inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2) {
+	if g.leftButtonJustPressed || g.rightButtonJustPressed {
 		g.state = GameOngoing
 		g.UpdateGameOngoing()
 		return
@@ -336,6 +360,8 @@ func (g *Gui) Update() error {
 	g.justPressedKeys = inpututil.AppendJustPressedKeys(g.justPressedKeys)
 	x, y := ebiten.CursorPosition()
 	g.mousePt = IPt(x, y)
+	g.leftButtonJustPressed = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0)
+	g.rightButtonJustPressed = inpututil.IsMouseButtonJustPressed(ebiten.MouseButton2)
 
 	if g.JustPressed(ebiten.KeyX) {
 		return ebiten.Termination
@@ -443,7 +469,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Draw portals.
 	for i := range g.world.SpawnPortals {
 		p := &g.world.SpawnPortals[i]
-		g.DrawTile(screen, g.imgSpawnPortal, p.Pos)
+		g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
 	}
 
 	// Draw ammo.
@@ -467,7 +493,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
 	if g.world.Beam.Idx.Gt(ZERO) {
-		beam := Line{g.TileToPlayRegion(g.world.Player.Pos), g.WorldToPlayRegion(g.world.Beam.End)}
+		beam := Line{g.TileToPlayRegion(g.world.Player.Pos()), g.WorldToPlayRegion(g.world.Beam.End)}
 		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
 		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
 		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
@@ -510,6 +536,20 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		!positionAlreadyHighlighted {
 		g.DrawTile(screen, g.imgHighlightMoveNotOk, tilePos)
 		highlightedPositions = append(highlightedPositions, tilePos)
+	}
+
+	// Draw all animations for world objects.
+	for _, o := range g.visWorld.Objects {
+		if o.Animation.Valid() {
+			g.DrawTile(screen, o.Animation.Img(), o.Object.Pos())
+		}
+	}
+
+	// Draw all temporary animations.
+	for _, o := range g.visWorld.Temporary {
+		if o.Animation.Valid() {
+			g.DrawTile(screen, o.Animation.Img(), g.ScreenToTile(o.ScreenPos))
+		}
 	}
 
 	// Draw hit effect.
@@ -723,7 +763,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	if !p.OnMap {
 		return
 	}
-	mask := ebiten.NewImageFromImage(g.imgPlayer)
+	// mask := ebiten.NewImageFromImage(g.animPlayer.Img())
 	// Draw mask of move cooldown.
 	// {
 	//	percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
@@ -750,9 +790,9 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
 	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
 	// }
-	g.DrawTile(screen, g.imgPlayer, p.Pos)
-	g.DrawTile(screen, mask, p.Pos)
-	g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos)
+	// g.DrawTile(screen, g.animPlayer, p.Pos())
+	// g.DrawTile(screen, mask, p.Pos())
+	g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos())
 }
 
 func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, currentHealth Int, tilePos Pt) {
@@ -787,7 +827,6 @@ func (g *Gui) loadGuiData() {
 		LoadJSON("data/gui/gui.json", &g.GuiData)
 		g.imgGround = g.LoadImage("data/gui/ground.png")
 		g.imgTree = g.LoadImage("data/gui/tree.png")
-		g.imgPlayer = g.LoadImage("data/gui/player.png")
 		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
 		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
 		g.imgGremlin = g.LoadImage("data/gui/enemy2.png")
@@ -812,12 +851,16 @@ func (g *Gui) loadGuiData() {
 		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
 		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
 		g.imgBlack = g.LoadImage("data/gui/black.png")
+		g.animMoveFailed = NewAnimation("data/gui/move-failed")
+		g.animAttackFailed = NewAnimation("data/gui/attack-failed")
+		g.animPlayer = NewAnimation("data/gui/player")
 		if CheckFailed == nil {
 			break
 		}
 	}
 	CheckCrashes = true
 
+	g.visWorld = NewVisWorld(g.Animations)
 	g.updateWindowSize()
 }
 

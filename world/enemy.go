@@ -61,10 +61,10 @@ func (e *EnemyBase) Alive() bool {
 }
 
 func (e *EnemyBase) goToPlayer(w *World, m MatBool) {
-	path := FindPath(e.pos, w.Player.Pos, m.Matrix, false)
+	path := FindPath(e.pos, w.Player.Pos(), m.Matrix, false)
 	if len(path) > 1 {
 		e.pos = path[1]
-		if e.pos.Eq(w.Player.Pos) {
+		if e.pos.Eq(w.Player.Pos()) {
 			w.Player.Hit()
 		}
 	}

@@ -5,7 +5,7 @@ import (
 )
 
 type Player struct {
-	Pos                        Pt
+	pos                        Pt
 	OnMap                      bool
 	MaxHealth                  Int
 	AmmoCount                  Int
@@ -54,13 +54,13 @@ func (p *Player) Step(w *World, input PlayerInput) {
 	if input.Move {
 		free := p.ComputeFreePositions(w)
 		if free.At(input.MovePt) {
-			p.Pos = input.MovePt
+			p.pos = input.MovePt
 			p.OnMap = true
 
 			// Collect ammos.
 			newAmmos := make([]Ammo, 0)
 			for i := range w.Ammos {
-				if w.Ammos[i].Pos == w.Player.Pos {
+				if w.Ammos[i].Pos == w.Player.pos {
 					w.Player.AmmoCount.Add(w.Ammos[i].Count)
 				} else {
 					newAmmos = append(newAmmos, w.Ammos[i])
@@ -71,7 +71,7 @@ func (p *Player) Step(w *World, input PlayerInput) {
 			// Collect keys.
 			newKeys := make([]Key, 0)
 			for i := range w.Keys {
-				if w.Keys[i].Pos == p.Pos {
+				if w.Keys[i].Pos == p.pos {
 					p.HitPermissions.Add(w.Keys[i].Permissions)
 				} else {
 					newKeys = append(newKeys, w.Keys[i])
@@ -93,7 +93,7 @@ func (p *Player) Step(w *World, input PlayerInput) {
 
 		shotPortals := []*SpawnPortal{}
 		for i := range w.SpawnPortals {
-			if w.SpawnPortals[i].Pos.Eq(input.ShootPt) {
+			if w.SpawnPortals[i].pos.Eq(input.ShootPt) {
 				shotPortals = append(shotPortals, &w.SpawnPortals[i])
 			}
 		}
@@ -110,4 +110,8 @@ func (p *Player) Hit() {
 	p.OnMap = false
 	p.Health.Dec()
 	p.CooldownAfterGettingHitIdx = p.CooldownAfterGettingHit
+}
+
+func (p *Player) Pos() Pt {
+	return p.pos
 }

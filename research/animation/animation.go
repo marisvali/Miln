@@ -3,18 +3,18 @@ package main
 import (
 	"errors"
 	"github.com/hajimehoshi/ebiten/v2"
-	. "github.com/marisvali/miln/gamelib"
+	x "github.com/marisvali/miln/gamelib"
 	_ "image/png"
 	"os"
 	"strconv"
 )
 
-var AnimationFps = I(10)
+var AnimationFps = x.I(10)
 
 type Animation struct {
 	imgs     []*ebiten.Image
-	imgIndex Int
-	frameIdx Int
+	imgIndex x.Int
+	frameIdx x.Int
 }
 
 func NewAnimation(name string) (a Animation) {
@@ -25,26 +25,26 @@ func NewAnimation(name string) (a Animation) {
 			break
 		}
 
-		img := LoadImage(fullName)
+		img := x.LoadImage(fullName)
 		a.imgs = append(a.imgs, img)
 		count++
 	}
-	a.imgIndex = I(len(a.imgs))
+	a.imgIndex = x.I(len(a.imgs))
 	return
 }
 
 func (a *Animation) Img() *ebiten.Image {
 	a.frameIdx.Inc()
-	if a.frameIdx.Eq(I(60)) {
-		a.frameIdx = ZERO
+	if a.frameIdx.Eq(x.I(60)) {
+		a.frameIdx = x.ZERO
 	}
 
-	framesPerImage := I(60).DivBy(AnimationFps)
-	if a.frameIdx.Mod(framesPerImage).Eq(ZERO) {
+	framesPerImage := x.I(60).DivBy(AnimationFps)
+	if a.frameIdx.Mod(framesPerImage).Eq(x.ZERO) {
 		a.imgIndex.Inc()
 	}
-	if a.imgIndex.Eq(I(len(a.imgs))) {
-		a.imgIndex = ZERO
+	if a.imgIndex.Eq(x.I(len(a.imgs))) {
+		a.imgIndex = x.ZERO
 	}
 	return a.imgs[a.imgIndex.ToInt()]
 }
