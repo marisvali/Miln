@@ -65,6 +65,7 @@ type WorldData struct {
 	NumCols         Int
 	NEntitiesPath   string
 	EnemyParamsPath string
+	Boardgame       bool
 	NEntities
 	EnemyParams
 }
@@ -75,6 +76,8 @@ type WorldObject interface {
 
 type World struct {
 	WorldData
+	Playthrough
+	Seeds
 	Player           Player
 	Enemies          []Enemy
 	Beam             Beam
@@ -91,8 +94,6 @@ type World struct {
 	PortalKeyDropped bool
 	KingSpawned      bool
 	vision           Vision
-	Playthrough
-	Seeds
 }
 
 func (w *World) Clone() World {
@@ -474,9 +475,21 @@ func (w *World) Step(input PlayerInput) {
 	w.Player.Step(w, input)
 	w.computeAttackableTiles()
 
-	// Step the enemies.
-	for i := range w.Enemies {
-		w.Enemies[i].Step(w)
+	stepEnemies := true
+	if w.Boardgame && !input.Move && !input.Shoot {
+		stepEnemies = false
+	}
+
+	if stepEnemies {
+		// Step the enemies.
+		for i := range w.Enemies {
+			w.Enemies[i].Step(w)
+		}
+
+		// Step Portals.
+		for i := range w.SpawnPortals {
+			w.SpawnPortals[i].Step(w)
+		}
 	}
 
 	// Cull dead enemies.
@@ -487,11 +500,6 @@ func (w *World) Step(input PlayerInput) {
 		}
 	}
 	w.Enemies = newEnemies
-
-	// Step Portals.
-	for i := range w.SpawnPortals {
-		w.SpawnPortals[i].Step(w)
-	}
 
 	// Cull dead Portals.
 	newPortals := []SpawnPortal{}

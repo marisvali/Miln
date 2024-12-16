@@ -732,26 +732,52 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
 	}
 
-	// Show bar on top of the tile going from full to empty.
-	barPercent := ZERO
-	if g.ShowFreezeCooldownAsBar {
-		if e.FreezeCooldown().IsPositive() {
-			barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
+	if g.world.Boardgame {
+		// Show bar on top of the tile going from full to empty.
+		barBlocks := ZERO
+		if g.ShowFreezeCooldownAsBar {
+			if e.FreezeCooldown().IsPositive() {
+				barBlocks = e.FreezeCooldownIdx()
+			}
 		}
-	}
-	if g.ShowMoveCooldownAsBar {
-		if e.MoveCooldown().IsPositive() {
-			barPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
+		if g.ShowMoveCooldownAsBar {
+			if e.MoveCooldown().IsPositive() {
+				barBlocks = e.MoveCooldownIdx()
+			}
 		}
-	}
-	if barPercent.Gt(ZERO) {
-		margin := float64(1)
-		pos := e.Pos().Times(g.BlockSize)
-		x := pos.X.ToFloat64()
-		y := pos.Y.ToFloat64()
-		tileSize := g.BlockSize.ToFloat64() - 2*margin
-		width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
-		DrawSprite(screen, g.imgBlack, x+margin, y+margin, width.ToFloat64(), tileSize/10)
+		if barBlocks.Gt(ZERO) {
+			margin := float64(1)
+			tileSize := g.BlockSize.ToFloat64() - 2*margin
+			blockSize := tileSize / 10
+			pos := e.Pos().Times(g.BlockSize)
+			x := pos.X.ToFloat64()
+			y := pos.Y.ToFloat64() + tileSize/5
+			for i := ZERO; i.Lt(barBlocks); i.Inc() {
+				DrawSprite(screen, g.imgBlack, x+(margin+blockSize)*i.ToFloat64(), y+margin, blockSize, blockSize)
+			}
+		}
+	} else {
+		// Show bar on top of the tile going from full to empty.
+		barPercent := ZERO
+		if g.ShowFreezeCooldownAsBar {
+			if e.FreezeCooldown().IsPositive() {
+				barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
+			}
+		}
+		if g.ShowMoveCooldownAsBar {
+			if e.MoveCooldown().IsPositive() {
+				barPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
+			}
+		}
+		if barPercent.Gt(ZERO) {
+			margin := float64(1)
+			pos := e.Pos().Times(g.BlockSize)
+			x := pos.X.ToFloat64()
+			y := pos.Y.ToFloat64()
+			tileSize := g.BlockSize.ToFloat64() - 2*margin
+			width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
+			DrawSprite(screen, g.imgBlack, x+margin, y+margin, width.ToFloat64(), tileSize/10)
+		}
 	}
 
 	if drawHealth {
