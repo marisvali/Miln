@@ -549,3 +549,98 @@ func SplitInLines(content []byte) (lines []string) {
 	}
 	return
 }
+
+// drawnOffset computes the offset between the (0, 0) of the window and the
+// drawn region.
+// See GameToOs for an explanation of what the drawn region is.
+func drawnSizeAndOffset(layout Pt) (drawnSize, drawnOffset Pt) {
+	// Check if going from windowSize to drawnSize, we need to adjust the width
+	// or the height. Either the drawnSize width matches the windowSize width or
+	// the drawnSize height matches the windowSize height.
+	windowSize := IPt(ebiten.WindowSize())
+	widthsMatch := windowSize.X.Times(layout.Y).DivBy(layout.X).Lt(windowSize.Y)
+	if widthsMatch {
+		drawnSize.X = windowSize.X
+		drawnSize.Y = layout.Y.Times(windowSize.X).DivBy(layout.X)
+	} else {
+		drawnSize.X = layout.X.Times(windowSize.Y).DivBy(layout.Y)
+		drawnSize.Y = windowSize.Y
+	}
+
+	drawnOffset = windowSize.Minus(drawnSize).DivBy(TWO)
+	return
+}
+
+// OsToGame converts an (x, y) position from the "OS coordinate system" to the
+// "Game coordinate system". See GameToOs for an explanation of what these
+// coordinate systems are.
+//
+// Basically it transforms what is returned by robotgo.Location() to match
+// what is returned by ebiten.CursorPosition(). The main use of this function
+// is to check that the conversion from OS to Game is correct (matches what
+// is returned by ebiten.CursorPosition()), so that we can then implement
+// GameToOs by reversing the operations.
+func OsToGame(os, layout Pt) (game Pt) {
+	// OS -> Window
+	window := os.Minus(IPt(ebiten.WindowPosition()))
+
+	// Window -> Drawn region
+	drawnSize, drawnOffset := drawnSizeAndOffset(layout)
+	drawn := window.Minus(drawnOffset)
+
+	// Drawn -> Game
+	game.X = drawn.X.Times(layout.X).DivBy(drawnSize.X)
+	game.Y = drawn.Y.Times(layout.Y).DivBy(drawnSize.Y)
+	return
+}
+
+// GameToOs converts an (x, y) position from the "Game coordinate system" to the
+// "OS coordinate system". See below for an explanation of what these coordinate
+// systems are.
+//
+// OS coordinate system: (0, 0) is the top-left of the monitor, x, y is the
+// number of pixels to the right and down from that corner. If the OS has
+// a resolution of 1920x1080 then the most bottom-right pixel is
+// (1919, 1079).
+//
+// Window coordinate system: (0, 0) is the top-left pixel in the window
+// spawned when the game is started. The size of this area is set and
+// retrieved using ebiten.SetWindowSize() and ebiten.WindowSize(). The
+// position of this area within the OS coordinate system is set and
+// retrieved using ebiten.SetWindowPosition() and ebiten.WindowPosition().
+// This window contains the game's drawn region. A pixel in this coordinate
+// system has the same size as in the OS. So if ebiten.WindowSize() returns
+// (13, 25) and ebiten.WindowPosition() returns (20, 30), then the
+// bottom-right pixel in the window is (12, 24), corresponding to pixel
+// (32, 54) in the OS coordinate system.
+//
+// Drawn region coordinate system: (0, 0) is the top-left pixel inside the
+// game's window that is actually drawn. A pixel in this coordinate system
+// has the same size as in the Window coordinate system and OS. The drawn
+// region has its width or height equal to the window, but the other
+// dimension is equal or smaller. This is so that the drawn region always
+// fits inside the window. The dimensions of the drawn region depend on
+// what the game's Layout() function returns. If Layout() returns a width
+// and height proportional to the width and height returned by WindowSize(),
+// then the drawn region will fill the window perfectly.
+//
+// Game coordinate system: (0, 0) is the top-left pixel inside the game's
+// window that is actually drawn. Layout() returns the number of pixels in
+// this coordinate system. A pixel in this coordinate system is not the same
+// as in the OS coordinate system. It is scaled so that layout width matches
+// the drawn region's width and the layout height matches the drawn region's
+// height.
+func GameToOs(game, layout Pt) (os Pt) {
+	// Game -> Drawn region
+	drawnSize, drawnOffset := drawnSizeAndOffset(layout)
+	drawn := Pt{}
+	drawn.X = game.X.Times(drawnSize.X).DivBy(layout.X)
+	drawn.Y = game.Y.Times(drawnSize.Y).DivBy(layout.Y)
+
+	// Drawn region -> Window
+	window := drawn.Plus(drawnOffset)
+
+	// Window -> OS
+	os = window.Plus(IPt(ebiten.WindowPosition()))
+	return
+}
