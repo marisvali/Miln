@@ -120,10 +120,13 @@ type Playthrough struct {
 }
 
 type PlayerInput struct {
-	Move    bool
-	MovePt  Pt // tile-coordinates
-	Shoot   bool
-	ShootPt Pt // tile-coordinates
+	MousePt            Pt
+	LeftButtonPressed  bool
+	RightButtonPressed bool
+	Move               bool
+	MovePt             Pt // tile-coordinates
+	Shoot              bool
+	ShootPt            Pt // tile-coordinates
 }
 
 func LevelX() string {

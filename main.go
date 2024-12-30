@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	. "github.com/marisvali/miln/ai"
@@ -45,6 +44,7 @@ type Animations struct {
 }
 
 type Gui struct {
+	// db                 *sql.DB
 	GuiData
 	Animations
 	defaultFont            font.Face
@@ -102,7 +102,7 @@ type Gui struct {
 	username               string
 	ai                     AI
 	visWorld               VisWorld
-	// db                 *sql.DB
+	layout                 Pt
 }
 
 type uploadData struct {
@@ -232,6 +232,10 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	var input PlayerInput
+	input.MousePt = g.mousePt
+	input.LeftButtonPressed = g.leftButtonJustPressed
+	input.RightButtonPressed = g.rightButtonJustPressed
+
 	if g.leftButtonJustPressed {
 		input.Move, input.MovePt = g.GetMoveTarget()
 		if !input.Move && g.HighlightMoveNotOk {
@@ -259,6 +263,8 @@ func (g *Gui) UpdateGameOngoing() {
 		inputs := g.playthrough.History
 		if idx := g.frameIdx.ToInt(); idx < len(inputs) {
 			input = inputs[idx]
+			osPt := GameToOs(input.MousePt, g.layout)
+			moveCursor(osPt)
 		}
 	}
 
@@ -608,7 +614,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	// Output TPS (ticks per second, which is like frames per second).
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
+	// ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
 
 func (g *Gui) DrawButtons(screen *ebiten.Image) {
@@ -831,7 +837,8 @@ func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, currentH
 }
 
 func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return outsideWidth, outsideHeight
+	g.layout = g.getWindowSize()
+	return g.layout.X.ToInt(), g.layout.Y.ToInt()
 }
 
 func (g *Gui) LoadImage(filename string) *ebiten.Image {
@@ -890,11 +897,16 @@ func (g *Gui) loadGuiData() {
 	g.updateWindowSize()
 }
 
-func (g *Gui) updateWindowSize() {
+func (g *Gui) getWindowSize() Pt {
 	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
 	windowSize := playSize
 	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
 	windowSize.Y.Add(g.textHeight)
+	return windowSize
+}
+
+func (g *Gui) updateWindowSize() {
+	windowSize := g.getWindowSize().Times(I(9)).DivBy(I(10))
 	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")
 }
@@ -928,7 +940,7 @@ func GetNextLevel(user string) (seed Int, targetDifficulty Int) {
 }
 
 func main() {
-	ebiten.SetWindowPosition(100, 100)
+	ebiten.SetWindowPosition(800, 200)
 
 	var g Gui
 	g.username = getUsername()
@@ -941,9 +953,16 @@ func main() {
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 	g.recording = true
+
+	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
+	replayFile := ""
 	if len(os.Args) == 2 {
+		replayFile = os.Args[1]
+	}
+
+	if replayFile != "" {
 		g.recording = false
-		g.playthrough = DeserializePlaythrough(ReadFile(os.Args[1]))
+		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
 		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty)
 		g.state = GameOngoing
 	} else if g.recording {
