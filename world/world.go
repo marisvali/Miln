@@ -2,6 +2,7 @@ package world
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
@@ -14,7 +15,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 7
+const Version = 999
 
 type NEntities struct {
 	NObstaclesMin Int
@@ -94,6 +95,7 @@ type World struct {
 	PortalKeyDropped bool
 	KingSpawned      bool
 	vision           Vision
+	EmbeddedFS       *embed.FS
 }
 
 func (w *World) Clone() World {
@@ -205,17 +207,32 @@ func (w *World) GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
 	}
 }
 
-func loadWorldData() (data WorldData) {
+func (w *World) LoadJSON(filename string, v any) {
+	if w.EmbeddedFS != nil {
+		LoadJSONEmbedded(filename, w.EmbeddedFS, v)
+	} else {
+		LoadJSON(filename, v)
+	}
+}
+
+func (w *World) loadWorldData() {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
 	// It's a hack but possibly a quick and very useful one.
-	CheckCrashes = false
+	// This repeated reading is only useful when we're not reading from the
+	// embedded filesystem. When we're reading from the embedded filesystem we
+	// want to crash as soon as possible. We might be in the browser, in which
+	// case we want to see an error in the developer console instead of a page
+	// that keeps trying to load and reports nothing.
+	if w.EmbeddedFS == nil {
+		CheckCrashes = false
+	}
 	for {
 		CheckFailed = nil
-		LoadJSON("data/world/world.json", &data)
-		LoadJSON("data/world/"+data.NEntitiesPath, &data.NEntities)
-		LoadJSON("data/world/"+data.EnemyParamsPath, &data.EnemyParams)
+		w.LoadJSON("data/world/world.json", &w)
+		w.LoadJSON("data/world/"+w.NEntitiesPath, &w.NEntities)
+		w.LoadJSON("data/world/"+w.EnemyParamsPath, &w.EnemyParams)
 		if CheckFailed == nil {
 			break
 		}
@@ -224,8 +241,9 @@ func loadWorldData() (data WorldData) {
 	return
 }
 
-func NewWorld(seed Int, difficulty Int) (w World) {
-	w.WorldData = loadWorldData()
+func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
+	w.EmbeddedFS = efs
+	w.loadWorldData()
 	w.Seed = seed
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()

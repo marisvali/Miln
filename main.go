@@ -87,7 +87,7 @@ type Gui struct {
 	state                  GameState
 	textHeight             Int
 	guiMargin              Int
-	useEmbedded            bool
+	EmbeddedFS             *embed.FS
 	buttonRegionWidth      Int
 	buttonPause            Rectangle
 	buttonNewLevel         Rectangle
@@ -286,15 +286,17 @@ func (g *Gui) UpdateGameOngoing() {
 
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
-		seed, targetDifficulty := GetNextLevel(g.username)
-		g.world = NewWorld(seed, targetDifficulty)
+		// seed, targetDifficulty := GetNextLevel(g.username)
+		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
+		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
 		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty)
+		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
+			g.EmbeddedFS)
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		return
@@ -356,7 +358,8 @@ func (g *Gui) Update() error {
 	if g.folderWatcher2.FolderContentsChanged() {
 		// Reload world, and rely on the fact that this is makes the new world
 		// load the new parameters from world.json.
-		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty)
+		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
+			g.EmbeddedFS)
 		g.updateWindowSize()
 	}
 
@@ -842,10 +845,26 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 }
 
 func (g *Gui) LoadImage(filename string) *ebiten.Image {
-	if g.useEmbedded {
+	if g.EmbeddedFS != nil {
 		return LoadImageEmbedded(filename, &embeddedFiles)
 	} else {
 		return LoadImage(filename)
+	}
+}
+
+func (g *Gui) NewAnimation(filename string) Animation {
+	if g.EmbeddedFS != nil {
+		return NewAnimationEmbedded(filename, g.EmbeddedFS)
+	} else {
+		return NewAnimation(filename)
+	}
+}
+
+func (g *Gui) LoadJSON(filename string, v any) {
+	if g.EmbeddedFS != nil {
+		LoadJSONEmbedded(filename, g.EmbeddedFS, v)
+	} else {
+		LoadJSON(filename, v)
 	}
 }
 
@@ -854,10 +873,17 @@ func (g *Gui) loadGuiData() {
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
 	// It's a hack but possibly a quick and very useful one.
-	CheckCrashes = false
+	// This repeated reading is only useful when we're not reading from the
+	// embedded filesystem. When we're reading from the embedded filesystem we
+	// want to crash as soon as possible. We might be in the browser, in which
+	// case we want to see an error in the developer console instead of a page
+	// that keeps trying to load and reports nothing.
+	if g.EmbeddedFS == nil {
+		CheckCrashes = false
+	}
 	for {
 		CheckFailed = nil
-		LoadJSON("data/gui/gui.json", &g.GuiData)
+		g.LoadJSON("data/gui/gui.json", &g.GuiData)
 		g.imgGround = g.LoadImage("data/gui/ground.png")
 		g.imgTree = g.LoadImage("data/gui/tree.png")
 		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
@@ -884,9 +910,9 @@ func (g *Gui) loadGuiData() {
 		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
 		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
 		g.imgBlack = g.LoadImage("data/gui/black.png")
-		g.animMoveFailed = NewAnimation("data/gui/move-failed")
-		g.animAttackFailed = NewAnimation("data/gui/attack-failed")
-		g.animPlayer = NewAnimation("data/gui/player")
+		g.animMoveFailed = g.NewAnimation("data/gui/move-failed")
+		g.animAttackFailed = g.NewAnimation("data/gui/attack-failed")
+		g.animPlayer = g.NewAnimation("data/gui/player")
 		if CheckFailed == nil {
 			break
 		}
@@ -906,7 +932,7 @@ func (g *Gui) getWindowSize() Pt {
 }
 
 func (g *Gui) updateWindowSize() {
-	windowSize := g.getWindowSize().Times(I(9)).DivBy(I(10))
+	windowSize := g.getWindowSize()
 	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
 	ebiten.SetWindowTitle("Miln")
 }
@@ -956,23 +982,33 @@ func main() {
 
 	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
 	replayFile := ""
+	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\vali-web\\20250102-122119.mln999"
+
 	if len(os.Args) == 2 {
 		replayFile = os.Args[1]
+	}
+
+	if !FileExists("data") {
+		g.EmbeddedFS = &embeddedFiles
+	} else {
+		g.folderWatcher1.Folder = "data/gui"
+		g.folderWatcher2.Folder = "data/world"
 	}
 
 	if replayFile != "" {
 		g.recording = false
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
 		g.state = GameOngoing
 	} else if g.recording {
 		// g.recordingFile = GetNewRecordingFile()
-		seed, targetDifficulty := GetNextLevel(g.username)
-		g.world = NewWorld(seed, targetDifficulty)
+		// seed, targetDifficulty := GetNextLevel(g.username)
+		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
+		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
@@ -991,13 +1027,7 @@ func main() {
 		g.state = GameOngoing
 	}
 
-	g.useEmbedded = !FileExists("data")
-	if !g.useEmbedded {
-		g.folderWatcher1.Folder = "data/gui"
-		g.folderWatcher2.Folder = "data/world"
-	}
 	g.loadGuiData()
-
 	g.imgTileOverlay = ebiten.NewImage(g.BlockSize.ToInt(), g.BlockSize.ToInt())
 
 	// font

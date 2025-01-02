@@ -42,7 +42,7 @@ func Check(e error) {
 	}
 }
 
-func CloseFile(f *os.File) {
+func CloseFile(f fs.File) {
 	Check(f.Close())
 }
 
@@ -62,6 +62,16 @@ func FileExists(name string) bool {
 		return true
 	}
 	return false
+}
+
+func FileExistsEmbedded(name string, efs *embed.FS) bool {
+	file, err := efs.Open(name)
+	if err == nil {
+		CloseFile(file)
+		return true
+	} else {
+		return false
+	}
 }
 
 func GetNewRecordingFile() string {
@@ -188,6 +198,13 @@ func LoadJSON(filename string, v any) {
 	file, err := os.Open(filename)
 	Check(err)
 	data, err := io.ReadAll(file)
+	Check(err)
+	err = json.Unmarshal(data, v)
+	Check(err)
+}
+
+func LoadJSONEmbedded(filename string, efs *embed.FS, v any) {
+	data, err := efs.ReadFile(filename)
 	Check(err)
 	err = json.Unmarshal(data, v)
 	Check(err)

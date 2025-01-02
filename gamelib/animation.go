@@ -1,10 +1,9 @@
 package gamelib
 
 import (
-	"errors"
+	"embed"
 	"github.com/hajimehoshi/ebiten/v2"
 	_ "image/png"
-	"os"
 	"strconv"
 )
 
@@ -20,7 +19,7 @@ func NewAnimation(name string) (a Animation) {
 	count := 1
 	for {
 		fullName := name + strconv.Itoa(count) + ".png"
-		if _, err := os.Stat(fullName); errors.Is(err, os.ErrNotExist) {
+		if !FileExists(fullName) {
 			break
 		}
 
@@ -34,6 +33,30 @@ func NewAnimation(name string) (a Animation) {
 	if count == 1 {
 		fullName := name + ".png"
 		img := LoadImage(fullName)
+		a.imgs = append(a.imgs, img)
+	}
+	a.imgIndex = ZERO
+	return
+}
+
+func NewAnimationEmbedded(name string, efs *embed.FS) (a Animation) {
+	count := 1
+	for {
+		fullName := name + strconv.Itoa(count) + ".png"
+		if !FileExistsEmbedded(fullName, efs) {
+			break
+		}
+
+		img := LoadImageEmbedded(fullName, efs)
+		a.imgs = append(a.imgs, img)
+		count++
+	}
+
+	// If no files exist following the format "player1.png", "player2.png" ..
+	// try just loading "player.png".
+	if count == 1 {
+		fullName := name + ".png"
+		img := LoadImageEmbedded(fullName, efs)
 		a.imgs = append(a.imgs, img)
 	}
 	a.imgIndex = ZERO
