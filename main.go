@@ -232,40 +232,42 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	var input PlayerInput
-	input.MousePt = g.mousePt
-	input.LeftButtonPressed = g.leftButtonJustPressed
-	input.RightButtonPressed = g.rightButtonJustPressed
+	inputs := g.playthrough.History
+	if idx := g.frameIdx.ToInt(); !g.recording && idx < len(inputs) {
+		// Get input from recording.
+		input = inputs[idx]
+		// Also move the cursor on the screen.
+		osPt := GameToOs(input.MousePt, g.layout)
+		moveCursor(osPt)
+	} else {
+		// Get input from player.
+		input.MousePt = g.mousePt
+		input.LeftButtonPressed = g.leftButtonJustPressed
+		input.RightButtonPressed = g.rightButtonJustPressed
 
-	if g.leftButtonJustPressed {
-		input.Move, input.MovePt = g.GetMoveTarget()
-		if !input.Move && g.HighlightMoveNotOk {
-			// TODO: move this logic to VisWorld
-			moveFailed := TemporaryAnimation{}
-			moveFailed.Animation = g.animMoveFailed
-			moveFailed.NFramesLeft = I(20)
-			moveFailed.ScreenPos = g.mousePt
-			g.visWorld.Temporary = append(g.visWorld.Temporary, &moveFailed)
+		if g.leftButtonJustPressed {
+			input.Move, input.MovePt = g.GetMoveTarget()
 		}
-	}
-	if g.rightButtonJustPressed {
-		input.Shoot, input.ShootPt = g.GetAttackTarget()
-		if !input.Shoot && g.HighlightAttack {
-			// TODO: move this logic to VisWorld
-			attackFailed := TemporaryAnimation{}
-			attackFailed.Animation = g.animAttackFailed
-			attackFailed.NFramesLeft = I(20)
-			attackFailed.ScreenPos = g.mousePt
-			g.visWorld.Temporary = append(g.visWorld.Temporary, &attackFailed)
+		if g.rightButtonJustPressed {
+			input.Shoot, input.ShootPt = g.GetAttackTarget()
 		}
 	}
 
-	if !g.recording {
-		inputs := g.playthrough.History
-		if idx := g.frameIdx.ToInt(); idx < len(inputs) {
-			input = inputs[idx]
-			osPt := GameToOs(input.MousePt, g.layout)
-			moveCursor(osPt)
-		}
+	if input.LeftButtonPressed && !input.Move && g.HighlightMoveNotOk {
+		// TODO: move this logic to VisWorld
+		moveFailed := TemporaryAnimation{}
+		moveFailed.Animation = g.animMoveFailed
+		moveFailed.NFramesLeft = I(20)
+		moveFailed.ScreenPos = g.mousePt
+		g.visWorld.Temporary = append(g.visWorld.Temporary, &moveFailed)
+	}
+	if input.RightButtonPressed && !input.Shoot && g.HighlightAttack {
+		// TODO: move this logic to VisWorld
+		attackFailed := TemporaryAnimation{}
+		attackFailed.Animation = g.animAttackFailed
+		attackFailed.NFramesLeft = I(20)
+		attackFailed.ScreenPos = g.mousePt
+		g.visWorld.Temporary = append(g.visWorld.Temporary, &attackFailed)
 	}
 
 	// input = g.ai.Step(&g.world)
@@ -932,8 +934,9 @@ func (g *Gui) getWindowSize() Pt {
 }
 
 func (g *Gui) updateWindowSize() {
-	windowSize := g.getWindowSize()
-	ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
+	// windowSize := g.getWindowSize()
+	// ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
+	ebiten.SetWindowSize(900, 900)
 	ebiten.SetWindowTitle("Miln")
 }
 
@@ -966,7 +969,7 @@ func GetNextLevel(user string) (seed Int, targetDifficulty Int) {
 }
 
 func main() {
-	ebiten.SetWindowPosition(800, 200)
+	ebiten.SetWindowPosition(500, 100)
 
 	var g Gui
 	g.username = getUsername()
@@ -982,7 +985,7 @@ func main() {
 
 	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
 	replayFile := ""
-	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\vali-web\\20250102-122119.mln999"
+	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\vali-web\\20250102-140111.mln999"
 
 	if len(os.Args) == 2 {
 		replayFile = os.Args[1]
