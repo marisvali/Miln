@@ -2,6 +2,8 @@
   "NumRows": 8,
   "NumCols": 8,
   "Boardgame": false,
-  "NEntitiesPath": "n_entities_action_8x8.json",
-  "EnemyParamsPath": "enemy_params_action_8x8.json"
+  "UseAmmo": true,
+  "AmmoLimit": 10,
+  "NEntitiesPath": "n_entities_ammo.json",
+  "EnemyParamsPath": "enemy_params_ammo.json"
 }

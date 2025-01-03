@@ -9,6 +9,7 @@ type Player struct {
 	OnMap                      bool
 	MaxHealth                  Int
 	AmmoCount                  Int
+	AmmoLimit                  Int
 	JustHit                    bool
 	Health                     Int
 	HitPermissions             HitPermissions
@@ -62,6 +63,9 @@ func (p *Player) Step(w *World, input PlayerInput) {
 			for i := range w.Ammos {
 				if w.Ammos[i].Pos == w.Player.pos {
 					w.Player.AmmoCount.Add(w.Ammos[i].Count)
+					if w.Player.AmmoCount.Gt(w.Player.AmmoLimit) {
+						w.Player.AmmoCount = w.Player.AmmoLimit
+					}
 				} else {
 					newAmmos = append(newAmmos, w.Ammos[i])
 				}
@@ -82,7 +86,8 @@ func (p *Player) Step(w *World, input PlayerInput) {
 	}
 
 	if input.Shoot &&
-		w.AttackableTiles.At(input.ShootPt) {
+		w.AttackableTiles.At(input.ShootPt) &&
+		(!w.UseAmmo || w.UseAmmo && w.Player.AmmoCount.IsPositive()) {
 
 		shotEnemies := []*Enemy{}
 		for i := range w.Enemies {
@@ -91,16 +96,12 @@ func (p *Player) Step(w *World, input PlayerInput) {
 			}
 		}
 
-		shotPortals := []*SpawnPortal{}
-		for i := range w.SpawnPortals {
-			if w.SpawnPortals[i].pos.Eq(input.ShootPt) {
-				shotPortals = append(shotPortals, &w.SpawnPortals[i])
-			}
-		}
-
-		if len(shotEnemies) > 0 || len(shotPortals) > 0 {
+		if len(shotEnemies) > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
 			w.Beam.End = w.TileToWorldPos(input.ShootPt)
+			if w.UseAmmo {
+				w.Player.AmmoCount.Dec()
+			}
 		}
 	}
 }

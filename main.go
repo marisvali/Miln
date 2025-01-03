@@ -16,6 +16,7 @@ import (
 	"image"
 	"image/color"
 	_ "image/png"
+	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -53,6 +54,7 @@ type Gui struct {
 	imgGround              *ebiten.Image
 	imgTree                *ebiten.Image
 	imgPlayerHealth        *ebiten.Image
+	imgPlayerAmmo          *ebiten.Image
 	imgGremlin             *ebiten.Image
 	imgGremlinMask         *ebiten.Image
 	imgHound               *ebiten.Image
@@ -495,9 +497,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		g.DrawTile(screen, g.imgKey[key.Type.ToInt()], key.Pos)
 	}
 
-	// Draw player.
-	g.DrawPlayer(screen, g.world.Player)
-
 	// Draw enemy.
 	for _, enemy := range g.world.Enemies {
 		g.DrawEnemy(screen, enemy)
@@ -564,6 +563,9 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 			g.DrawTile(screen, o.Animation.Img(), g.ScreenToTile(o.ScreenPos))
 		}
 	}
+
+	// Draw player.
+	g.DrawPlayer(screen, g.world.Player)
 
 	// Draw hit effect.
 	p := &g.world.Player
@@ -831,7 +833,48 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	// }
 	// g.DrawTile(screen, g.animPlayer, p.Pos())
 	// g.DrawTile(screen, mask, p.Pos())
-	g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos())
+	// g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos())
+
+	// Draw ammo.
+	// Draw it as an array starting at the top-left of the tile.
+	// g.imgTileOverlay.Clear()
+	// blockSize := float64(g.imgPlayerAmmo.Bounds().Dy()) / 5
+	// for i := I(0); i.Lt(p.AmmoCount); i.Inc() {
+	// 	DrawSprite(g.imgTileOverlay, g.imgPlayerAmmo, blockSize*i.ToFloat64()*1.3, 0, blockSize, blockSize)
+	// }
+	// g.DrawTile(screen, g.imgTileOverlay, p.Pos())
+
+	// Draw ammo as a circle around the player.
+	g.imgTileOverlay.Clear()
+	blockSize := float64(g.imgTileOverlay.Bounds().Dx()) / 4
+
+	// Define the total number of positions on the circle
+	var totalPositions = g.world.AmmoLimit.ToFloat64()
+
+	// Define the center of the circle
+	bounds := g.imgTileOverlay.Bounds()
+	size := bounds.Max.Sub(bounds.Min)
+	center := bounds.Min.Add(size.Div(2))
+	var centerX = float64(center.X) - blockSize/2
+	var centerY = float64(center.Y) - blockSize/2
+
+	// Define the radius of the circle
+	var radius = float64(size.X) / 2 * 70 / 100
+
+	// Iterate through positions on the circle
+	ammoCount := p.AmmoCount.ToInt()
+	for i := 0; i < ammoCount; i++ {
+		// Calculate the angle for the current position (in radians)
+		angle := (2*math.Pi/totalPositions)*float64(i) - (math.Pi / 2)
+
+		// Calculate the x and y coordinates
+		x := centerX + radius*math.Cos(angle)
+		y := centerY + radius*math.Sin(angle)
+
+		// Display sprite at the x, y coordinates
+		DrawSprite(g.imgTileOverlay, g.imgPlayerAmmo, x, y, blockSize, blockSize)
+	}
+	g.DrawTile(screen, g.imgTileOverlay, p.Pos())
 }
 
 func (g *Gui) DrawHealth(screen *ebiten.Image, imgHealth *ebiten.Image, currentHealth Int, tilePos Pt) {
@@ -891,6 +934,7 @@ func (g *Gui) loadGuiData() {
 		g.imgGround = g.LoadImage("data/gui/ground.png")
 		g.imgTree = g.LoadImage("data/gui/tree.png")
 		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
+		g.imgPlayerAmmo = g.LoadImage("data/gui/player-ammo.png")
 		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
 		g.imgGremlin = g.LoadImage("data/gui/enemy2.png")
 		g.imgPillar = g.LoadImage("data/gui/enemy3.png")
@@ -1014,7 +1058,7 @@ func main() {
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GamePaused
+		g.state = GameOngoing
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()
 		// if g.recordingFile != "" {

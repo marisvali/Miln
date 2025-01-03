@@ -67,6 +67,8 @@ type WorldData struct {
 	NEntitiesPath   string
 	EnemyParamsPath string
 	Boardgame       bool
+	UseAmmo         bool
+	AmmoLimit       Int
 	NEntities
 	EnemyParams
 }
@@ -272,6 +274,7 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	w.Player.HitPermissions.CanHitHound = true
 	w.Player.HitPermissions.CanHitQuestion = true
 	w.Player.HitPermissions.CanHitKing = true
+	w.Player.AmmoLimit = w.AmmoLimit
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -502,6 +505,11 @@ func (w *World) Step(input PlayerInput) {
 	}
 
 	if stepEnemies {
+		// Step the ammos.
+		if w.UseAmmo {
+			w.SpawnAmmos()
+		}
+
 		// Step the enemies.
 		for i := range w.Enemies {
 			w.Enemies[i].Step(w)
@@ -535,6 +543,40 @@ func (w *World) Step(input PlayerInput) {
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
 		// Damn.
 		Check(fmt.Errorf("got to an unusually large time step: %d", w.TimeStep.ToInt64()))
+	}
+}
+
+func (w *World) SpawnAmmos() {
+	// Spawn new ammos
+	for {
+		// Count ammo available in the world now.
+		available := ZERO
+		for _, a := range w.Ammos {
+			available.Add(a.Count)
+		}
+
+		// Count total ammo.
+		totalAmmo := w.Player.AmmoCount.Plus(available)
+
+		if totalAmmo.Geq(w.Player.AmmoLimit) {
+			// There's enough ammo available.
+			return
+		}
+
+		// Build matrix with positions occupied everywhere we don't want to
+		// spawn ammo.
+		occ := w.Obstacles.Clone()
+		for _, a := range w.Ammos {
+			occ.Set(a.Pos)
+		}
+		occ.Set(w.Player.Pos())
+
+		// Spawn ammo.
+		ammo := Ammo{
+			Pos:   occ.OccupyRandomPos(),
+			Count: I(3),
+		}
+		w.Ammos = append(w.Ammos, ammo)
 	}
 }
 
