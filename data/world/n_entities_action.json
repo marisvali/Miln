@@ -1,0 +1,16 @@
+{
+  "NObstaclesMin": 25,
+  "NObstaclesMax": 25,
+
+  "NPortalsMin": 2,
+  "NPortalsMax": 2,
+
+  "NGremlinMin": 3,
+  "NGremlinMax": 7,
+
+  "NHoundMin": 0,
+  "NHoundMax": 2,
+
+  "NUltraHoundMin": 0,
+  "NUltraHoundMax": 0
+}

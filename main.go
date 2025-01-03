@@ -30,7 +30,9 @@ type GuiData struct {
 	HighlightMoveNotOk       bool
 	HighlightAttack          bool
 	AutoAimAttack            bool
+	AutoAimAttackFactor      Int
 	AutoAimMove              bool
+	AutoAimMoveFactor        Int
 	ShowFreezeCooldownAsMask bool
 	ShowMoveCooldownAsMask   bool
 	ShowFreezeCooldownAsBar  bool
@@ -153,7 +155,7 @@ func (g *Gui) GetMoveTarget() (valid bool, target Pt) {
 	if g.AutoAimMove {
 		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
 		tilePos, dist := g.ClosestTileToMouse(freePositions)
-		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(g.BlockSize.Times(g.AutoAimMoveFactor).DivBy(I(100)))
 		return closeEnough, tilePos
 	} else {
 		freePositions := g.world.Player.ComputeFreePositions(&g.world)
@@ -174,7 +176,7 @@ func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 		attackablePositions := g.world.VulnerableEnemyPositions()
 		attackablePositions.IntersectWith(g.world.AttackableTiles)
 		tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
-		closeEnough := dist.Lt(g.BlockSize.Times(I(300)).DivBy(I(100)))
+		closeEnough := dist.Lt(g.BlockSize.Times(g.AutoAimAttackFactor).DivBy(I(100)))
 		attackOk := g.world.Player.OnMap && closeEnough
 		return attackOk, tilePos
 	} else {
@@ -1011,7 +1013,7 @@ func main() {
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GamePaused
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()

@@ -1,7 +1,7 @@
 {
   "NumRows": 8,
   "NumCols": 8,
-  "Boardgame": true,
-  "NEntitiesPath": "n_entities_1.json",
-  "EnemyParamsPath": "enemy_params_boardgame.json"
+  "Boardgame": false,
+  "NEntitiesPath": "n_entities_action_8x8.json",
+  "EnemyParamsPath": "enemy_params_action_8x8.json"
 }
