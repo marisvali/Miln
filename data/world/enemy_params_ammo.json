@@ -1,8 +1,8 @@
 {
-  "SpawnPortalCooldownMin": 40,
-  "SpawnPortalCooldownMax": 150,
+  "SpawnPortalCooldownMin": 70,
+  "SpawnPortalCooldownMax": 70,
 
-  "GremlinMoveCooldown": 250,
+  "GremlinMoveCooldown": 60,
   "UltraHoundMoveCooldown": 290,
   "HoundMoveCooldown": 270,
   "KingMoveCooldown": 260,

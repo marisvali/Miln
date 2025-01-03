@@ -1,53 +1,114 @@
 package world
 
 import (
+	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 )
 
-type SpawnPortal struct {
-	pos                     Pt
-	Health                  Int
-	MaxHealth               Int
-	MaxTimeout              Int
-	TimeoutIdx              Int
-	nGremlinsLeftToSpawn    Int
-	nHoundsLeftToSpawn      Int
-	nUltraHoundsLeftToSpawn Int
-	nKingsLeftToSpawn       Int
-	worldData               WorldData
+type Wave struct {
+	SecondsAfterLastWave Int
+	NGremlins            Int
+	NHounds              Int
+	NUltraHounds         Int
+	NKings               Int
 }
 
-func NewSpawnPortal(w WorldData, pos Pt, cooldown Int, nGremlins Int, nHounds Int, nUltraHounds Int, nKings Int) (p SpawnPortal) {
+func NewWave(wd WaveData) (w Wave) {
+	w.SecondsAfterLastWave = wd.SecondsAfterLastWave
+	w.NGremlins = RInt(wd.NGremlinMin, wd.NGremlinMax)
+	w.NHounds = RInt(wd.NHoundMin, wd.NHoundMax)
+	w.NUltraHounds = RInt(wd.NUltraHoundMin, wd.NUltraHoundMax)
+	w.NKings = RInt(wd.NKingMin, wd.NKingMax)
+	return
+}
+
+type SpawnPortal struct {
+	pos        Pt
+	Health     Int
+	MaxHealth  Int
+	MaxTimeout Int
+	TimeoutIdx Int
+	Waves      []Wave
+	frameIdx   Int
+	worldData  WorldData
+}
+
+func NewSpawnPortal(w WorldData, pos Pt, cooldown Int, waves []Wave) (p SpawnPortal) {
 	p.pos = pos
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth
 	p.MaxTimeout = cooldown
-	p.nGremlinsLeftToSpawn = nGremlins
-	p.nHoundsLeftToSpawn = nHounds
-	p.nUltraHoundsLeftToSpawn = nUltraHounds
-	p.nKingsLeftToSpawn = nKings
+	p.Waves = waves
 	p.worldData = w
 	return
 }
 
+func (p *SpawnPortal) CurrentWave() *Wave {
+	// Compute the frame at which each wave starts.
+	waveStarts := []Int{}
+	startOfLastWave := ZERO
+	for i := range p.Waves {
+		framesAfterLastWave := p.Waves[i].SecondsAfterLastWave.Times(I(60))
+		startOfThisWave := startOfLastWave.Plus(framesAfterLastWave)
+		waveStarts = append(waveStarts, startOfThisWave)
+		startOfLastWave = startOfThisWave
+	}
+
+	// Find the i so that:
+	// waveStarts[i] <= p.frameIdx < waveStarts[i+1]
+	// Watch out for the edge cases:
+	// p.frameIdx < waveStarts[0]
+	// waveStarts[len(waveStarts)-1] <= p.frameIdx
+
+	if p.frameIdx.Lt(waveStarts[0]) {
+		// No wave has started yet.
+		return nil
+	}
+
+	if p.frameIdx.Geq(waveStarts[len(waveStarts)-1]) {
+		// The last wave is active.
+		return &p.Waves[len(waveStarts)-1]
+	}
+
+	for i := range waveStarts {
+		if p.frameIdx.Lt(waveStarts[i]) {
+			return &p.Waves[i-1]
+		}
+	}
+
+	Check(fmt.Errorf("should never get here"))
+	return nil
+}
+
 func (p *SpawnPortal) Step(w *World) {
+	p.frameIdx.Inc()
+
 	if p.TimeoutIdx.IsPositive() {
 		p.TimeoutIdx.Dec()
 		return // Don't spawn.
 	}
 
-	if p.nUltraHoundsLeftToSpawn.IsPositive() {
+	wave := p.CurrentWave()
+	if wave == nil {
+		// No wave active.
+		return
+	}
+
+	if wave.NUltraHounds.IsPositive() {
 		w.Enemies = append(w.Enemies, NewUltraHound(p.worldData, p.pos))
-		p.nUltraHoundsLeftToSpawn.Dec()
-	} else if p.nHoundsLeftToSpawn.IsPositive() {
+		wave.NUltraHounds.Dec()
+	} else if wave.NHounds.IsPositive() {
 		w.Enemies = append(w.Enemies, NewHound(p.worldData, p.pos))
-		p.nHoundsLeftToSpawn.Dec()
-	} else if p.nGremlinsLeftToSpawn.IsPositive() {
+		wave.NHounds.Dec()
+	} else if wave.NGremlins.IsPositive() {
 		w.Enemies = append(w.Enemies, NewGremlin(p.worldData, p.pos))
-		p.nGremlinsLeftToSpawn.Dec()
-	} else if p.nKingsLeftToSpawn.IsPositive() {
+		wave.NGremlins.Dec()
+	} else if wave.NKings.IsPositive() {
 		w.Enemies = append(w.Enemies, NewKing(p.worldData, p.pos))
-		p.nKingsLeftToSpawn.Dec()
+		wave.NKings.Dec()
+	} else {
+		// Nothing spawned, so don't trigger the cooldown.
+		return
 	}
 
 	// ng := p.nGremlinsLeftToSpawn
@@ -77,10 +138,16 @@ func (p *SpawnPortal) Step(w *World) {
 }
 
 func (p *SpawnPortal) Active() bool {
-	if p.nGremlinsLeftToSpawn.Gt(ZERO) ||
-		p.nHoundsLeftToSpawn.Gt(ZERO) ||
-		p.nUltraHoundsLeftToSpawn.Gt(ZERO) ||
-		p.nKingsLeftToSpawn.Gt(ZERO) {
+	wave := p.CurrentWave()
+	if wave != &p.Waves[len(p.Waves)-1] {
+		// We are not at the last wave yet.
+		return true
+	}
+
+	if wave.NGremlins.Gt(ZERO) ||
+		wave.NHounds.Gt(ZERO) ||
+		wave.NUltraHounds.Gt(ZERO) ||
+		wave.NKings.Gt(ZERO) {
 		return true
 	}
 	return false

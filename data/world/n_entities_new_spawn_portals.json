@@ -1,0 +1,48 @@
+{
+  "NObstaclesMin": 12,
+  "NObstaclesMax": 12,
+  "SpawnPortalDatas": [
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2,
+          "NHoundMin": 2,
+          "NHoundMax": 2
+        },
+        {
+          "SecondsAfterLastWave": 10,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2
+        },
+        {
+          "SecondsAfterLastWave": 10,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2,
+          "NHoundMin": 2,
+          "NHoundMax": 2
+        },
+        {
+          "SecondsAfterLastWave": 10,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2
+        },
+        {
+          "SecondsAfterLastWave": 10,
+          "NGremlinMin": 2,
+          "NGremlinMax": 2
+        }
+      ]
+    }
+  ]
+}

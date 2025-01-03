@@ -4,6 +4,6 @@
   "Boardgame": false,
   "UseAmmo": true,
   "AmmoLimit": 10,
-  "NEntitiesPath": "n_entities_ammo.json",
+  "NEntitiesPath": "n_entities_new_spawn_portals.json",
   "EnemyParamsPath": "enemy_params_ammo.json"
 }

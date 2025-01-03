@@ -17,21 +17,26 @@ type Beam struct {
 
 const Version = 999
 
+type WaveData struct {
+	SecondsAfterLastWave Int
+	NGremlinMin          Int
+	NGremlinMax          Int
+	NHoundMin            Int
+	NHoundMax            Int
+	NUltraHoundMin       Int
+	NUltraHoundMax       Int
+	NKingMin             Int
+	NKingMax             Int
+}
+
+type SpawnPortalData struct {
+	Waves []WaveData
+}
+
 type NEntities struct {
-	NObstaclesMin Int
-	NObstaclesMax Int
-
-	NPortalsMin Int
-	NPortalsMax Int
-
-	NGremlinMin Int
-	NGremlinMax Int
-
-	NHoundMin Int
-	NHoundMax Int
-
-	NUltraHoundMin Int
-	NUltraHoundMax Int
+	NObstaclesMin    Int
+	NObstaclesMax    Int
+	SpawnPortalDatas []SpawnPortalData
 }
 
 type EnemyParams struct {
@@ -80,7 +85,6 @@ type WorldObject interface {
 type World struct {
 	WorldData
 	Playthrough
-	Seeds
 	Player           Player
 	Enemies          []Enemy
 	Beam             Beam
@@ -112,7 +116,7 @@ func (w *World) Clone() World {
 	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
 	clone.Keys = slices.Clone(w.Keys)
 	clone.History = slices.Clone(w.History)
-	clone.Portals = slices.Clone(w.Portals)
+	clone.SpawnPortalDatas = slices.Clone(w.SpawnPortalDatas)
 	return clone
 }
 
@@ -164,51 +168,6 @@ type PortalSeed struct {
 	NUltraHounds Int
 }
 
-type Seeds struct {
-	NObstacles Int
-	Portals    []PortalSeed
-}
-
-func (w *World) GenerateSeeds(seed Int) (s Seeds) {
-	RSeed(seed)
-	s.NObstacles = RInt(w.NObstaclesMin, w.NObstaclesMax)
-	nPortals := RInt(w.NPortalsMin, w.NPortalsMax)
-
-	for i := ZERO; i.Lt(nPortals); i.Inc() {
-		var portal PortalSeed
-		portal.Cooldown = RInt(w.SpawnPortalCooldownMin, w.SpawnPortalCooldownMax)
-		portal.NGremlins = RInt(w.NGremlinMin, w.NGremlinMax)
-		portal.NHounds = RInt(w.NHoundMin, w.NHoundMax)
-		portal.NUltraHounds = RInt(w.NUltraHoundMin, w.NUltraHoundMax)
-		s.Portals = append(s.Portals, portal)
-	}
-	return
-}
-
-func (w *World) GenerateSeedsTargetDifficulty(seed Int, target Int) (s Seeds) {
-	RSeed(seed)
-	for {
-		s = w.GenerateSeeds(RInt(ZERO, I(1000000)))
-		difficulty := ZERO
-		difficulty.Add(s.NObstacles)
-		difficulty.Add(I(len(s.Portals)))
-		cd := ZERO
-		for _, p := range s.Portals {
-			difficulty.Add(p.NGremlins)
-			difficulty.Add(p.NHounds.Times(I(2)))
-			difficulty.Add(p.NUltraHounds.Times(I(2)))
-			cd.Add(p.Cooldown)
-		}
-		cd = cd.DivBy(I(len(s.Portals)))
-		difficulty.Add(cd.Times(I(2)).DivBy(I(100)))
-		dif := target.Minus(difficulty)
-		if dif.Abs().Leq(I(5)) {
-			s.NObstacles.Add(dif)
-			return
-		}
-	}
-}
-
 func (w *World) LoadJSON(filename string, v any) {
 	if w.EmbeddedFS != nil {
 		LoadJSONEmbedded(filename, w.EmbeddedFS, v)
@@ -249,22 +208,23 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	w.Seed = seed
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
-	w.Seeds = w.GenerateSeeds(seed)
-	// w.Seeds = GenerateSeedsTargetDifficulty(seed, difficulty)
-	w.Obstacles = RandomLevel(w.NObstacles, w.NumRows, w.NumCols)
+	w.Obstacles = RandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
-	for _, portal := range w.Portals {
+	for _, portal := range w.SpawnPortalDatas {
+		// Build Waves from WaveDatas.
+		var waves []Wave
+		for _, wave := range portal.Waves {
+			waves = append(waves, NewWave(wave))
+		}
+
+		// Build spawn portal using waves.
 		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
 			w.WorldData,
 			occ.OccupyRandomPos(),
-			portal.Cooldown,
-			portal.NGremlins,
-			portal.NHounds,
-			portal.NUltraHounds,
-			I(0)))
+			RInt(w.SpawnPortalCooldownMin, w.SpawnPortalCooldownMax),
+			waves))
 	}
-	w.SpawnPortals[0].nKingsLeftToSpawn = I(1)
 
 	// Params
 	w.BlockSize = I(1000)
@@ -515,7 +475,7 @@ func (w *World) Step(input PlayerInput) {
 			w.Enemies[i].Step(w)
 		}
 
-		// Step Portals.
+		// Step SpawnPortalDatas.
 		for i := range w.SpawnPortals {
 			w.SpawnPortals[i].Step(w)
 		}
@@ -530,7 +490,7 @@ func (w *World) Step(input PlayerInput) {
 	}
 	w.Enemies = newEnemies
 
-	// Cull dead Portals.
+	// Cull dead SpawnPortalDatas.
 	newPortals := []SpawnPortal{}
 	for i := range w.SpawnPortals {
 		if w.SpawnPortals[i].Health.IsPositive() {
