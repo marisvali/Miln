@@ -1,0 +1,9 @@
+{
+  "NumRows": 8,
+  "NumCols": 8,
+  "Boardgame": false,
+  "UseAmmo": true,
+  "AmmoLimit": 10,
+  "NEntitiesPath": "n_entities_dismantle.json",
+  "EnemyParamsPath": "enemy_params_dismantle.json"
+}

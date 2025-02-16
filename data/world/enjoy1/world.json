@@ -4,6 +4,6 @@
   "Boardgame": false,
   "UseAmmo": true,
   "AmmoLimit": 10,
-  "NEntitiesPath": "n_entities_freeze.json",
-  "EnemyParamsPath": "enemy_params_frozen.json"
+  "NEntitiesPath": "n_entities_4_portals.json",
+  "EnemyParamsPath": "enemy_params_ammo.json"
 }

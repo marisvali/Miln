@@ -1,0 +1,28 @@
+{
+  "HoundMoveCooldown": 150,
+  "HoundFreezeCooldown": 30,
+  "HoundMaxHealth": 4,
+
+  "GremlinMoveCooldown": 300,
+  "GremlinFreezeCooldown": 300,
+  "GremlinMaxHealth": 4,
+
+  "SpawnPortalCooldownMin": 250,
+  "SpawnPortalCooldownMax": 250,
+
+  "KingMoveCooldown": 260,
+
+  "UltraHoundMoveCooldown": 290,
+  "UltraHoundFreezeCooldown": 0,
+  "UltraHoundMaxHealth": 1,
+
+  "PillarMoveCooldown": 100,
+  "PillarFreezeCooldown": 300,
+  "PillarMaxHealth": 1,
+
+
+  "KingFreezeCooldown": 200,
+  "KingMaxHealth": 3,
+  
+  "QuestionMaxHealth": 1
+}

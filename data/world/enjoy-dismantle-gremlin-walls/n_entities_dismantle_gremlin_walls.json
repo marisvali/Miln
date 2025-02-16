@@ -1,0 +1,258 @@
+{
+  "NObstaclesMin": 10,
+  "NObstaclesMax": 10,
+  "SpawnPortalDatas": [
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
+        }
+      ]
+    }
+  ]
+}

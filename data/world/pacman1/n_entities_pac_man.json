@@ -1,0 +1,33 @@
+{
+  "NObstaclesMin": 14,
+  "NObstaclesMax": 14,
+  "SpawnPortalDatas": [
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
+        }
+      ]
+    }
+  ]
+}
