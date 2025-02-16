@@ -80,6 +80,7 @@ type WorldData struct {
 
 type WorldObject interface {
 	Pos() Pt
+	State() string
 }
 
 type World struct {
@@ -156,7 +157,7 @@ func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 	// Create matrix with obstacles.
 	m = NewMatBool(Pt{nRows, nCols})
 	for i := ZERO; i.Lt(nObstacles); i.Inc() {
-		m.Set(m.RandomPos())
+		m.OccupyRandomPos()
 	}
 	return
 }
@@ -530,6 +531,9 @@ func (w *World) SpawnAmmos() {
 			occ.Set(a.Pos)
 		}
 		occ.Set(w.Player.Pos())
+		for _, e := range w.Enemies {
+			occ.Set(e.Pos())
+		}
 
 		// Spawn ammo.
 		ammo := Ammo{

@@ -4,11 +4,17 @@ import (
 	"embed"
 	"github.com/hajimehoshi/ebiten/v2"
 	_ "image/png"
+	"slices"
 	"strconv"
 )
 
 var AnimationFps = I(10)
 
+// Animation represents an instance of a running animation.
+// It is cheap to copy this struct. You should make copies for every
+// instance of an animation that you need.
+// The idea is that once the images are loaded, there's no need to change
+// this data. So you can just copy around the references to the images.
 type Animation struct {
 	imgs     []*ebiten.Image
 	imgIndex Int
@@ -84,4 +90,9 @@ func (a *Animation) Img() *ebiten.Image {
 
 func (a *Animation) Valid() bool {
 	return len(a.imgs) > 0
+}
+
+// Same returns true if this animation contains the same images as "other".
+func (a *Animation) Same(other Animation) bool {
+	return slices.Equal(a.imgs, other.imgs)
 }

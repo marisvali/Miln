@@ -16,6 +16,7 @@ type Player struct {
 	CooldownAfterGettingHit    Int
 	CooldownAfterGettingHitIdx Int
 	Energy                     Int
+	state                      string
 }
 
 func NewPlayer() (p Player) {
@@ -47,8 +48,15 @@ func (p *Player) Step(w *World, input PlayerInput) {
 		w.Beam.Idx.Dec()
 	}
 
-	if w.Player.CooldownAfterGettingHitIdx.Gt(ZERO) {
-		w.Player.CooldownAfterGettingHitIdx.Dec()
+	// Update the player's state.
+	if w.Beam.Idx.Gt(ZERO) {
+		p.state = "Shooting"
+	} else {
+		p.state = "Resting"
+	}
+
+	if p.CooldownAfterGettingHitIdx.Gt(ZERO) {
+		p.CooldownAfterGettingHitIdx.Dec()
 		return
 	}
 
@@ -115,4 +123,8 @@ func (p *Player) Hit() {
 
 func (p *Player) Pos() Pt {
 	return p.pos
+}
+
+func (p *Player) State() string {
+	return p.state
 }

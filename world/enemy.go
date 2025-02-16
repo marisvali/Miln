@@ -16,6 +16,7 @@ type Enemy interface {
 	MaxHealth() Int
 	Clone() Enemy
 	Vulnerable(w *World) bool
+	State() string
 }
 
 type EnemyBase struct {
@@ -59,6 +60,8 @@ func (e *EnemyBase) MaxHealth() Int {
 func (e *EnemyBase) Alive() bool {
 	return e.health.IsPositive()
 }
+
+func (e *EnemyBase) State() string { return "NotUsed" }
 
 func (e *EnemyBase) goToPlayer(w *World, m MatBool) {
 	path := FindPath(e.pos, w.Player.Pos(), m.Matrix, false)

@@ -7,6 +7,7 @@ import (
 )
 
 type WorldObjectAnimation struct {
+	LastState string
 	Object    WorldObject
 	Animation Animation
 }
@@ -18,9 +19,10 @@ type TemporaryAnimation struct {
 }
 
 type VisWorld struct {
-	Animations Animations
-	Objects    []*WorldObjectAnimation
-	Temporary  []*TemporaryAnimation
+	Animations         Animations
+	Objects            []*WorldObjectAnimation
+	Temporary          []*TemporaryAnimation
+	lastPlayerShooting bool
 }
 
 func NewVisWorld(anims Animations) (v VisWorld) {
@@ -31,6 +33,7 @@ func NewVisWorld(anims Animations) (v VisWorld) {
 func NewWorldObjectAnimation(wo WorldObject, anims Animations) *WorldObjectAnimation {
 	var woa WorldObjectAnimation
 	woa.Object = wo
+	woa.LastState = wo.State()
 	switch wo.(type) {
 	// case *Gremlin:
 	// 	woa.Animation = anims.animMoveFailed
@@ -45,7 +48,12 @@ func NewWorldObjectAnimation(wo WorldObject, anims Animations) *WorldObjectAnima
 	// case *Question:
 	// 	woa.Animation = anims.animMoveFailed
 	case *Player:
-		woa.Animation = anims.animPlayer
+		switch wo.(*Player).State() {
+		case "Resting":
+			woa.Animation = anims.animPlayer1
+		case "Shooting":
+			woa.Animation = anims.animPlayer2
+		}
 	// case *SpawnPortal:
 	// 	woa.Animation = anims.animMoveFailed
 	default:
@@ -75,8 +83,10 @@ func (v *VisWorld) UpdateWhichObjectsExist(w *World) {
 	}
 
 	// Create animations for objects that don't have them.
+	// Either an animation wasn't created for this object or the object's
+	// state has changed since the animation was created.
 	for _, o := range objs {
-		if objToAnim[o] == nil {
+		if objToAnim[o] == nil || o.State() != objToAnim[o].LastState {
 			woa := NewWorldObjectAnimation(o, v.Animations)
 			v.Objects = append(v.Objects, woa)
 			objToAnim[o] = woa

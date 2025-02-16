@@ -44,6 +44,8 @@ type Animations struct {
 	animMoveFailed   Animation
 	animAttackFailed Animation
 	animPlayer       Animation
+	animPlayer1      Animation
+	animPlayer2      Animation
 }
 
 type Gui struct {
@@ -196,18 +198,18 @@ func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.state = GamePaused
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
 		g.state = GamePaused
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
@@ -226,12 +228,12 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if allEnemiesDead {
 		g.state = GameWon
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
-		g.uploadCurrentWorld()
+		// g.uploadCurrentWorld()
 		return
 	}
 
@@ -297,14 +299,16 @@ func (g *Gui) UpdateGamePaused() {
 		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
 		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		g.state = GameOngoing
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
 			g.EmbeddedFS)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		g.state = GameOngoing
 		return
 	}
 	if g.leftButtonJustPressed || g.rightButtonJustPressed {
@@ -502,17 +506,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		g.DrawEnemy(screen, enemy)
 	}
 
-	// Draw beam.
-	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
-	if g.world.Beam.Idx.Gt(ZERO) {
-		beam := Line{g.TileToPlayRegion(g.world.Player.Pos()), g.WorldToPlayRegion(g.world.Beam.End)}
-		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
-		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
-		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
-		DrawLine(beamScreen, beam, beamCol)
-	}
-	DrawSpriteXY(screen, beamScreen, 0, 0)
-
 	// Mark attackable tiles.
 	if g.world.Player.OnMap {
 		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
@@ -523,6 +516,17 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	// Draw beam.
+	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
+	if g.world.Beam.Idx.Gt(ZERO) {
+		beam := Line{g.TileToPlayRegion(g.world.Player.Pos()), g.WorldToPlayRegion(g.world.Beam.End)}
+		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
+		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
+		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
+		DrawLine(beamScreen, beam, beamCol)
+	}
+	DrawSpriteXY(screen, beamScreen, 0, 0)
 
 	// Highlight attack
 	attackOk, attackPos := g.GetAttackTarget()
@@ -960,7 +964,8 @@ func (g *Gui) loadGuiData() {
 		g.imgBlack = g.LoadImage("data/gui/black.png")
 		g.animMoveFailed = g.NewAnimation("data/gui/move-failed")
 		g.animAttackFailed = g.NewAnimation("data/gui/attack-failed")
-		g.animPlayer = g.NewAnimation("data/gui/player")
+		g.animPlayer1 = g.NewAnimation("data/gui/player1")
+		g.animPlayer2 = g.NewAnimation("data/gui/player2")
 		if CheckFailed == nil {
 			break
 		}
