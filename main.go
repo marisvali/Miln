@@ -285,7 +285,7 @@ func (g *Gui) UpdateGameOngoing() {
 			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
 		}
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			g.uploadCurrentWorld()
+			// g.uploadCurrentWorld()
 		}
 	}
 
