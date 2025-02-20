@@ -6,17 +6,68 @@ import (
 	"image/color"
 )
 
+// Col creates a color from the red, green, blue, alpha components.
+// Use this instead of color.RGBA{r, g, b, a} or color.NRGBA{r, g, b, a}.
+// color.RGBA{r, g, b, a} is most likely not what you want (has unexpected
+// behavior if you don't read its specification very carefully).
+// color.NRGBA{r, g, b, a} is most likely what you want, but it is slightly
+// inefficient.
+// Col has the behavior you expect and is efficient.
+func Col(r, g, b, a uint8) color.Color {
+	// Detailed explanation:
+	// - The first instinct is to create a color using color.RGBA{r, g, b, a}.
+	// This is almost never what you want to do if your alpha isn't 255. As the
+	// specification for color.RGBA says (emphasis mine):
+	// "RGBA represents a traditional 32-bit **ALPHA-PREMULTIPLIED** color,
+	// having 8 bits for each of red, green, blue and alpha.
+	// An alpha-premultiplied color component **C HAS BEEN SCALED** by alpha
+	// (A), so has **VALID VALUES 0 <= C <= A**."
+	// This is not what you expect! You expect a color of {255, 0, 0, 100} to be
+	// a transparent red. This is WRONG if you do color.RGBA{255, 0, 0, 100}.
+	// The red must be scaled by the alpha, so what you should do is
+	// color.RGBA{100, 0, 0, 100}. But nobody bothers to specify colors this
+	// way, when coding. But if you don't specify colors like this, you will get
+	// strange effects like your alpha being ignored. Then you might think
+	// something is wrong with the draw function and the blending options.
+	// But no, the default blending options of ebiten.Image.DrawImage() are
+	// exactly what you want, no need to tweak them.
+	// - There is a color struct that behaves like you expect: color.NRGBA.
+	// However, if you use it in a tight loop, like a DrawLine(), you call the
+	// color.NRGBA.RGBA() function, which converts from non-alpha-premultiplied
+	// to alpha-premultiplied. Doing this every time is silly, so might as well
+	// have a color that is already alpha-premultiplied. So, Col() gets the
+	// input that seems natural to a coder (non-alpha-premultiplied) and returns
+	// an alpha-premultiplied color.
+	// - There is already a conversion function in the color package, so use
+	// that.
+	return color.RGBA64Model.Convert(color.NRGBA{r, g, b, a})
+	// PS: worrying about the efficiency of the color structure is kind of silly
+	// if you're going to use the color.Color interface. And you're going to use
+	// it, because that's what most functions take. But a RGBA64 color struct
+	// has 8 bytes. A color.Color variable has 16 bytes: pointer to the value
+	// and 8 bytes indicating the type.
+	// Using RGBA64 instead of NRGBA gets you from 3.571 ns/op to 2.156 ns/op.
+	// But using RGBA64 directly instead of going through color.Color gets you
+	// from 2.156 ns/op to 0.7282 ns/op.
+	// But even though this function returns a RGBA64, all graphics functions
+	// will just receive color.Color, and it will defeat the whole point.
+	// So, you can't worry too much about efficiency when working with colors.
+	// The most important thing about Col() is correctness.
+	// Why not just use NRGBA everywhere then? It even has the nice effect that
+	// you can directly check color components like .R or .G and compare them
+	// to some number (e.g. col.R > 10). And the values are not
+	// alpha-premultiplied so you can actually reason about them. The issue is
+	// that you could only do that for color values you create, but not things
+	// colors obtained from images (e.g. imgBeam.At(0, 0)). So now you have to
+	// deal with treating some colors one way and some colors another way. So,
+	// since the color.Color interface decided to make alpha-premultiplied the
+	// default, I guess it's better to be uniform than have extra convenience
+	// some of the time, but always remember there's two systems.
+}
+
 func DrawSpriteXY(screen *ebiten.Image, img *ebiten.Image,
 	x float64, y float64) {
 	op := &ebiten.DrawImageOptions{}
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
 	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
 	screen.DrawImage(img, op)
 }
@@ -33,18 +84,11 @@ func DrawSpriteAlpha(screen *ebiten.Image, img *ebiten.Image,
 	newDx := targetWidth / float64(imgSize.X)
 	newDy := targetHeight / float64(imgSize.Y)
 	op.GeoM.Scale(newDx, newDy)
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
 	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
 	op.ColorScale.SetA(float32(alpha) / 255)
 	screen.DrawImage(img, op)
 }
+
 func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	x float64, y float64, targetWidth float64, targetHeight float64) {
 	op := &ebiten.DrawImageOptions{}
@@ -57,14 +101,6 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	newDx := targetWidth / float64(imgSize.X)
 	newDy := targetHeight / float64(imgSize.Y)
 	op.GeoM.Scale(newDx, newDy)
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
 	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
 	screen.DrawImage(img, op)
 }
@@ -115,14 +151,6 @@ func DrawFilledRect(screen *ebiten.Image, r Rectangle, col color.Color) {
 	img.Fill(col)
 
 	op := &ebiten.DrawImageOptions{}
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
 	op.GeoM.Translate(r.Min().X.ToFloat64(), r.Min().Y.ToFloat64())
 	screen.DrawImage(img, op)
 }
@@ -132,14 +160,6 @@ func DrawFilledSquare(screen *ebiten.Image, s Square, col color.Color) {
 	img.Fill(col)
 
 	op := &ebiten.DrawImageOptions{}
-
-	op.Blend.BlendFactorSourceRGB = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorSourceAlpha = ebiten.BlendFactorSourceAlpha
-	op.Blend.BlendFactorDestinationRGB = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendFactorDestinationAlpha = ebiten.BlendFactorOneMinusSourceAlpha
-	op.Blend.BlendOperationAlpha = ebiten.BlendOperationAdd
-	op.Blend.BlendOperationRGB = ebiten.BlendOperationAdd
-
 	x := s.Center.X.Minus(s.Size.DivBy(TWO)).ToFloat64()
 	y := s.Center.Y.Minus(s.Size.DivBy(TWO)).ToFloat64()
 	op.GeoM.Translate(x, y)
