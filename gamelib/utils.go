@@ -16,6 +16,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
 	"image/color"
+	"image/png"
 	"io"
 	"io/fs"
 	"math"
@@ -329,6 +330,15 @@ func LoadImage(str string) *ebiten.Image {
 	}
 
 	return ebiten.NewImageFromImage(img)
+}
+
+func SaveImage(str string, img *ebiten.Image) {
+	file, err := os.Create(str)
+	defer func(file *os.File) { Check(file.Close()) }(file)
+	Check(err)
+
+	err = png.Encode(file, img)
+	Check(err)
 }
 
 func LoadImageEmbedded(str string, efs *embed.FS) *ebiten.Image {
