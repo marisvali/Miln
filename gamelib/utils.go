@@ -366,12 +366,7 @@ func HexToColor(hexVal int) color.Color {
 	r := uint8(hexVal & 0xFF0000 >> 16)
 	g := uint8(hexVal & 0x00FF00 >> 8)
 	b := uint8(hexVal & 0x0000FF)
-	return color.RGBA{
-		R: r,
-		G: g,
-		B: b,
-		A: 255,
-	}
+	return Col(r, g, b, 255)
 }
 
 // Remove modifies the underlying array, which may be what you want, or
@@ -388,7 +383,7 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 		for x := 0; x < sz.X; x++ {
 			_, _, _, a := img.At(x, y).RGBA()
 			if a > 0 {
-				mask.Set(x, y, color.RGBA{0, 0, 0, 255})
+				mask.Set(x, y, Col(0, 0, 0, 255))
 			}
 		}
 	}

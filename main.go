@@ -510,7 +510,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	if g.world.Player.OnMap {
 		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-				if g.world.AttackableTiles.At(pt) {
+				if !g.world.AttackableTiles.At(pt) {
 					g.DrawTile(screen, g.imgShadow, pt)
 				}
 			}
@@ -523,7 +523,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		beam := Line{g.TileToPlayRegion(g.world.Player.Pos()), g.WorldToPlayRegion(g.world.Beam.End)}
 		alpha := uint8(g.world.Beam.Idx.Times(I(255)).DivBy(g.world.BeamMax).ToInt())
 		colr, colg, colb, _ := g.imgBeam.At(0, 0).RGBA()
-		beamCol := color.RGBA{uint8(colr), uint8(colg), uint8(colb), alpha}
+		beamCol := Col(uint8(colr), uint8(colg), uint8(colb), alpha)
 		DrawLine(beamScreen, beam, beamCol)
 	}
 	DrawSpriteXY(screen, beamScreen, 0, 0)
@@ -594,8 +594,8 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	//	gray = I(50)
 	// }
 	// v := uint8(gray.ToInt())
-	// screen.Fill(color.RGBA{v, v, v, 255})
-	screen.Fill(color.RGBA{0, 0, 0, 255})
+	// screen.Fill(Col(v, v, v, 255))
+	screen.Fill(Col(0, 0, 0, 255))
 
 	{
 		upperLeft := Pt{g.guiMargin, g.guiMargin}
@@ -612,7 +612,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		// lowerRight := upperLeft.Plus(Pt{buttonRegionX, g.textHeight.DivBy(TWO)})
 		lowerRight := Pt{screenSize.X, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
-		textRegion.Fill(color.RGBA{215, 215, 15, 255})
+		textRegion.Fill(Col(215, 215, 15, 255))
 		g.DrawInstructionalText(textRegion)
 	}
 
@@ -622,7 +622,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		lowerRight := Pt{screenSize.X, screenSize.Y}
 		buttonRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
-		buttonRegion.Fill(color.RGBA{5, 215, 215, 255})
+		buttonRegion.Fill(Col(5, 215, 215, 255))
 		g.DrawButtons(buttonRegion)
 	}
 
@@ -634,7 +634,8 @@ func (g *Gui) DrawButtons(screen *ebiten.Image) {
 	height := I(screen.Bounds().Dy())
 	buttonWidth := I(200)
 
-	buttonCols := []color.RGBA{{35, 115, 115, 255}, {65, 215, 115, 255}, {225, 115, 215, 255}}
+	buttonCols := []color.Color{Col(35, 115, 115, 255), Col(65, 215, 115, 255),
+		Col(225, 115, 215, 255)}
 
 	buttons := []*ebiten.Image{}
 	for i := I(0); i.Lt(I(3)); i.Inc() {
@@ -645,7 +646,7 @@ func (g *Gui) DrawButtons(screen *ebiten.Image) {
 		buttons = append(buttons, button)
 	}
 
-	textCol := color.RGBA{0, 0, 0, 255}
+	textCol := Col(0, 0, 0, 255)
 	g.DrawText(buttons[0], "[ESC] Pause", true, textCol)
 	g.DrawText(buttons[1], "[R] Restart level", true, textCol)
 	g.DrawText(buttons[2], "[N] New level", true, textCol)
@@ -824,7 +825,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	//		for x := 0; x < sz.X; x++ {
 	//			_, _, _, a := mask.At(x, y).RGBA()
 	//			if a > 0 {
-	//				mask.Set(x, y, color.RGBA{0, 0, 0, uint8(alpha.ToInt())})
+	//				mask.Set(x, y, Col(0, 0, 0, uint8(alpha.ToInt())))
 	//			}
 	//		}
 	//	}
@@ -833,7 +834,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	//	//lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
 	//	lineWidth := percent.Times(totalWidth).DivBy(I(100))
 	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
-	//	DrawLine(mask, l, color.RGBA{0, 0, 0, 255})
+	//	DrawLine(mask, l, Col(0, 0, 0, 255))
 	// }
 	// g.DrawTile(screen, g.animPlayer, p.Pos())
 	// g.DrawTile(screen, mask, p.Pos())

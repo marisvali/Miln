@@ -52,7 +52,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	// Draw beam.
 	beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
-	// beamCol := color.RGBA{uint8(255), uint8(255), uint8(0), 150}
+	// beamCol := Col(uint8(255), uint8(255), uint8(0), 150)
 	// beamCol.R = (uint8)(int64(beamCol.R) * int64(beamCol.A) / int64(255)) // pre-multiply alpha
 	// beamCol.G = (uint8)(int64(beamCol.G) * int64(beamCol.A) / int64(255)) // pre-multiply alpha
 	// beamCol.B = (uint8)(int64(beamCol.B) * int64(beamCol.A) / int64(255)) // pre-multiply alpha
