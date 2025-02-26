@@ -588,18 +588,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		alpha := uint8(i.Times(I(100)).DivBy(t).ToInt()) + 30
 		DrawSpriteAlpha(screen, g.imgPlayerHitEffect, 0, 0, float64(screen.Bounds().Dx()), float64(screen.Bounds().Dy()), alpha)
 	}
-
-	// Draw enemy move cooldown.
-	// Show bar on top of the play region going from full to empty.
-	barPercent := g.world.EnemyMoveCooldownIdx.Times(I(100)).DivBy(g.world.EnemyMoveCooldown)
-	if barPercent.Gt(ZERO) {
-		margin := float64(1)
-		pos := IPt(0, 0)
-		x := pos.X.ToFloat64()
-		y := pos.Y.ToFloat64()
-		width := I(screen.Bounds().Dx()).Times(barPercent).DivBy(I(100))
-		DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), 20)
-	}
 }
 
 func (g *Gui) Draw(screen *ebiten.Image) {
@@ -777,7 +765,12 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 				barBlocks = e.FreezeCooldownIdx()
 			}
 		}
-		if barBlocks.Gt(ZERO) {
+		if g.ShowMoveCooldownAsBar {
+			if g.world.EnemyMoveCooldown.IsPositive() {
+				barBlocks = g.world.EnemyMoveCooldownIdx
+			}
+		}
+		if barBlocks.Gt(ZERO) && e.FreezeCooldownIdx().IsZero() {
 			margin := float64(1)
 			tileSize := g.BlockSize.ToFloat64() - 2*margin
 			blockSize := tileSize / 10
@@ -796,7 +789,12 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 				barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
 			}
 		}
-		if barPercent.Gt(ZERO) {
+		if g.ShowMoveCooldownAsBar {
+			if g.world.EnemyMoveCooldown.IsPositive() {
+				barPercent = g.world.EnemyMoveCooldownIdx.Times(I(100)).DivBy(g.world.EnemyMoveCooldown)
+			}
+		}
+		if barPercent.Gt(ZERO) && e.FreezeCooldownIdx().IsZero() {
 			margin := float64(1)
 			pos := e.Pos().Times(g.BlockSize)
 			x := pos.X.ToFloat64()
