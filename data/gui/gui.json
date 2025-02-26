@@ -10,5 +10,6 @@
   "ShowFreezeCooldownAsMask": true,
   "ShowMoveCooldownAsMask": false,
   "ShowFreezeCooldownAsBar": false,
-  "ShowMoveCooldownAsBar": true
+  "ShowMoveCooldownAsBar": true,
+  "DrawEnemyHealth": false
 }
