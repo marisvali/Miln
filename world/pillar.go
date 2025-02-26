@@ -14,8 +14,6 @@ func NewPillar(w WorldData, pos Pt) *Pillar {
 	p.maxHealth = w.PillarMaxHealth
 	p.health = p.maxHealth
 	p.freezeCooldown = w.PillarFreezeCooldown
-	p.moveCooldown = w.PillarMoveCooldown
-	p.moveCooldownIdx = p.moveCooldown.DivBy(TWO)
 	return &p
 }
 

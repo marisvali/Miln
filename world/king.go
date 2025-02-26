@@ -15,8 +15,6 @@ func NewKing(w WorldData, pos Pt) *King {
 	k.maxHealth = w.KingMaxHealth
 	k.health = w.KingMaxHealth
 	k.freezeCooldown = w.KingFreezeCooldown
-	k.moveCooldown = w.KingMoveCooldown
-	k.moveCooldownIdx = k.moveCooldown.DivBy(TWO)
 	k.worldData = w
 	return &k
 }

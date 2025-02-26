@@ -10,8 +10,6 @@ type Enemy interface {
 	Alive() bool
 	FreezeCooldownIdx() Int
 	FreezeCooldown() Int
-	MoveCooldownIdx() Int
-	MoveCooldown() Int
 	Health() Int
 	MaxHealth() Int
 	Clone() Enemy
@@ -25,8 +23,6 @@ type EnemyBase struct {
 	maxHealth         Int
 	freezeCooldownIdx Int
 	freezeCooldown    Int
-	moveCooldownIdx   Int
-	moveCooldown      Int
 }
 
 func (e *EnemyBase) Pos() Pt {
@@ -39,14 +35,6 @@ func (e *EnemyBase) FreezeCooldownIdx() Int {
 
 func (e *EnemyBase) FreezeCooldown() Int {
 	return e.freezeCooldown
-}
-
-func (e *EnemyBase) MoveCooldownIdx() Int {
-	return e.moveCooldownIdx
-}
-
-func (e *EnemyBase) MoveCooldown() Int {
-	return e.moveCooldown
 }
 
 func (e *EnemyBase) Health() Int {
@@ -88,11 +76,7 @@ func (e *EnemyBase) beamJustHit(w *World) bool {
 }
 
 func (e *EnemyBase) move(w *World, m MatBool) {
-	if e.moveCooldownIdx.IsPositive() {
-		e.moveCooldownIdx.Dec()
-	}
-	if e.moveCooldown.IsPositive() && e.moveCooldownIdx == ZERO && w.Player.OnMap {
-		e.moveCooldownIdx = e.moveCooldown
+	if w.EnemyMoveCooldown.IsPositive() && w.EnemyMoveCooldownIdx == ZERO && w.Player.OnMap {
 		e.goToPlayer(w, m)
 	}
 }

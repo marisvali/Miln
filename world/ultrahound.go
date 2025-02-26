@@ -14,8 +14,6 @@ func NewUltraHound(w WorldData, pos Pt) *UltraHound {
 	h.maxHealth = w.UltraHoundMaxHealth
 	h.health = h.maxHealth
 	h.freezeCooldown = w.UltraHoundFreezeCooldown
-	h.moveCooldown = w.UltraHoundMoveCooldown
-	h.moveCooldownIdx = h.moveCooldown.DivBy(TWO)
 	return &h
 }
 

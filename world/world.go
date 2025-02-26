@@ -43,23 +43,18 @@ type EnemyParams struct {
 	SpawnPortalCooldownMin Int
 	SpawnPortalCooldownMax Int
 
-	GremlinMoveCooldown   Int
 	GremlinFreezeCooldown Int
 	GremlinMaxHealth      Int
 
-	HoundMoveCooldown   Int
 	HoundFreezeCooldown Int
 	HoundMaxHealth      Int
 
-	UltraHoundMoveCooldown   Int
 	UltraHoundFreezeCooldown Int
 	UltraHoundMaxHealth      Int
 
-	PillarMoveCooldown   Int
 	PillarFreezeCooldown Int
 	PillarMaxHealth      Int
 
-	KingMoveCooldown   Int
 	KingFreezeCooldown Int
 	KingMaxHealth      Int
 
@@ -67,13 +62,14 @@ type EnemyParams struct {
 }
 
 type WorldData struct {
-	NumRows         Int
-	NumCols         Int
-	NEntitiesPath   string
-	EnemyParamsPath string
-	Boardgame       bool
-	UseAmmo         bool
-	AmmoLimit       Int
+	NumRows           Int
+	NumCols           Int
+	NEntitiesPath     string
+	EnemyParamsPath   string
+	Boardgame         bool
+	UseAmmo           bool
+	AmmoLimit         Int
+	EnemyMoveCooldown Int
 	NEntities
 	EnemyParams
 }
@@ -86,14 +82,16 @@ type WorldObject interface {
 type World struct {
 	WorldData
 	Playthrough
-	Player           Player
-	Enemies          []Enemy
-	Beam             Beam
-	Obstacles        MatBool
-	AttackableTiles  MatBool
-	TimeStep         Int
-	BeamMax          Int
-	BlockSize        Int
+	Player               Player
+	Enemies              []Enemy
+	Beam                 Beam
+	Obstacles            MatBool
+	AttackableTiles      MatBool
+	TimeStep             Int
+	BeamMax              Int
+	BlockSize            Int
+	EnemyMoveCooldownIdx Int
+
 	Ammos            []Ammo
 	SpawnPortals     []SpawnPortal
 	Keys             []Key
@@ -472,8 +470,14 @@ func (w *World) Step(input PlayerInput) {
 		}
 
 		// Step the enemies.
+		if w.EnemyMoveCooldownIdx.IsPositive() {
+			w.EnemyMoveCooldownIdx.Dec()
+		}
 		for i := range w.Enemies {
 			w.Enemies[i].Step(w)
+		}
+		if w.EnemyMoveCooldownIdx.IsZero() {
+			w.EnemyMoveCooldownIdx = w.EnemyMoveCooldown
 		}
 
 		// Step SpawnPortalDatas.

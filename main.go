@@ -38,6 +38,7 @@ type GuiData struct {
 	ShowMoveCooldownAsMask   bool
 	ShowFreezeCooldownAsBar  bool
 	ShowMoveCooldownAsBar    bool
+	DrawEnemyHealth          bool
 }
 
 type Animations struct {
@@ -52,37 +53,39 @@ type Gui struct {
 	// db                 *sql.DB
 	GuiData
 	Animations
-	defaultFont            font.Face
-	imgGround              *ebiten.Image
-	imgTree                *ebiten.Image
-	imgPlayerHealth        *ebiten.Image
-	imgPlayerAmmo          *ebiten.Image
-	imgGremlin             *ebiten.Image
-	imgGremlinMask         *ebiten.Image
-	imgHound               *ebiten.Image
-	imgHoundMask           *ebiten.Image
-	imgUltraHound          *ebiten.Image
-	imgUltraHoundMask      *ebiten.Image
-	imgPillar              *ebiten.Image
-	imgPillarMask          *ebiten.Image
-	imgQuestion            *ebiten.Image
-	imgQuestionMask        *ebiten.Image
-	imgKing                *ebiten.Image
-	imgKingMask            *ebiten.Image
-	imgEnemyHealth         *ebiten.Image
-	imgTileOverlay         *ebiten.Image
-	imgBeam                *ebiten.Image
-	imgShadow              *ebiten.Image
-	imgTextBackground      *ebiten.Image
-	imgTextColor           *ebiten.Image
-	imgAmmo                *ebiten.Image
-	imgSpawnPortal         *ebiten.Image
-	imgPlayerHitEffect     *ebiten.Image
-	imgHighlightMoveOk     *ebiten.Image
-	imgHighlightMoveNotOk  *ebiten.Image
-	imgHighlightAttack     *ebiten.Image
-	imgKey                 []*ebiten.Image
-	imgBlack               *ebiten.Image
+	defaultFont           font.Face
+	imgGround             *ebiten.Image
+	imgTree               *ebiten.Image
+	imgPlayerHealth       *ebiten.Image
+	imgPlayerAmmo         *ebiten.Image
+	imgGremlin            *ebiten.Image
+	imgGremlinMask        *ebiten.Image
+	imgHound              *ebiten.Image
+	imgHoundMask          *ebiten.Image
+	imgUltraHound         *ebiten.Image
+	imgUltraHoundMask     *ebiten.Image
+	imgPillar             *ebiten.Image
+	imgPillarMask         *ebiten.Image
+	imgQuestion           *ebiten.Image
+	imgQuestionMask       *ebiten.Image
+	imgKing               *ebiten.Image
+	imgKingMask           *ebiten.Image
+	imgEnemyHealth        *ebiten.Image
+	imgEnemyCooldown      *ebiten.Image
+	imgTileOverlay        *ebiten.Image
+	imgBeam               *ebiten.Image
+	imgShadow             *ebiten.Image
+	imgTextBackground     *ebiten.Image
+	imgTextColor          *ebiten.Image
+	imgAmmo               *ebiten.Image
+	imgSpawnPortal        *ebiten.Image
+	imgPlayerHitEffect    *ebiten.Image
+	imgHighlightMoveOk    *ebiten.Image
+	imgHighlightMoveNotOk *ebiten.Image
+	imgHighlightAttack    *ebiten.Image
+	imgKey                []*ebiten.Image
+	imgBlack              *ebiten.Image
+
 	world                  World
 	worldAtStart           World
 	frameIdx               Int
@@ -506,13 +509,19 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		g.DrawEnemy(screen, enemy)
 	}
 
-	// Mark attackable tiles.
+	// Mark un-attackable tiles.
 	if g.world.Player.OnMap {
 		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
 				if !g.world.AttackableTiles.At(pt) {
 					g.DrawTile(screen, g.imgShadow, pt)
 				}
+			}
+		}
+	} else {
+		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
+			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
+				g.DrawTile(screen, g.imgShadow, pt)
 			}
 		}
 	}
@@ -578,6 +587,18 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		t := p.CooldownAfterGettingHit
 		alpha := uint8(i.Times(I(100)).DivBy(t).ToInt()) + 30
 		DrawSpriteAlpha(screen, g.imgPlayerHitEffect, 0, 0, float64(screen.Bounds().Dx()), float64(screen.Bounds().Dy()), alpha)
+	}
+
+	// Draw enemy move cooldown.
+	// Show bar on top of the play region going from full to empty.
+	barPercent := g.world.EnemyMoveCooldownIdx.Times(I(100)).DivBy(g.world.EnemyMoveCooldown)
+	if barPercent.Gt(ZERO) {
+		margin := float64(1)
+		pos := IPt(0, 0)
+		x := pos.X.ToFloat64()
+		y := pos.Y.ToFloat64()
+		width := I(screen.Bounds().Dx()).Times(barPercent).DivBy(I(100))
+		DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), 20)
 	}
 }
 
@@ -732,6 +753,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		img = g.imgQuestion
 		imgMask = g.imgQuestionMask
 	}
+	drawHealth = g.DrawEnemyHealth
 
 	g.DrawTile(screen, img, e.Pos())
 
@@ -740,11 +762,6 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	if g.ShowFreezeCooldownAsMask {
 		if e.FreezeCooldown().IsPositive() {
 			maskPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
-		}
-	}
-	if g.ShowMoveCooldownAsMask {
-		if e.MoveCooldown().IsPositive() {
-			maskPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
 		}
 	}
 	if maskPercent.Gt(ZERO) {
@@ -760,11 +777,6 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 				barBlocks = e.FreezeCooldownIdx()
 			}
 		}
-		if g.ShowMoveCooldownAsBar {
-			if e.MoveCooldown().IsPositive() {
-				barBlocks = e.MoveCooldownIdx()
-			}
-		}
 		if barBlocks.Gt(ZERO) {
 			margin := float64(1)
 			tileSize := g.BlockSize.ToFloat64() - 2*margin
@@ -773,7 +785,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 			x := pos.X.ToFloat64()
 			y := pos.Y.ToFloat64() + tileSize/5
 			for i := ZERO; i.Lt(barBlocks); i.Inc() {
-				DrawSprite(screen, g.imgBlack, x+(margin+blockSize)*i.ToFloat64(), y+margin, blockSize, blockSize)
+				DrawSprite(screen, g.imgEnemyCooldown, x+(margin+blockSize)*i.ToFloat64(), y+margin, blockSize, blockSize)
 			}
 		}
 	} else {
@@ -784,11 +796,6 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 				barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
 			}
 		}
-		if g.ShowMoveCooldownAsBar {
-			if e.MoveCooldown().IsPositive() {
-				barPercent = e.MoveCooldownIdx().Times(I(100)).DivBy(e.MoveCooldown())
-			}
-		}
 		if barPercent.Gt(ZERO) {
 			margin := float64(1)
 			pos := e.Pos().Times(g.BlockSize)
@@ -796,7 +803,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 			y := pos.Y.ToFloat64()
 			tileSize := g.BlockSize.ToFloat64() - 2*margin
 			width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
-			DrawSprite(screen, g.imgBlack, x+margin, y+margin, width.ToFloat64(), tileSize/10)
+			DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), tileSize/10)
 		}
 	}
 
@@ -864,7 +871,7 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	var centerY = float64(center.Y) - blockSize/2
 
 	// Define the radius of the circle
-	var radius = float64(size.X) / 2 * 70 / 100
+	var radius = float64(size.X) / 2 * 85 / 100
 
 	// Iterate through positions on the circle
 	ammoCount := p.AmmoCount.ToInt()
@@ -948,6 +955,7 @@ func (g *Gui) loadGuiData() {
 		g.imgQuestion = g.LoadImage("data/gui/enemy5.png")
 		g.imgKing = g.LoadImage("data/gui/enemy6.png")
 		g.imgEnemyHealth = g.LoadImage("data/gui/enemy-health.png")
+		g.imgEnemyCooldown = g.LoadImage("data/gui/enemy-cooldown.png")
 		g.imgBeam = g.LoadImage("data/gui/beam.png")
 		g.imgShadow = g.LoadImage("data/gui/shadow.png")
 		g.imgTextBackground = g.LoadImage("data/gui/text-background.png")

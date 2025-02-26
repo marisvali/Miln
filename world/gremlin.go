@@ -14,8 +14,6 @@ func NewGremlin(w WorldData, pos Pt) *Gremlin {
 	g.maxHealth = w.GremlinMaxHealth
 	g.health = g.maxHealth
 	g.freezeCooldown = w.GremlinFreezeCooldown
-	g.moveCooldown = w.GremlinMoveCooldown
-	g.moveCooldownIdx = g.moveCooldown.DivBy(TWO)
 	return &g
 }
 

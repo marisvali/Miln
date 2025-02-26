@@ -14,8 +14,6 @@ func NewHound(w WorldData, pos Pt) *Hound {
 	h.maxHealth = w.HoundMaxHealth
 	h.health = h.maxHealth
 	h.freezeCooldown = w.HoundFreezeCooldown
-	h.moveCooldown = w.HoundMoveCooldown
-	h.moveCooldownIdx = h.moveCooldown.DivBy(TWO)
 	return &h
 }
 
