@@ -469,20 +469,22 @@ func (w *World) Step(input PlayerInput) {
 			w.SpawnAmmos()
 		}
 
-		// Step the enemies.
 		if w.EnemyMoveCooldownIdx.IsPositive() {
 			w.EnemyMoveCooldownIdx.Dec()
 		}
+
+		// Step the enemies.
 		for i := range w.Enemies {
 			w.Enemies[i].Step(w)
-		}
-		if w.EnemyMoveCooldownIdx.IsZero() {
-			w.EnemyMoveCooldownIdx = w.EnemyMoveCooldown
 		}
 
 		// Step SpawnPortalDatas.
 		for i := range w.SpawnPortals {
 			w.SpawnPortals[i].Step(w)
+		}
+
+		if w.EnemyMoveCooldownIdx.IsZero() {
+			w.EnemyMoveCooldownIdx = w.EnemyMoveCooldown
 		}
 	}
 

@@ -88,6 +88,10 @@ func (p *SpawnPortal) Step(w *World) {
 		return // Don't spawn.
 	}
 
+	if !(p.TimeoutIdx.IsZero() && w.EnemyMoveCooldownIdx.IsZero()) {
+		return // Only spawn when the enemy cooldown is at max.
+	}
+
 	wave := p.CurrentWave()
 	if wave == nil {
 		// No wave active.

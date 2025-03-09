@@ -31,7 +31,13 @@ func (h *Hound) Step(w *World) {
 	}
 
 	if h.freezeCooldownIdx.IsPositive() {
-		h.freezeCooldownIdx.Dec()
+		// Only move after freezeCooldownIdx is down to ZERO
+		// AND also w.EnemyMoveCooldownIdx is at maximum.
+		if h.freezeCooldownIdx.Gt(I(10)) {
+			h.freezeCooldownIdx.Dec()
+		} else if w.EnemyMoveCooldownIdx.Eq(w.EnemyMoveCooldown.Minus(ONE)) {
+			h.freezeCooldownIdx = ZERO
+		}
 		return // Don't move.
 	}
 
