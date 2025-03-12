@@ -11,5 +11,7 @@
   "ShowMoveCooldownAsMask": false,
   "ShowFreezeCooldownAsBar": false,
   "ShowMoveCooldownAsBar": true,
-  "DrawEnemyHealth": false
+  "DrawEnemyHealth": false,
+  "DrawVirtualCursorDuringReplay": true,
+  "MoveActualOSCursorDuringReplay": false
 }

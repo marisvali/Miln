@@ -26,19 +26,21 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize                Int
-	HighlightMoveOk          bool
-	HighlightMoveNotOk       bool
-	HighlightAttack          bool
-	AutoAimAttack            bool
-	AutoAimAttackFactor      Int
-	AutoAimMove              bool
-	AutoAimMoveFactor        Int
-	ShowFreezeCooldownAsMask bool
-	ShowMoveCooldownAsMask   bool
-	ShowFreezeCooldownAsBar  bool
-	ShowMoveCooldownAsBar    bool
-	DrawEnemyHealth          bool
+	BlockSize                      Int
+	HighlightMoveOk                bool
+	HighlightMoveNotOk             bool
+	HighlightAttack                bool
+	AutoAimAttack                  bool
+	AutoAimAttackFactor            Int
+	AutoAimMove                    bool
+	AutoAimMoveFactor              Int
+	ShowFreezeCooldownAsMask       bool
+	ShowMoveCooldownAsMask         bool
+	ShowFreezeCooldownAsBar        bool
+	ShowMoveCooldownAsBar          bool
+	DrawEnemyHealth                bool
+	DrawVirtualCursorDuringReplay  bool
+	MoveActualOSCursorDuringReplay bool
 }
 
 type Animations struct {
@@ -85,6 +87,7 @@ type Gui struct {
 	imgHighlightAttack    *ebiten.Image
 	imgKey                []*ebiten.Image
 	imgBlack              *ebiten.Image
+	imgCursor             *ebiten.Image
 
 	world                  World
 	worldAtStart           World
@@ -245,9 +248,14 @@ func (g *Gui) UpdateGameOngoing() {
 	if idx := g.frameIdx.ToInt(); !g.recording && idx < len(inputs) {
 		// Get input from recording.
 		input = inputs[idx]
-		// Also move the cursor on the screen.
-		osPt := GameToOs(input.MousePt, g.layout)
-		moveCursor(osPt)
+		// Remember cursor position in order to draw the virtual cursor during
+		// Draw().
+		g.mousePt = input.MousePt
+		// Move the actual OS cursor on the screen.
+		if g.MoveActualOSCursorDuringReplay {
+			osPt := GameToOs(g.mousePt, g.layout)
+			moveCursor(osPt)
+		}
 	} else {
 		// Get input from player.
 		input.MousePt = g.mousePt
@@ -635,6 +643,14 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		g.DrawButtons(buttonRegion)
 	}
 
+	// Draw virtual cursor.
+	if g.DrawVirtualCursorDuringReplay {
+		DrawSprite(screen, g.imgCursor,
+			g.mousePt.X.ToFloat64(),
+			g.mousePt.Y.ToFloat64(),
+			20.0, 20.0)
+	}
+
 	// Output TPS (ticks per second, which is like frames per second).
 	// ebitenutil.DebugPrint(screen, fmt.Sprintf("ActualTPS: %f", ebiten.ActualTPS()))
 }
@@ -969,6 +985,7 @@ func (g *Gui) loadGuiData() {
 		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
 		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
 		g.imgBlack = g.LoadImage("data/gui/black.png")
+		g.imgCursor = g.LoadImage("data/gui/cursor.png")
 		g.animMoveFailed = g.NewAnimation("data/gui/move-failed")
 		g.animAttackFailed = g.NewAnimation("data/gui/attack-failed")
 		g.animPlayer1 = g.NewAnimation("data/gui/player1")
@@ -1043,7 +1060,7 @@ func main() {
 
 	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
 	replayFile := ""
-	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\vali-web\\20250102-140111.mln999"
+	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\denis\\20250311-213937.mln008"
 
 	if len(os.Args) == 2 {
 		replayFile = os.Args[1]
