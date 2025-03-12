@@ -16,6 +16,8 @@ type Game struct {
 	frameIdx     int
 	layoutWidth  int
 	layoutHeight int
+	x            int
+	y            int
 }
 
 // OsToGame converts an (x, y) position from the "OS coordinate system" to the
@@ -115,10 +117,20 @@ func GameToOs(gameX, gameY, layoutWidth, layoutHeight int) (osX, osY int) {
 	return
 }
 
+func DrawCursor(screen *ebiten.Image, x int, y int, col color.Color) {
+	sz := 30
+	for iy := 0; iy < sz; iy++ {
+		for ix := 0; ix < sz; ix++ {
+			screen.Set(x+ix, y+iy, col)
+		}
+	}
+}
+
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.frameIdx++
 	osX, osY := robotgo.Location()
 	gameX, gameY := ebiten.CursorPosition()
+
 	// The purpose here is to obtain the same result as CursorPosition.
 	// If I can do this, then I can be confident in implementing a reverse
 	// function, GameToOs, which I can use to replicate a player's recorded
@@ -132,26 +144,43 @@ func (g *Game) Draw(screen *ebiten.Image) {
 		fmt.Sprintf("os x, y: %d %d\n"+
 			"ebiten game x, y: %d %d\n"+
 			"my game x, y: %d %d\n"+
-			"my os x, y: %d %d\n",
+			"my os x, y: %d %d\n"+
+			"update os x, y: %d %d\n",
 			osX, osY,
 			gameX, gameY,
 			myGameX, myGameY,
-			myOsX, myOsY))
+			myOsX, myOsY,
+			g.x, g.y))
+
+	updateGameX, updateGameY := OsToGame(g.x, g.y, g.layoutWidth, g.layoutHeight)
+	DrawCursor(screen, updateGameX, updateGameY, color.RGBA{255, 0, 0, 255})
+	DrawCursor(screen, gameX, gameY, color.RGBA{0, 255, 0, 255})
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	g.layoutWidth = 200
-	g.layoutHeight = 650
+	g.layoutWidth = 800
+	g.layoutHeight = 800
 	return g.layoutWidth, g.layoutHeight
 }
 
 func (g *Game) Update() error {
+	step := 1
+	if (g.frameIdx/250)%3 == 0 {
+		g.x += step
+	} else if (g.frameIdx/250)%3 == 1 {
+
+	} else {
+		g.x -= step
+	}
+	robotgo.Move(g.x, g.y)
 	return nil
 }
 
 func main() {
 	g := Game{}
-	ebiten.SetWindowSize(800, 500)
+	g.x = 700
+	g.y = 500
+	ebiten.SetWindowSize(900, 900)
 	// ebiten.SetFullscreen(true)
 	ebiten.SetWindowTitle("Mouse position")
 	if err := ebiten.RunGame(&g); err != nil {
