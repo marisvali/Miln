@@ -5,7 +5,7 @@
   "GremlinFreezeCooldown": 30,
   "GremlinMaxHealth": 1,
 
-  "HoundFreezeCooldown": 300,
+  "HoundFreezeCooldown": 100,
   "HoundMaxHealth": 3,
 
   "UltraHoundFreezeCooldown": 0,

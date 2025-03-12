@@ -201,18 +201,18 @@ func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
 		g.state = GamePaused
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.UserRequestedRestartLevel() {
 		g.state = GamePaused
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
 	if g.UserRequestedNewLevel() {
 		g.state = GamePaused
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		g.UpdateGamePaused()
 		return
 	}
@@ -231,12 +231,12 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if allEnemiesDead {
 		g.state = GameWon
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
-		// g.uploadCurrentWorld()
+		g.uploadCurrentWorld()
 		return
 	}
 
@@ -288,7 +288,7 @@ func (g *Gui) UpdateGameOngoing() {
 			WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
 		}
 		if g.frameIdx.Mod(I(60)) == ZERO {
-			// g.uploadCurrentWorld()
+			g.uploadCurrentWorld()
 		}
 	}
 
@@ -302,7 +302,7 @@ func (g *Gui) UpdateGamePaused() {
 		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
 		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 		return
 	}
@@ -310,7 +310,7 @@ func (g *Gui) UpdateGamePaused() {
 		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
 			g.EmbeddedFS)
 		// InitializeIdInDbSql(g.db, g.world.Id)
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 		return
 	}
@@ -1027,7 +1027,7 @@ func GetNextLevel(user string) (seed Int, targetDifficulty Int) {
 }
 
 func main() {
-	ebiten.SetWindowPosition(500, 100)
+	ebiten.SetWindowPosition(10, 100)
 
 	var g Gui
 	g.username = getUsername()
@@ -1054,6 +1054,17 @@ func main() {
 	} else {
 		g.folderWatcher1.Folder = "data/gui"
 		g.folderWatcher2.Folder = "data/world"
+		// Initialize watchers.
+		// Check if folder contents changed but do nothing with the result
+		// because we just want the watchers to initialize their internal
+		// structures with the current timestamps of files.
+		// This is necessary if we want to avoid creating a new world
+		// immediately after the first world is created, every time.
+		// I want to avoid creating a new world for now because it changes the
+		// id of the current world and it messes up the upload of the world
+		// to the database.
+		g.folderWatcher1.FolderContentsChanged()
+		g.folderWatcher2.FolderContentsChanged()
 	}
 
 	if replayFile != "" {
@@ -1069,7 +1080,7 @@ func main() {
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
-		// InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 	} else {
 		// g.recordingFile = GetLatestRecordingFile()

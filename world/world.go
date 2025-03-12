@@ -15,7 +15,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 999
+const Version = 8
 
 type WaveData struct {
 	SecondsAfterLastWave Int
@@ -205,6 +205,7 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	w.EmbeddedFS = efs
 	w.loadWorldData()
 	w.Seed = seed
+	RSeed(w.Seed)
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
 	w.Obstacles = RandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
