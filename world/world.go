@@ -68,14 +68,15 @@ type EnemyParams struct {
 }
 
 type WorldData struct {
-	NumRows           Int
-	NumCols           Int
-	NEntitiesPath     string
-	EnemyParamsPath   string
-	Boardgame         bool
-	UseAmmo           bool
-	AmmoLimit         Int
-	EnemyMoveCooldown Int
+	NumRows                 Int
+	NumCols                 Int
+	NEntitiesPath           string
+	EnemyParamsPath         string
+	Boardgame               bool
+	UseAmmo                 bool
+	AmmoLimit               Int
+	EnemyMoveCooldown       Int
+	EnemiesAggroWhenVisible bool
 	NEntities
 	EnemyParams
 }

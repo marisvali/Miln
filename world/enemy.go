@@ -98,16 +98,34 @@ func (e *EnemyBase) beamJustHit(w *World) bool {
 }
 
 func (e *EnemyBase) move(w *World, m MatBool) {
+	// Don't move or consume movement cooldown if the enemy is aggroed by
+	// being visible. Otherwise, when you teleport close to an enemy that was
+	// previously not aggroed, the enemy instantly jumps at you. This is not
+	// what I want.
+	if w.EnemiesAggroWhenVisible {
+		if !w.Player.OnMap || !w.AttackableTiles.At(e.pos) {
+			e.moveCooldownIdx = e.moveCooldownMultiplier
+			return
+		}
+	}
+
 	if w.EnemyMoveCooldown.IsPositive() && w.EnemyMoveCooldownIdx.IsZero() && e.moveCooldownIdx.IsPositive() {
 		e.moveCooldownIdx.Dec()
 	}
 
 	if e.moveCooldownIdx.IsZero() && w.Player.OnMap {
-		aggroDistance := e.aggroDistance.Times(e.aggroDistance)
-		distanceToPlayer := e.Pos().SquaredDistTo(w.Player.Pos())
-		if aggroDistance.Geq(distanceToPlayer) {
-			e.goToPlayer(w, m)
-			e.moveCooldownIdx = e.moveCooldownMultiplier
+		if w.EnemiesAggroWhenVisible {
+			if w.AttackableTiles.At(e.pos) {
+				e.goToPlayer(w, m)
+				e.moveCooldownIdx = e.moveCooldownMultiplier
+			}
+		} else {
+			aggroDistance := e.aggroDistance.Times(e.aggroDistance)
+			distanceToPlayer := e.Pos().SquaredDistTo(w.Player.Pos())
+			if aggroDistance.Geq(distanceToPlayer) {
+				e.goToPlayer(w, m)
+				e.moveCooldownIdx = e.moveCooldownMultiplier
+			}
 		}
 	}
 }
