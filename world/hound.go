@@ -14,6 +14,9 @@ func NewHound(w WorldData, pos Pt) *Hound {
 	h.maxHealth = w.HoundMaxHealth
 	h.health = h.maxHealth
 	h.freezeCooldown = w.HoundFreezeCooldown
+	h.moveCooldownMultiplier = w.HoundMoveCooldownMultiplier
+	h.moveCooldownIdx = h.moveCooldownMultiplier
+	h.hitsPlayer = w.HoundHitsPlayer
 	return &h
 }
 

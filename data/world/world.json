@@ -4,7 +4,7 @@
   "Boardgame": false,
   "UseAmmo": true,
   "AmmoLimit": 10,
-  "NEntitiesPath": "n_entities_4_portals.json",
-  "EnemyParamsPath": "enemy_params_slower_gremlin.json",
-  "EnemyMoveCooldown": 300
+  "NEntitiesPath": "n_entities.json",
+  "EnemyParamsPath": "enemy_params.json",
+  "EnemyMoveCooldown": 50
 }

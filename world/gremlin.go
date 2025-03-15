@@ -14,6 +14,9 @@ func NewGremlin(w WorldData, pos Pt) *Gremlin {
 	g.maxHealth = w.GremlinMaxHealth
 	g.health = g.maxHealth
 	g.freezeCooldown = w.GremlinFreezeCooldown
+	g.moveCooldownMultiplier = w.GremlinMoveCooldownMultiplier
+	g.moveCooldownIdx = g.moveCooldownMultiplier
+	g.hitsPlayer = w.GremlinHitsPlayer
 	return &g
 }
 

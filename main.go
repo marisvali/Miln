@@ -757,7 +757,10 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		img = g.imgQuestion
 		imgMask = g.imgQuestionMask
 	}
-	drawHealth = g.DrawEnemyHealth
+	if e.MaxHealth().Leq(ONE) {
+		drawHealth = false
+	}
+	drawHealth = drawHealth && g.DrawEnemyHealth
 
 	g.DrawTile(screen, img, e.Pos())
 
@@ -807,17 +810,20 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		}
 		if g.ShowMoveCooldownAsBar {
 			if g.world.EnemyMoveCooldown.IsPositive() {
-				barPercent = g.world.EnemyMoveCooldownIdx.Times(I(100)).DivBy(g.world.EnemyMoveCooldown)
+				totalCooldown := g.world.EnemyMoveCooldown.Times(e.MoveCooldownMultiplier())
+				cooldownLeft := g.world.EnemyMoveCooldown.Times(e.MoveCooldownIdx().Minus(ONE)).Plus(g.world.EnemyMoveCooldownIdx)
+				barPercent = cooldownLeft.Times(I(100)).DivBy(totalCooldown)
 			}
 		}
 		if barPercent.Gt(ZERO) && e.FreezeCooldownIdx().IsZero() {
 			margin := float64(1)
 			pos := e.Pos().Times(g.BlockSize)
-			x := pos.X.ToFloat64()
-			y := pos.Y.ToFloat64()
 			tileSize := g.BlockSize.ToFloat64() - 2*margin
 			width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
-			DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), tileSize/10)
+			height := tileSize / 10
+			x := pos.X.ToFloat64()
+			y := pos.Y.ToFloat64() + tileSize - height
+			DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), height)
 		}
 	}
 
@@ -962,9 +968,9 @@ func (g *Gui) loadGuiData() {
 		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
 		g.imgPlayerAmmo = g.LoadImage("data/gui/player-ammo.png")
 		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
-		g.imgGremlin = g.LoadImage("data/gui/enemy2.png")
-		g.imgPillar = g.LoadImage("data/gui/enemy3.png")
-		g.imgHound = g.LoadImage("data/gui/enemy4.png")
+		g.imgGremlin = g.LoadImage("data/gui/enemy3.png")
+		g.imgPillar = g.LoadImage("data/gui/enemy4.png")
+		g.imgHound = g.LoadImage("data/gui/enemy2.png")
 		g.imgUltraHound = g.LoadImage("data/gui/ultra-hound.png")
 		g.imgQuestion = g.LoadImage("data/gui/enemy5.png")
 		g.imgKing = g.LoadImage("data/gui/enemy6.png")

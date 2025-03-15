@@ -1,20 +1,16 @@
 {
-  "SpawnPortalCooldownMin": 700000,
-  "SpawnPortalCooldownMax": 700000,
-
-  "GremlinMoveCooldown": 600000,
-  "UltraHoundMoveCooldown": 2900000,
-  "HoundMoveCooldown": 2700000,
-  "KingMoveCooldown": 2600000,
-
+  "SpawnPortalCooldownMin": 100,
+  "SpawnPortalCooldownMax": 100,
 
   "GremlinFreezeCooldown": 0,
-  "GremlinMaxHealth": 6,
+  "GremlinMoveCooldownMultiplier": 5,
+  "GremlinMaxHealth": 3,
+  "GremlinHitsPlayer": false,
 
-
-  "HoundFreezeCooldown": 0,
+  "HoundFreezeCooldown": 400,
+  "HoundMoveCooldownMultiplier": 1,
   "HoundMaxHealth": 6,
-
+  "HoundHitsPlayer": true,
 
   "UltraHoundFreezeCooldown": 0,
   "UltraHoundMaxHealth": 1,

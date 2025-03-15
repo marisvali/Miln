@@ -10,8 +10,8 @@
   "ShowFreezeCooldownAsMask": true,
   "ShowMoveCooldownAsMask": false,
   "ShowFreezeCooldownAsBar": false,
-  "ShowMoveCooldownAsBar": true,
-  "DrawEnemyHealth": false,
+  "ShowMoveCooldownAsBar": false,
+  "DrawEnemyHealth": true,
   "DrawVirtualCursorDuringReplay": true,
   "MoveActualOSCursorDuringReplay": false
 }
