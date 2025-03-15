@@ -115,6 +115,8 @@ func (m *MatBool) OccupyRandomPos() (p Pt) {
 // connected to the start point. A position is connected if there is a path
 // between it and the start point, where all the elements of the path have the
 // same value as the start point.
+// res.At(pt) == true if pt is connected to start
+// res.At(pt) == false if pt is NOT connected to start
 func (m MatBool) ConnectedPositions(start Pt) (res MatBool) {
 	goodVal := m.Get(start)
 	queue := []Pt{}

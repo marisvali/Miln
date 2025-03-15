@@ -158,6 +158,30 @@ func LevelX() string {
 `
 }
 
+func FirstUnoccupiedPos(m MatBool) (unoccupiedPos Pt) {
+	unoccupiedPos = IPt(0, 0)
+	for ; unoccupiedPos.Y.Lt(m.Size().Y); unoccupiedPos.Y.Inc() {
+		for ; unoccupiedPos.X.Lt(m.Size().X); unoccupiedPos.X.Inc() {
+			if !m.At(unoccupiedPos) {
+				return
+			}
+		}
+	}
+	panic(fmt.Errorf("no unoccupied position found"))
+}
+
+func IsLevelValid(m MatBool) bool {
+	// Get all unoccupied positions connected to the first unoccupied position.
+	m2 := m.ConnectedPositions(FirstUnoccupiedPos(m))
+
+	// Check if all unoccupied positions in m are also unoccupied in m2.
+	// If yes, all unoccupied positions are connected.
+	// Unoccupied positions in m2 are true, while in m they are false. So negate
+	// m2 and compare m2 and m.
+	m2.Negate()
+	return m.Equal(m2)
+}
+
 func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 	// Create matrix with obstacles.
 	m = NewMatBool(Pt{nRows, nCols})
@@ -165,6 +189,20 @@ func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 		m.OccupyRandomPos()
 	}
 	return
+}
+
+func ValidRandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
+	nTries := 0
+	for {
+		nTries++
+		if nTries > 1000 {
+			panic(fmt.Errorf("failed to generate valid level for nObstacles: %d nRows: %d nCols: %d", nObstacles, nRows, nCols))
+		}
+		m = RandomLevel(nObstacles, nRows, nCols)
+		if IsLevelValid(m) {
+			return
+		}
+	}
 }
 
 type PortalSeed struct {
@@ -215,7 +253,7 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	RSeed(w.Seed)
 	w.TargetDifficulty = difficulty
 	w.Id = uuid.New()
-	w.Obstacles = RandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
+	w.Obstacles = ValidRandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())
 	occ := w.Obstacles.Clone()
 	for _, portal := range w.SpawnPortalDatas {
