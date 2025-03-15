@@ -28,6 +28,7 @@ type EnemyBase struct {
 	moveCooldownMultiplier Int
 	moveCooldownIdx        Int
 	hitsPlayer             bool
+	aggroDistance          Int
 }
 
 func (e *EnemyBase) Pos() Pt {
@@ -102,7 +103,11 @@ func (e *EnemyBase) move(w *World, m MatBool) {
 	}
 
 	if e.moveCooldownIdx.IsZero() && w.Player.OnMap {
-		e.goToPlayer(w, m)
-		e.moveCooldownIdx = e.moveCooldownMultiplier
+		aggroDistance := e.aggroDistance.Times(e.aggroDistance)
+		distanceToPlayer := e.Pos().SquaredDistTo(w.Player.Pos())
+		if aggroDistance.Geq(distanceToPlayer) {
+			e.goToPlayer(w, m)
+			e.moveCooldownIdx = e.moveCooldownMultiplier
+		}
 	}
 }

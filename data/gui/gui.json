@@ -13,5 +13,6 @@
   "ShowMoveCooldownAsBar": false,
   "DrawEnemyHealth": true,
   "DrawVirtualCursorDuringReplay": true,
-  "MoveActualOSCursorDuringReplay": false
+  "MoveActualOSCursorDuringReplay": false,
+  "DrawSpawnPortal": false
 }

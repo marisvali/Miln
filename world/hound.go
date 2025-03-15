@@ -17,6 +17,7 @@ func NewHound(w WorldData, pos Pt) *Hound {
 	h.moveCooldownMultiplier = w.HoundMoveCooldownMultiplier
 	h.moveCooldownIdx = h.moveCooldownMultiplier
 	h.hitsPlayer = w.HoundHitsPlayer
+	h.aggroDistance = w.HoundAggroDistance
 	return &h
 }
 

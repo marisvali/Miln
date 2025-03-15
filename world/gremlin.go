@@ -17,6 +17,7 @@ func NewGremlin(w WorldData, pos Pt) *Gremlin {
 	g.moveCooldownMultiplier = w.GremlinMoveCooldownMultiplier
 	g.moveCooldownIdx = g.moveCooldownMultiplier
 	g.hitsPlayer = w.GremlinHitsPlayer
+	g.aggroDistance = w.GremlinAggroDistance
 	return &g
 }
 

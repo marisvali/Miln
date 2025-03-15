@@ -41,6 +41,7 @@ type GuiData struct {
 	DrawEnemyHealth                bool
 	DrawVirtualCursorDuringReplay  bool
 	MoveActualOSCursorDuringReplay bool
+	DrawSpawnPortal                bool
 }
 
 type Animations struct {
@@ -497,9 +498,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	}
 
 	// Draw portals.
-	for i := range g.world.SpawnPortals {
-		p := &g.world.SpawnPortals[i]
-		g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
+	if g.DrawSpawnPortal {
+		for i := range g.world.SpawnPortals {
+			p := &g.world.SpawnPortals[i]
+			g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
+		}
 	}
 
 	// Draw ammo.

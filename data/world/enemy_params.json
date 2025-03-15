@@ -3,14 +3,16 @@
   "SpawnPortalCooldownMax": 100,
 
   "GremlinFreezeCooldown": 0,
-  "GremlinMoveCooldownMultiplier": 5,
+  "GremlinMoveCooldownMultiplier": 2000,
   "GremlinMaxHealth": 3,
   "GremlinHitsPlayer": false,
+  "GremlinAggroDistance": 0,
 
-  "HoundFreezeCooldown": 400,
-  "HoundMoveCooldownMultiplier": 1,
+  "HoundFreezeCooldown": 200,
+  "HoundMoveCooldownMultiplier": 6,
   "HoundMaxHealth": 6,
   "HoundHitsPlayer": true,
+  "HoundAggroDistance": 4,
 
   "UltraHoundFreezeCooldown": 0,
   "UltraHoundMaxHealth": 1,

@@ -8,13 +8,63 @@
           "SecondsAfterLastWave": 0,
           "NGremlinMin": 1,
           "NGremlinMax": 1,
+          "NHoundMin": 0,
+          "NHoundMax": 0
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1,
+          "NHoundMin": 0,
+          "NHoundMax": 0
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1,
+          "NHoundMin": 0,
+          "NHoundMax": 0
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1,
+          "NHoundMin": 0,
+          "NHoundMax": 0
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 1,
+          "NGremlinMax": 1,
+          "NHoundMin": 0,
+          "NHoundMax": 0
+        }
+      ]
+    },
+    {
+      "Waves": [
+        {
+          "SecondsAfterLastWave": 0,
+          "NGremlinMin": 0,
+          "NGremlinMax": 0,
           "NHoundMin": 1,
           "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 15,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
         }
       ]
     },
@@ -22,13 +72,10 @@
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 15,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
+          "NGremlinMin": 0,
+          "NGremlinMax": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
         }
       ]
     },
@@ -36,13 +83,10 @@
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 15,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
+          "NGremlinMin": 0,
+          "NGremlinMax": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
         }
       ]
     },
@@ -50,27 +94,10 @@
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 15,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
-        }
-      ]
-    },
-    {
-      "Waves": [
-        {
-          "SecondsAfterLastWave": 0,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 15,
-          "NGremlinMin": 1,
-          "NGremlinMax": 1
+          "NGremlinMin": 0,
+          "NGremlinMax": 0,
+          "NHoundMin": 1,
+          "NHoundMax": 1
         }
       ]
     }

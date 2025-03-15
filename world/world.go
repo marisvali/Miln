@@ -47,11 +47,13 @@ type EnemyParams struct {
 	GremlinMoveCooldownMultiplier Int
 	GremlinMaxHealth              Int
 	GremlinHitsPlayer             bool
+	GremlinAggroDistance          Int
 
 	HoundFreezeCooldown         Int
 	HoundMoveCooldownMultiplier Int
 	HoundMaxHealth              Int
 	HoundHitsPlayer             bool
+	HoundAggroDistance          Int
 
 	UltraHoundFreezeCooldown Int
 	UltraHoundMaxHealth      Int
