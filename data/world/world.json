@@ -6,6 +6,6 @@
   "AmmoLimit": 10,
   "NEntitiesPath": "n_entities.json",
   "EnemyParamsPath": "enemy_params.json",
-  "EnemyMoveCooldown": 10,
+  "EnemyMoveCooldown": 80,
   "EnemiesAggroWhenVisible": true
 }

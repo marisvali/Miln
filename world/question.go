@@ -14,7 +14,7 @@ func NewQuestion(w WorldData, pos Pt) *Question {
 	q.pos = pos
 	q.maxHealth = w.QuestionMaxHealth
 	q.health = q.maxHealth
-	q.freezeCooldown = I(1)
+	q.hitCooldown = I(1)
 	q.worldData = w
 	return &q
 }
@@ -63,7 +63,7 @@ func (q *Question) onDeath(w *World) {
 
 func (q *Question) Step(w *World) {
 	if q.Vulnerable(w) && q.beamJustHit(w) {
-		q.freezeCooldownIdx = q.freezeCooldown
+		q.hitCooldownIdx = q.hitCooldown
 		if w.Player.HitPermissions.CanHitQuestion {
 			q.health.Dec()
 			if q.health == ZERO {
@@ -74,7 +74,7 @@ func (q *Question) Step(w *World) {
 }
 
 func (q *Question) Vulnerable(w *World) bool {
-	if q.freezeCooldownIdx.IsPositive() {
+	if q.hitCooldownIdx.IsPositive() {
 		return false
 	}
 	return w.Player.HitPermissions.CanHitGremlin

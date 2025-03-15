@@ -43,11 +43,13 @@ type EnemyParams struct {
 	SpawnPortalCooldownMin Int
 	SpawnPortalCooldownMax Int
 
-	GremlinFreezeCooldown         Int
-	GremlinMoveCooldownMultiplier Int
-	GremlinMaxHealth              Int
-	GremlinHitsPlayer             bool
-	GremlinAggroDistance          Int
+	GremlinMaxHealth                 Int
+	GremlinMoveCooldownMultiplier    Int
+	GremlinPreparingToAttackCooldown Int
+	GremlinAttackCooldownMultiplier  Int
+	GremlinHitCooldown               Int
+	GremlinHitsPlayer                bool
+	GremlinAggroDistance             Int
 
 	HoundFreezeCooldown         Int
 	HoundMoveCooldownMultiplier Int

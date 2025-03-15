@@ -13,7 +13,7 @@ func NewUltraHound(w WorldData, pos Pt) *UltraHound {
 	h.pos = pos
 	h.maxHealth = w.UltraHoundMaxHealth
 	h.health = h.maxHealth
-	h.freezeCooldown = w.UltraHoundFreezeCooldown
+	h.hitCooldown = w.UltraHoundFreezeCooldown
 	return &h
 }
 
@@ -24,14 +24,14 @@ func (h *UltraHound) Clone() Enemy {
 
 func (h *UltraHound) Step(w *World) {
 	if h.Vulnerable(w) && h.beamJustHit(w) {
-		h.freezeCooldownIdx = h.freezeCooldown
+		h.hitCooldownIdx = h.hitCooldown
 		if w.Player.HitPermissions.CanHitUltraHound {
 			h.health.Dec()
 		}
 	}
 
-	if h.freezeCooldownIdx.IsPositive() {
-		h.freezeCooldownIdx.Dec()
+	if h.hitCooldownIdx.IsPositive() {
+		h.hitCooldownIdx.Dec()
 		return // Don't move.
 	}
 
@@ -43,11 +43,11 @@ func (h *UltraHound) Step(w *World) {
 			m.Set(enemy.Pos())
 		}
 	}
-	h.move(w, m)
+	// h.move(w, m)
 }
 
 func (h *UltraHound) Vulnerable(w *World) bool {
-	if h.freezeCooldownIdx.IsPositive() {
+	if h.hitCooldownIdx.IsPositive() {
 		return false
 	}
 	return w.Player.HitPermissions.CanHitUltraHound

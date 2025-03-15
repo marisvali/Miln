@@ -14,7 +14,7 @@ func NewKing(w WorldData, pos Pt) *King {
 	k.pos = pos
 	k.maxHealth = w.KingMaxHealth
 	k.health = w.KingMaxHealth
-	k.freezeCooldown = w.KingFreezeCooldown
+	k.hitCooldown = w.KingFreezeCooldown
 	k.worldData = w
 	return &k
 }
@@ -26,7 +26,7 @@ func (k *King) Clone() Enemy {
 
 func (k *King) Step(w *World) {
 	if k.Vulnerable(w) && k.beamJustHit(w) {
-		k.freezeCooldownIdx = k.freezeCooldown
+		k.hitCooldownIdx = k.hitCooldown
 		if w.Player.HitPermissions.CanHitKing {
 			k.health.Dec()
 			if k.health == ZERO {
@@ -36,16 +36,16 @@ func (k *King) Step(w *World) {
 		}
 	}
 
-	if k.freezeCooldownIdx.IsPositive() {
-		k.freezeCooldownIdx.Dec()
+	if k.hitCooldownIdx.IsPositive() {
+		k.hitCooldownIdx.Dec()
 		return // Don't move.
 	}
 
-	k.move(w, getObstaclesAndEnemies(w))
+	// k.move(w, getObstaclesAndEnemies(w))
 }
 
 func (k *King) Vulnerable(w *World) bool {
-	if k.freezeCooldownIdx.IsPositive() {
+	if k.hitCooldownIdx.IsPositive() {
 		return false
 	}
 	return w.Player.HitPermissions.CanHitKing

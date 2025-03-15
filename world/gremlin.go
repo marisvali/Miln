@@ -13,9 +13,10 @@ func NewGremlin(w WorldData, pos Pt) *Gremlin {
 	g.pos = pos
 	g.maxHealth = w.GremlinMaxHealth
 	g.health = g.maxHealth
-	g.freezeCooldown = w.GremlinFreezeCooldown
 	g.moveCooldownMultiplier = w.GremlinMoveCooldownMultiplier
-	g.moveCooldownIdx = g.moveCooldownMultiplier
+	g.preparingToAttackCooldown = w.GremlinPreparingToAttackCooldown
+	g.attackCooldownMultiplier = w.GremlinAttackCooldownMultiplier
+	g.hitCooldown = w.GremlinHitCooldown
 	g.hitsPlayer = w.GremlinHitsPlayer
 	g.aggroDistance = w.GremlinAggroDistance
 	return &g
@@ -24,27 +25,4 @@ func NewGremlin(w WorldData, pos Pt) *Gremlin {
 func (g *Gremlin) Clone() Enemy {
 	ng := *g
 	return &ng
-}
-
-func (g *Gremlin) Step(w *World) {
-	if g.Vulnerable(w) && g.beamJustHit(w) {
-		g.freezeCooldownIdx = g.freezeCooldown
-		if w.Player.HitPermissions.CanHitGremlin {
-			g.health.Dec()
-		}
-	}
-
-	if g.freezeCooldownIdx.IsPositive() {
-		g.freezeCooldownIdx.Dec()
-		return // Don't move.
-	}
-
-	g.move(w, getObstaclesAndEnemies(w))
-}
-
-func (g *Gremlin) Vulnerable(w *World) bool {
-	if g.freezeCooldownIdx.IsPositive() {
-		return false
-	}
-	return w.Player.HitPermissions.CanHitGremlin
 }

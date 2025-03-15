@@ -13,7 +13,7 @@ func NewPillar(w WorldData, pos Pt) *Pillar {
 	p.pos = pos
 	p.maxHealth = w.PillarMaxHealth
 	p.health = p.maxHealth
-	p.freezeCooldown = w.PillarFreezeCooldown
+	p.hitCooldown = w.PillarFreezeCooldown
 	return &p
 }
 
@@ -24,7 +24,7 @@ func (p *Pillar) Clone() Enemy {
 
 func (p *Pillar) Step(w *World) {
 	if p.Vulnerable(w) && p.beamJustHit(w) {
-		p.freezeCooldownIdx = p.freezeCooldown
+		p.hitCooldownIdx = p.hitCooldown
 		if w.Player.HitPermissions.CanHitPillar {
 			p.health.Dec()
 			if p.health == ZERO {
@@ -34,16 +34,16 @@ func (p *Pillar) Step(w *World) {
 		}
 	}
 
-	if p.freezeCooldownIdx.IsPositive() {
-		p.freezeCooldownIdx.Dec()
+	if p.hitCooldownIdx.IsPositive() {
+		p.hitCooldownIdx.Dec()
 		return // Don't move.
 	}
 
-	p.move(w, getObstaclesAndEnemies(w))
+	// p.move(w, getObstaclesAndEnemies(w))
 }
 
 func (p *Pillar) Vulnerable(w *World) bool {
-	if p.freezeCooldownIdx.IsPositive() {
+	if p.hitCooldownIdx.IsPositive() {
 		return false
 	}
 	return w.Player.HitPermissions.CanHitGremlin

@@ -6,8 +6,8 @@
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
-          "NHoundMin": 1,
-          "NHoundMax": 1
+          "NGremlinMin": 1,
+          "NGremlinMax": 1
         }
       ]
     }
