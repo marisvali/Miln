@@ -4,7 +4,7 @@
 
   "HoundMaxHealth": 3,
   "HoundMoveCooldownMultiplier": 1,
-  "HoundPreparingToAttackCooldown": 10,
+  "HoundPreparingToAttackCooldown": 100,
   "HoundAttackCooldownMultiplier": 1,
   "HoundHitCooldown": 100,
   "HoundHitsPlayer": true,
