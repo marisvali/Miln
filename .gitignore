@@ -1,5 +1,5 @@
 /recordings/
 /research/analysis
-miln.wasm
+*.wasm
 vali-dev-index.txt
 miln-test.wasm
