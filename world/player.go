@@ -12,7 +12,6 @@ type Player struct {
 	AmmoLimit                  Int
 	JustHit                    bool
 	Health                     Int
-	HitPermissions             HitPermissions
 	CooldownAfterGettingHit    Int
 	CooldownAfterGettingHitIdx Int
 	Energy                     Int
@@ -22,7 +21,6 @@ type Player struct {
 func NewPlayer() (p Player) {
 	p.MaxHealth = I(3)
 	p.Health = p.MaxHealth
-	p.HitPermissions = HitPermissions{}
 	p.CooldownAfterGettingHit = I(40)
 	return
 }
@@ -79,17 +77,6 @@ func (p *Player) Step(w *World, input PlayerInput) {
 				}
 			}
 			w.Ammos = newAmmos
-
-			// Collect keys.
-			newKeys := make([]Key, 0)
-			for i := range w.Keys {
-				if w.Keys[i].Pos == p.pos {
-					p.HitPermissions.Add(w.Keys[i].Permissions)
-				} else {
-					newKeys = append(newKeys, w.Keys[i])
-				}
-			}
-			w.Keys = newKeys
 		}
 	}
 

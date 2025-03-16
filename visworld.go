@@ -35,18 +35,18 @@ func NewWorldObjectAnimation(wo WorldObject, anims Animations) *WorldObjectAnima
 	woa.Object = wo
 	woa.LastState = wo.State()
 	switch wo.(type) {
-	case *Gremlin:
+	case *Hound:
 		switch wo.State() {
 		case "Searching":
-			woa.Animation = anims.animGremlinSearching
+			woa.Animation = anims.animHoundSearching
 		case "PreparingToAttack":
-			woa.Animation = anims.animGremlinPreparingToAttack
+			woa.Animation = anims.animHoundPreparingToAttack
 		case "Attacking":
-			woa.Animation = anims.animGremlinAttacking
+			woa.Animation = anims.animHoundAttacking
 		case "Hit":
-			woa.Animation = anims.animGremlinHit
+			woa.Animation = anims.animHoundHit
 		case "Dead":
-			woa.Animation = anims.animGremlinDead
+			woa.Animation = anims.animHoundDead
 		}
 	// case *Hound:
 	// 	woa.Animation = anims.animMoveFailed

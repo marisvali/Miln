@@ -3,9 +3,9 @@
   "HoundFreezeCooldown": 30,
   "HoundMaxHealth": 4,
 
-  "GremlinMoveCooldown": 300,
-  "GremlinFreezeCooldown": 300,
-  "GremlinMaxHealth": 4,
+  "HoundMoveCooldown": 300,
+  "HoundFreezeCooldown": 300,
+  "HoundMaxHealth": 4,
 
   "SpawnPortalCooldownMin": 250,
   "SpawnPortalCooldownMax": 250,

@@ -25,12 +25,12 @@ func ClosestEnemy(pt Pt, w *World) Enemy {
 	return w.Enemies[minI]
 }
 
-func CanAttackEnemy(w *World, e Enemy) bool {
-	_, isUltraHound := e.(*UltraHound)
-	return (w.Player.HitPermissions.CanHitUltraHound || !isUltraHound) &&
-		e.FreezeCooldownIdx().IsZero() &&
-		w.AttackableTiles.At(e.Pos())
-}
+// func CanAttackEnemy(w *World, e Enemy) bool {
+// 	_, isUltraHound := e.(*UltraHound)
+// 	return (w.Player.HitPermissions.CanHitUltraHound || !isUltraHound) &&
+// 		e.FreezeCooldownIdx().IsZero() &&
+// 		w.AttackableTiles.At(e.Pos())
+// }
 
 func InDangerZone(w *World, pos Pt) bool {
 	for _, e := range w.Enemies {
@@ -42,12 +42,12 @@ func InDangerZone(w *World, pos Pt) bool {
 }
 
 func OnlyUltrahoundsLeft(w *World) bool {
-	for _, e := range w.Enemies {
-		_, isUltraHound := e.(*UltraHound)
-		if !isUltraHound {
-			return false
-		}
-	}
+	// for _, e := range w.Enemies {
+	// 	_, isUltraHound := e.(*UltraHound)
+	// 	if !isUltraHound {
+	// 		return false
+	// 	}
+	// }
 	return true
 }
 
@@ -108,27 +108,27 @@ func GetPointsFromWhichPlayerCanAttack(w *World, freePts []Pt) (attackPts []Pt) 
 		// makes a move.
 		cloneW.Step(PlayerInput{})
 
-		for _, e := range cloneW.Enemies {
-			if CanAttackEnemy(&cloneW, e) {
-				attackPts = append(attackPts, pt)
-			}
-		}
+		// for _, e := range cloneW.Enemies {
+		// 	if CanAttackEnemy(&cloneW, e) {
+		// 		attackPts = append(attackPts, pt)
+		// 	}
+		// }
 	}
 	return
 }
 
 func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
-	minDist := I(math.MaxInt64)
-	closestEnemy = nil
-	for _, e := range w.Enemies {
-		if CanAttackEnemy(w, e) {
-			dist := e.Pos().Minus(w.Player.Pos()).SquaredLen()
-			if dist.Lt(minDist) {
-				minDist = dist
-				closestEnemy = e
-			}
-		}
-	}
+	// minDist := I(math.MaxInt64)
+	// closestEnemy = nil
+	// for _, e := range w.Enemies {
+	// 	if CanAttackEnemy(w, e) {
+	// 		dist := e.Pos().Minus(w.Player.Pos()).SquaredLen()
+	// 		if dist.Lt(minDist) {
+	// 			minDist = dist
+	// 			closestEnemy = e
+	// 		}
+	// 	}
+	// }
 	return
 }
 
@@ -159,12 +159,12 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	}
 
 	// Get the key if it exists and is reachable.
-	if len(w.Keys) > 0 {
-		keyPos := w.Keys[0].Pos
-		if freePos.At(keyPos) && !InDangerZone(w, keyPos) {
-			input.MovePt = keyPos
-		}
-	}
+	// if len(w.Keys) > 0 {
+	// 	keyPos := w.Keys[0].Pos
+	// 	if freePos.At(keyPos) && !InDangerZone(w, keyPos) {
+	// 		input.MovePt = keyPos
+	// 	}
+	// }
 
 	// We may be in the situation that only ultra hounds are left and we keep
 	// dodging them, but not getting the key.
@@ -172,26 +172,26 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	// range at some point.
 	// Don't do this often, otherwise it might keep ultrahounds almost
 	// in the same place near the key and we keep jumping around them.
-	if len(w.Keys) > 0 && !freePos.At(w.Keys[0].Pos) && OnlyUltrahoundsLeft(w) {
-		if a.frameIdx.Minus(a.lastRandomMoveIdx).Gt(I(240)) {
-			// Only try a maximum number of times, because such a position might
-			// not exist and I don't want to get stuck in an infinite loop.
-			for i := 0; i < 10; i++ {
-				pt := RElem(freePts)
-				if !InDangerZone(w, pt) {
-					input.Move = true
-					input.MovePt = pt
-					a.lastRandomMoveIdx = a.frameIdx
-					break
-				}
-			}
-		} else {
-			// Just sit in the random position for a while.
-			if !InDangerZone(w, w.Player.Pos()) {
-				input.Move = false
-			}
-		}
-	}
+	// if len(w.Keys) > 0 && !freePos.At(w.Keys[0].Pos) && OnlyUltrahoundsLeft(w) {
+	// 	if a.frameIdx.Minus(a.lastRandomMoveIdx).Gt(I(240)) {
+	// 		// Only try a maximum number of times, because such a position might
+	// 		// not exist and I don't want to get stuck in an infinite loop.
+	// 		for i := 0; i < 10; i++ {
+	// 			pt := RElem(freePts)
+	// 			if !InDangerZone(w, pt) {
+	// 				input.Move = true
+	// 				input.MovePt = pt
+	// 				a.lastRandomMoveIdx = a.frameIdx
+	// 				break
+	// 			}
+	// 		}
+	// 	} else {
+	// 		// Just sit in the random position for a while.
+	// 		if !InDangerZone(w, w.Player.Pos()) {
+	// 			input.Move = false
+	// 		}
+	// 	}
+	// }
 
 	// Compute the best target to shoot if we were to shoot.
 	// Shoot at the closest guy that isn't frozen.
@@ -204,19 +204,19 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 
 	// Don't shoot king when he's over a spawn portal, because he'll drop the
 	// key on a place that we can't reach.
-	for _, e := range w.Enemies {
-		if _, isKing := e.(*King); isKing {
-			if e.Pos() == input.ShootPt {
-				for _, sp := range w.SpawnPortals {
-					if sp.Pos() == e.Pos() {
-						input.Shoot = false
-						break
-					}
-				}
-			}
-			break
-		}
-	}
+	// for _, e := range w.Enemies {
+	// 	if _, isKing := e.(*King); isKing {
+	// 		if e.Pos() == input.ShootPt {
+	// 			for _, sp := range w.SpawnPortals {
+	// 				if sp.Pos() == e.Pos() {
+	// 					input.Shoot = false
+	// 					break
+	// 				}
+	// 			}
+	// 		}
+	// 		break
+	// 	}
+	// }
 
 	// Decide if we move or shoot.
 	// We should move if we are in a danger zone and we have a better option.

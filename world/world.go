@@ -15,18 +15,12 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 8
+const Version = 999
 
 type WaveData struct {
 	SecondsAfterLastWave Int
-	NGremlinMin          Int
-	NGremlinMax          Int
 	NHoundMin            Int
 	NHoundMax            Int
-	NUltraHoundMin       Int
-	NUltraHoundMax       Int
-	NKingMin             Int
-	NKingMax             Int
 }
 
 type SpawnPortalData struct {
@@ -43,30 +37,13 @@ type EnemyParams struct {
 	SpawnPortalCooldownMin Int
 	SpawnPortalCooldownMax Int
 
-	GremlinMaxHealth                 Int
-	GremlinMoveCooldownMultiplier    Int
-	GremlinPreparingToAttackCooldown Int
-	GremlinAttackCooldownMultiplier  Int
-	GremlinHitCooldown               Int
-	GremlinHitsPlayer                bool
-	GremlinAggroDistance             Int
-
-	HoundFreezeCooldown         Int
-	HoundMoveCooldownMultiplier Int
-	HoundMaxHealth              Int
-	HoundHitsPlayer             bool
-	HoundAggroDistance          Int
-
-	UltraHoundFreezeCooldown Int
-	UltraHoundMaxHealth      Int
-
-	PillarFreezeCooldown Int
-	PillarMaxHealth      Int
-
-	KingFreezeCooldown Int
-	KingMaxHealth      Int
-
-	QuestionMaxHealth Int
+	HoundMaxHealth                 Int
+	HoundMoveCooldownMultiplier    Int
+	HoundPreparingToAttackCooldown Int
+	HoundAttackCooldownMultiplier  Int
+	HoundHitCooldown               Int
+	HoundHitsPlayer                bool
+	HoundAggroDistance             Int
 }
 
 type WorldData struct {
@@ -103,7 +80,6 @@ type World struct {
 
 	Ammos            []Ammo
 	SpawnPortals     []SpawnPortal
-	Keys             []Key
 	PillarKeyDropped bool
 	HoundKeyDropped  bool
 	PortalKeyDropped bool
@@ -122,7 +98,6 @@ func (w *World) Clone() World {
 	clone.AttackableTiles = w.AttackableTiles.Clone()
 	clone.Ammos = slices.Clone(w.Ammos)
 	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
-	clone.Keys = slices.Clone(w.Keys)
 	clone.History = slices.Clone(w.History)
 	clone.SpawnPortalDatas = slices.Clone(w.SpawnPortalDatas)
 	return clone
@@ -209,7 +184,6 @@ func ValidRandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 
 type PortalSeed struct {
 	Cooldown     Int
-	NGremlins    Int
 	NHounds      Int
 	NUltraHounds Int
 }
@@ -277,10 +251,6 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
-	w.Player.HitPermissions.CanHitGremlin = true
-	w.Player.HitPermissions.CanHitHound = true
-	w.Player.HitPermissions.CanHitQuestion = true
-	w.Player.HitPermissions.CanHitKing = true
 	w.Player.AmmoLimit = w.AmmoLimit
 
 	// GUI needs this even without the world ever doing a step.
@@ -292,27 +262,19 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 }
 
 func NewWorldFromString(level string) (w World) {
-	var pos1, pos2 []Pt
+	var pos1 []Pt
 	w.Id = uuid.New()
-	w.Obstacles, pos1, pos2 = LevelFromString(level)
+	w.Obstacles, pos1, _ = LevelFromString(level)
 	w.vision = NewVision(w.Obstacles.Size())
 
 	for _, pos := range pos1 {
-		w.Enemies = append(w.Enemies, NewGremlin(w.WorldData, pos))
-	}
-
-	for _, pos := range pos2 {
-		w.Enemies = append(w.Enemies, NewUltraHound(w.WorldData, pos))
+		w.Enemies = append(w.Enemies, NewHound(w.WorldData, pos))
 	}
 
 	// Params
 	w.BlockSize = I(1000)
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
-	w.Player.HitPermissions.CanHitGremlin = true
-	w.Player.HitPermissions.CanHitHound = true
-	w.Player.HitPermissions.CanHitQuestion = true
-	w.Player.HitPermissions.CanHitKing = true
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -409,18 +371,8 @@ func (w *World) RegressionId() string {
 	Serialize(buf, int64(len(w.Enemies)))
 	for _, e := range w.Enemies {
 		switch e.(type) {
-		case *Gremlin:
-			Serialize(buf, int64(0))
 		case *Hound:
-			Serialize(buf, int64(1))
-		case *UltraHound:
-			Serialize(buf, int64(2))
-		case *Pillar:
-			Serialize(buf, int64(3))
-		case *King:
-			Serialize(buf, int64(4))
-		case *Question:
-			Serialize(buf, int64(5))
+			Serialize(buf, int64(0))
 		}
 		Serialize(buf, e.Health())
 		Serialize(buf, e.Pos())
@@ -597,25 +549,3 @@ func (w *World) SpawnAmmos() {
 		w.Ammos = append(w.Ammos, ammo)
 	}
 }
-
-// func RandomLevel1() (m Matrix[Int], pos1 []Pt, pos2 []Pt) {
-// 	m = NewMatrix[Int](IPt(10, 10))
-// 	for i := 0; i < 10; i++ {
-// 		var pt Pt
-// 		pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
-// 		pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
-// 		m.Set(pt, ONE)
-// 	}
-// 	pos1 = append(pos1, IPt(0, 0))
-// 	pos2 = append(pos2, IPt(2, 2))
-// 	return
-// }
-//
-// func RandomLevel2() (m Matrix[Int]) {
-// 	// Create matrix with obstacles.
-// 	m = NewMatrix[Int](IPt(10, 10))
-// 	for i := 0; i < 0; i++ {
-// 		m.Set(m.RandomPos(), ONE)
-// 	}
-// 	return
-// }

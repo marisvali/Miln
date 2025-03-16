@@ -45,16 +45,16 @@ type GuiData struct {
 }
 
 type Animations struct {
-	animMoveFailed               Animation
-	animAttackFailed             Animation
-	animPlayer                   Animation
-	animPlayer1                  Animation
-	animPlayer2                  Animation
-	animGremlinSearching         Animation
-	animGremlinPreparingToAttack Animation
-	animGremlinAttacking         Animation
-	animGremlinHit               Animation
-	animGremlinDead              Animation
+	animMoveFailed             Animation
+	animAttackFailed           Animation
+	animPlayer                 Animation
+	animPlayer1                Animation
+	animPlayer2                Animation
+	animHoundSearching         Animation
+	animHoundPreparingToAttack Animation
+	animHoundAttacking         Animation
+	animHoundHit               Animation
+	animHoundDead              Animation
 }
 
 type Gui struct {
@@ -66,18 +66,7 @@ type Gui struct {
 	imgTree               *ebiten.Image
 	imgPlayerHealth       *ebiten.Image
 	imgPlayerAmmo         *ebiten.Image
-	imgGremlin            *ebiten.Image
-	imgGremlinMask        *ebiten.Image
 	imgHound              *ebiten.Image
-	imgHoundMask          *ebiten.Image
-	imgUltraHound         *ebiten.Image
-	imgUltraHoundMask     *ebiten.Image
-	imgPillar             *ebiten.Image
-	imgPillarMask         *ebiten.Image
-	imgQuestion           *ebiten.Image
-	imgQuestionMask       *ebiten.Image
-	imgKing               *ebiten.Image
-	imgKingMask           *ebiten.Image
 	imgEnemyHealth        *ebiten.Image
 	imgEnemyCooldown      *ebiten.Image
 	imgTileOverlay        *ebiten.Image
@@ -91,7 +80,6 @@ type Gui struct {
 	imgHighlightMoveOk    *ebiten.Image
 	imgHighlightMoveNotOk *ebiten.Image
 	imgHighlightAttack    *ebiten.Image
-	imgKey                []*ebiten.Image
 	imgBlack              *ebiten.Image
 	imgCursor             *ebiten.Image
 
@@ -366,18 +354,6 @@ func (g *Gui) UpdatePlayback() {
 }
 
 func (g *Gui) Update() error {
-	// One-time initialization. This needs to happen here because I need to
-	// operate on ebiten images and it won't let me before I do RunGame.
-	// TODO: find a better place for this code
-	if g.imgGremlinMask == nil {
-		g.imgGremlinMask = ComputeSpriteMask(g.imgGremlin)
-		g.imgHoundMask = ComputeSpriteMask(g.imgHound)
-		g.imgUltraHoundMask = ComputeSpriteMask(g.imgUltraHound)
-		g.imgPillarMask = ComputeSpriteMask(g.imgPillar)
-		g.imgQuestionMask = ComputeSpriteMask(g.imgQuestion)
-		g.imgKingMask = ComputeSpriteMask(g.imgKing)
-	}
-
 	// Updates common to all states.
 	if g.folderWatcher1.FolderContentsChanged() {
 		g.loadGuiData()
@@ -515,11 +491,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		g.DrawTile(screen, g.imgAmmo, ammo.Pos)
 	}
 
-	// Draw keys.
-	for _, key := range g.world.Keys {
-		g.DrawTile(screen, g.imgKey[key.Type.ToInt()], key.Pos)
-	}
-
 	// Draw enemy.
 	for _, enemy := range g.world.Enemies {
 		g.DrawEnemy(screen, enemy)
@@ -608,18 +579,6 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 
 func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw background.
-	// percent starts from 100 and goes down to 0
-	// percent := g.world.Player.TimeoutIdx.Times(I(100)).DivBy(PlayerCooldown)
-
-	// gray needs to be at 80 when percent is at 0 and 0 when percent is at 100.
-	// var gray Int
-	// if percent.Gt(ZERO) {
-	//	gray = (I(100).Minus(percent)).Times(I(30)).DivBy(I(100))
-	// } else {
-	//	gray = I(50)
-	// }
-	// v := uint8(gray.ToInt())
-	// screen.Fill(Col(v, v, v, 255))
 	screen.Fill(Col(0, 0, 0, 255))
 
 	{
@@ -630,11 +589,9 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		g.DrawPlayRegion(playRegion)
 	}
 
-	// buttonRegionX := I(screen.Bounds().Dx()).Minus(g.buttonRegionWidth)
 	screenSize := IPt(screen.Bounds().Dx(), screen.Bounds().Dy())
 	{
 		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight)}
-		// lowerRight := upperLeft.Plus(Pt{buttonRegionX, g.textHeight.DivBy(TWO)})
 		lowerRight := Pt{screenSize.X, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
 		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		textRegion.Fill(Col(215, 215, 15, 255))
@@ -741,101 +698,7 @@ func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color
 }
 
 func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
-	// var img *ebiten.Image
-	// var imgMask *ebiten.Image
-	drawHealth := true
-	// switch e.(type) {
-	// case *Gremlin:
-	// 	img = g.imgGremlin
-	// 	imgMask = g.imgGremlinMask
-	// case *Hound:
-	// 	img = g.imgHound
-	// 	imgMask = g.imgHoundMask
-	// case *UltraHound:
-	// 	img = g.imgUltraHound
-	// 	drawHealth = g.world.Player.HitPermissions.CanHitUltraHound
-	// 	imgMask = g.imgUltraHoundMask
-	// case *Pillar:
-	// 	img = g.imgPillar
-	// 	imgMask = g.imgPillarMask
-	// case *King:
-	// 	img = g.imgKing
-	// 	imgMask = g.imgKingMask
-	// case *Question:
-	// 	img = g.imgQuestion
-	// 	imgMask = g.imgQuestionMask
-	// }
-	if e.MaxHealth().Leq(ONE) {
-		drawHealth = false
-	}
-	drawHealth = drawHealth && g.DrawEnemyHealth
-
-	// g.DrawTile(screen, img, e.Pos())
-
-	// Show mask fading from dark to nothing.
-	// maskPercent := ZERO
-	// if g.ShowFreezeCooldownAsMask {
-	// 	if e.FreezeCooldown().IsPositive() {
-	// 		maskPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
-	// 	}
-	// }
-	// if maskPercent.Gt(ZERO) {
-	// 	alpha := (maskPercent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-	// 	g.DrawTileAlpha(screen, imgMask, e.Pos(), uint8(alpha.ToInt()))
-	// }
-
-	if g.world.Boardgame {
-		// Show bar on top of the tile going from full to empty.
-		barBlocks := ZERO
-		if g.ShowFreezeCooldownAsBar {
-			if e.FreezeCooldown().IsPositive() {
-				barBlocks = e.FreezeCooldownIdx()
-			}
-		}
-		if g.ShowMoveCooldownAsBar {
-			if g.world.EnemyMoveCooldown.IsPositive() {
-				barBlocks = g.world.EnemyMoveCooldownIdx
-			}
-		}
-		if barBlocks.Gt(ZERO) && e.FreezeCooldownIdx().IsZero() {
-			margin := float64(1)
-			tileSize := g.BlockSize.ToFloat64() - 2*margin
-			blockSize := tileSize / 10
-			pos := e.Pos().Times(g.BlockSize)
-			x := pos.X.ToFloat64()
-			y := pos.Y.ToFloat64() + tileSize/5
-			for i := ZERO; i.Lt(barBlocks); i.Inc() {
-				DrawSprite(screen, g.imgEnemyCooldown, x+(margin+blockSize)*i.ToFloat64(), y+margin, blockSize, blockSize)
-			}
-		}
-	} else {
-		// Show bar on top of the tile going from full to empty.
-		barPercent := ZERO
-		if g.ShowFreezeCooldownAsBar {
-			if e.FreezeCooldown().IsPositive() {
-				barPercent = e.FreezeCooldownIdx().Times(I(100)).DivBy(e.FreezeCooldown())
-			}
-		}
-		if g.ShowMoveCooldownAsBar {
-			if g.world.EnemyMoveCooldown.IsPositive() {
-				totalCooldown := g.world.EnemyMoveCooldown.Times(e.MoveCooldownMultiplier())
-				cooldownLeft := g.world.EnemyMoveCooldown.Times(e.MoveCooldownIdx().Minus(ONE)).Plus(g.world.EnemyMoveCooldownIdx)
-				barPercent = cooldownLeft.Times(I(100)).DivBy(totalCooldown)
-			}
-		}
-		if barPercent.Gt(ZERO) && e.FreezeCooldownIdx().IsZero() {
-			margin := float64(1)
-			pos := e.Pos().Times(g.BlockSize)
-			tileSize := g.BlockSize.ToFloat64() - 2*margin
-			width := I(int(tileSize)).Times(barPercent).DivBy(I(100))
-			height := tileSize / 10
-			x := pos.X.ToFloat64()
-			y := pos.Y.ToFloat64() + tileSize - height
-			DrawSprite(screen, g.imgEnemyCooldown, x+margin, y+margin, width.ToFloat64(), height)
-		}
-	}
-
-	if drawHealth {
+	if g.DrawEnemyHealth {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}
 }
@@ -844,45 +707,6 @@ func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {
 	if !p.OnMap {
 		return
 	}
-	// mask := ebiten.NewImageFromImage(g.animPlayer.Img())
-	// Draw mask of move cooldown.
-	// {
-	//	percent := p.MoveCooldownIdx.Times(I(100)).DivBy(p.MoveCooldown)
-	//	var alpha Int
-	//	if percent.Gt(ZERO) {
-	//		alpha = (percent.Plus(I(100))).Times(I(255)).DivBy(I(200))
-	//	} else {
-	//		alpha = ZERO
-	//	}
-	//
-	//	sz := mask.Bounds().Size()
-	//	for y := 0; y < sz.Y; y++ {
-	//		for x := 0; x < sz.X; x++ {
-	//			_, _, _, a := mask.At(x, y).RGBA()
-	//			if a > 0 {
-	//				mask.Set(x, y, Col(0, 0, 0, uint8(alpha.ToInt())))
-	//			}
-	//		}
-	//	}
-	//
-	//	totalWidth := I(mask.Bounds().Size().X)
-	//	//lineWidth := p.AmmoCount.Times(totalWidth).DivBy(I(3))
-	//	lineWidth := percent.Times(totalWidth).DivBy(I(100))
-	//	l := Line{IPt(0, mask.Bounds().Dy()), Pt{lineWidth, I(mask.Bounds().Dy())}}
-	//	DrawLine(mask, l, Col(0, 0, 0, 255))
-	// }
-	// g.DrawTile(screen, g.animPlayer, p.Pos())
-	// g.DrawTile(screen, mask, p.Pos())
-	// g.DrawHealth(screen, g.imgPlayerHealth, p.Health, p.Pos())
-
-	// Draw ammo.
-	// Draw it as an array starting at the top-left of the tile.
-	// g.imgTileOverlay.Clear()
-	// blockSize := float64(g.imgPlayerAmmo.Bounds().Dy()) / 5
-	// for i := I(0); i.Lt(p.AmmoCount); i.Inc() {
-	// 	DrawSprite(g.imgTileOverlay, g.imgPlayerAmmo, blockSize*i.ToFloat64()*1.3, 0, blockSize, blockSize)
-	// }
-	// g.DrawTile(screen, g.imgTileOverlay, p.Pos())
 
 	// Draw ammo as a circle around the player.
 	g.imgTileOverlay.Clear()
@@ -975,13 +799,7 @@ func (g *Gui) loadGuiData() {
 		g.imgTree = g.LoadImage("data/gui/tree.png")
 		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
 		g.imgPlayerAmmo = g.LoadImage("data/gui/player-ammo.png")
-		// g.imgEnemy = append(g.imgEnemy, g.LoadImage("data/enemy.png"))
-		g.imgGremlin = g.LoadImage("data/gui/enemy2.png")
-		g.imgPillar = g.LoadImage("data/gui/enemy4.png")
-		g.imgHound = g.LoadImage("data/gui/enemy3.png")
-		g.imgUltraHound = g.LoadImage("data/gui/ultra-hound.png")
-		g.imgQuestion = g.LoadImage("data/gui/enemy5.png")
-		g.imgKing = g.LoadImage("data/gui/enemy6.png")
+		g.imgHound = g.LoadImage("data/gui/enemy2.png")
 		g.imgEnemyHealth = g.LoadImage("data/gui/enemy-health.png")
 		g.imgEnemyCooldown = g.LoadImage("data/gui/enemy-cooldown.png")
 		g.imgBeam = g.LoadImage("data/gui/beam.png")
@@ -991,10 +809,6 @@ func (g *Gui) loadGuiData() {
 		g.imgAmmo = g.LoadImage("data/gui/ammo.png")
 		g.imgSpawnPortal = g.LoadImage("data/gui/spawn-portal.png")
 		g.imgPlayerHitEffect = g.LoadImage("data/gui/player-hit-effect.png")
-		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key1.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key2.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key3.png"))
-		g.imgKey = append(g.imgKey, g.LoadImage("data/gui/key4.png"))
 		g.imgHighlightMoveOk = g.LoadImage("data/gui/highlight-move-ok.png")
 		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
 		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
@@ -1004,11 +818,11 @@ func (g *Gui) loadGuiData() {
 		g.animAttackFailed = g.NewAnimation("data/gui/attack-failed")
 		g.animPlayer1 = g.NewAnimation("data/gui/player1")
 		g.animPlayer2 = g.NewAnimation("data/gui/player2")
-		g.animGremlinSearching = g.NewAnimation("data/gui/gremlin-searching")
-		g.animGremlinPreparingToAttack = g.NewAnimation("data/gui/gremlin-preparing-to-attack")
-		g.animGremlinAttacking = g.NewAnimation("data/gui/gremlin-attacking")
-		g.animGremlinHit = g.NewAnimation("data/gui/gremlin-hit")
-		g.animGremlinDead = g.NewAnimation("data/gui/gremlin-dead")
+		g.animHoundSearching = g.NewAnimation("data/gui/hound-searching")
+		g.animHoundPreparingToAttack = g.NewAnimation("data/gui/hound-preparing-to-attack")
+		g.animHoundAttacking = g.NewAnimation("data/gui/hound-attacking")
+		g.animHoundHit = g.NewAnimation("data/gui/hound-hit")
+		g.animHoundDead = g.NewAnimation("data/gui/hound-dead")
 		if CheckFailed == nil {
 			break
 		}
@@ -1138,9 +952,8 @@ func main() {
 	g.loadGuiData()
 	g.imgTileOverlay = ebiten.NewImage(g.BlockSize.ToInt(), g.BlockSize.ToInt())
 
-	// font
+	// Load the Arial font.
 	var err error
-	// Load the Arial font
 	fontData, err := opentype.Parse(goregular.TTF)
 	Check(err)
 

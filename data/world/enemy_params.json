@@ -2,30 +2,11 @@
   "SpawnPortalCooldownMin": 100,
   "SpawnPortalCooldownMax": 100,
 
-  "GremlinMaxHealth": 3,
-  "GremlinMoveCooldownMultiplier": 1,
-  "GremlinPreparingToAttackCooldown": 10,
-  "GremlinAttackCooldownMultiplier": 1,
-  "GremlinHitCooldown": 100,
-  "GremlinHitsPlayer": true,
-  "GremlinAggroDistance": 0,
-
-  "HoundFreezeCooldown": 200,
-  "HoundMoveCooldownMultiplier": 6,
-  "HoundMaxHealth": 6,
+  "HoundMaxHealth": 3,
+  "HoundMoveCooldownMultiplier": 1,
+  "HoundPreparingToAttackCooldown": 10,
+  "HoundAttackCooldownMultiplier": 1,
+  "HoundHitCooldown": 100,
   "HoundHitsPlayer": true,
-  "HoundAggroDistance": 4,
-
-  "UltraHoundFreezeCooldown": 0,
-  "UltraHoundMaxHealth": 1,
-
-  "PillarMoveCooldown": 100,
-  "PillarFreezeCooldown": 300,
-  "PillarMaxHealth": 1,
-
-
-  "KingFreezeCooldown": 200,
-  "KingMaxHealth": 3,
-  
-  "QuestionMaxHealth": 1
+  "HoundAggroDistance": 0
 }
