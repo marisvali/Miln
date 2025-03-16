@@ -15,7 +15,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 999
+const Version = 9
 
 type WaveData struct {
 	SecondsAfterLastWave Int
