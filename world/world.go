@@ -549,3 +549,17 @@ func (w *World) SpawnAmmos() {
 		w.Ammos = append(w.Ammos, ammo)
 	}
 }
+
+func (w *World) AllEnemiesDead() bool {
+	for _, enemy := range w.Enemies {
+		if enemy.Alive() {
+			return false
+		}
+	}
+	for _, portal := range w.SpawnPortals {
+		if portal.Active() {
+			return false
+		}
+	}
+	return true
+}
