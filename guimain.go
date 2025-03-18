@@ -80,7 +80,7 @@ type Gui struct {
 	frameIdx               Int
 	folderWatcher1         FolderWatcher
 	folderWatcher2         FolderWatcher
-	recording              bool
+	playback               bool
 	recordingFile          string
 	state                  GameState
 	textHeight             Int
@@ -133,7 +133,6 @@ func main() {
 	g.textHeight = I(75)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
-	g.recording = true
 
 	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
 	replayFile := ""
@@ -162,12 +161,13 @@ func main() {
 	}
 
 	if replayFile != "" {
-		g.recording = false
+		g.playback = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
 		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
-		g.state = GameOngoing
-	} else if g.recording {
-		// g.recordingFile = GetNewRecordingFile()
+		g.state = Playback
+	} else {
+		g.playback = false
+		g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
 		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
@@ -175,21 +175,6 @@ func main() {
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GameOngoing
-	} else {
-		// g.recordingFile = GetLatestRecordingFile()
-		// if g.recordingFile != "" {
-		//	g.playthrough = DeserializePlaythrough(ReadFile(g.recordingFile))
-		// }
-
-		// id, err := uuid.Parse("dec49e01-bb13-4c63-b3e9-b5b9261dad67")
-		// id, err := uuid.Parse("b02433de-bef5-476b-bbf1-7cf23fe8fcef")
-		// Check(err)
-		// db := ConnectToDbSql()
-		// zippedPlaythrough := DownloadDataFromDbSql(db, id)
-		// g.playthrough = DeserializePlaythrough(zippedPlaythrough)
-		// g.playthrough = DeserializePlaythrough(ReadFile("world/playthroughs/20240714-120933.mln006"))
-		g.world = NewWorldFromString(Level1())
 		g.state = GameOngoing
 	}
 

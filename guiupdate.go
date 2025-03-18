@@ -78,30 +78,16 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	var input PlayerInput
-	inputs := g.playthrough.History
-	if idx := g.frameIdx.ToInt(); !g.recording && idx < len(inputs) {
-		// Get input from recording.
-		input = inputs[idx]
-		// Remember cursor position in order to draw the virtual cursor during
-		// Draw().
-		g.mousePt = input.MousePt
-		// Move the actual OS cursor on the screen.
-		if g.MoveActualOSCursorDuringReplay {
-			osPt := GameToOs(g.mousePt, g.layout)
-			moveCursor(osPt)
-		}
-	} else {
-		// Get input from player.
-		input.MousePt = g.mousePt
-		input.LeftButtonPressed = g.leftButtonJustPressed
-		input.RightButtonPressed = g.rightButtonJustPressed
+	// Get input from player.
+	input.MousePt = g.mousePt
+	input.LeftButtonPressed = g.leftButtonJustPressed
+	input.RightButtonPressed = g.rightButtonJustPressed
 
-		if g.leftButtonJustPressed {
-			input.Move, input.MovePt = g.GetMoveTarget()
-		}
-		if g.rightButtonJustPressed {
-			input.Shoot, input.ShootPt = g.GetAttackTarget()
-		}
+	if g.leftButtonJustPressed {
+		input.Move, input.MovePt = g.GetMoveTarget()
+	}
+	if g.rightButtonJustPressed {
+		input.Shoot, input.ShootPt = g.GetAttackTarget()
 	}
 
 	// input = g.ai.Step(&g.world)
