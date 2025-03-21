@@ -17,18 +17,23 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw background.
 	screen.Fill(Col(0, 0, 0, 255))
 
+	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
+	yPlayRegion := g.guiMargin
+	yInstructionalText := yPlayRegion.Plus(playSize.Y)
+	yButtons := yInstructionalText.Plus(g.textHeight)
+	yPlayback := yButtons.Plus(g.textHeight)
+
 	{
-		upperLeft := Pt{g.guiMargin, g.guiMargin}
-		playSize := g.world.Obstacles.Size().Times(g.BlockSize)
-		lowerRight := upperLeft.Plus(playSize)
+		upperLeft := Pt{g.guiMargin, yPlayRegion}
+		lowerRight := Pt{g.guiMargin.Plus(playSize.X), yInstructionalText}
 		playRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		g.DrawPlayRegion(playRegion)
 	}
 
 	screenSize := IPt(screen.Bounds().Dx(), screen.Bounds().Dy())
 	{
-		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight)}
-		lowerRight := Pt{screenSize.X, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
+		upperLeft := Pt{ZERO, yInstructionalText}
+		lowerRight := Pt{screenSize.X, yButtons}
 		textRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		textRegion.Fill(Col(215, 215, 15, 255))
 		g.DrawInstructionalText(textRegion)
@@ -37,19 +42,27 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	{
 		// upperLeft := Pt{buttonRegionX, I(screen.Bounds().Dy()).Minus(g.textHeight)}
 		// lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
-		upperLeft := Pt{ZERO, screenSize.Y.Minus(g.textHeight.DivBy(TWO))}
-		lowerRight := Pt{screenSize.X, screenSize.Y}
+		upperLeft := Pt{ZERO, yButtons}
+		lowerRight := Pt{screenSize.X, yPlayback}
 		buttonRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		buttonRegion.Fill(Col(5, 215, 215, 255))
 		g.DrawButtons(buttonRegion)
 	}
 
-	// Draw virtual cursor.
-	if g.DrawVirtualCursorDuringReplay {
-		DrawSprite(screen, g.imgCursor,
-			g.mousePt.X.ToFloat64(),
-			g.mousePt.Y.ToFloat64(),
-			20.0, 20.0)
+	if g.playbackExecution {
+		// Draw playback bar.
+		upperLeft := Pt{ZERO, yPlayback}
+		lowerRight := Pt{screenSize.X, screenSize.Y}
+		playbackBarRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		g.DrawPlaybackBar(playbackBarRegion)
+
+		// Draw virtual cursor.
+		if g.DrawVirtualCursorDuringReplay {
+			DrawSprite(screen, g.imgCursor,
+				g.mousePt.X.ToFloat64(),
+				g.mousePt.Y.ToFloat64(),
+				20.0, 20.0)
+		}
 	}
 
 	// Output TPS (ticks per second, which is like frames per second).
@@ -315,4 +328,40 @@ func (g *Gui) DrawButtons(screen *ebiten.Image) {
 	g.buttonPause = FromImageRectangle(buttons[0].Bounds())
 	g.buttonRestartLevel = FromImageRectangle(buttons[1].Bounds())
 	g.buttonNewLevel = FromImageRectangle(buttons[2].Bounds())
+}
+
+func (g *Gui) DrawPlaybackBar(screen *ebiten.Image) {
+	// Background of playback bar.
+	DrawSpriteStretched(screen, g.imgTextBackground)
+
+	// Play/pause button.
+	playbarHeight := screen.Bounds().Dy()
+	playButtonWidth := playbarHeight
+	playButtonHeight := playbarHeight
+	playButton := SubImage(screen,
+		Rectangle{IPt(0, 0), IPt(playButtonWidth, playButtonHeight)})
+	if g.playbackPaused {
+		DrawSpriteStretched(playButton, g.imgPlaybackPlay)
+	} else {
+		DrawSpriteStretched(playButton, g.imgPlaybackPause)
+	}
+	// Remember the region so that Update() can react when it's clicked.
+	g.buttonPlaybackPlay = FromImageRectangle(playButton.Bounds())
+
+	// Play bar.
+	barXMargin := 10
+	barX := playButtonWidth + barXMargin
+	barWidth := screen.Bounds().Dx() - barX - barXMargin
+	bar := SubImage(screen,
+		Rectangle{IPt(barX, 0), IPt(barX+barWidth, playbarHeight)})
+	DrawSpriteStretched(bar, g.imgPlayBar)
+	// Remember the region so that Update() can react when it's clicked.
+	g.buttonPlaybackBar = FromImageRectangle(bar.Bounds())
+
+	// Playback bar cursor.
+	factor := g.frameIdx.ToFloat64() / float64(len(g.playthrough.History))
+	cursorX := factor * g.buttonPlaybackBar.Width().ToFloat64()
+	cursorWidth := float64(playbarHeight)
+	cursorHeight := float64(playbarHeight)
+	DrawSprite(bar, g.imgPlaybackCursor, cursorX, 0, cursorWidth, cursorHeight)
 }

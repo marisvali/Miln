@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
+	"slices"
 )
 
 type Wave struct {
@@ -35,6 +36,12 @@ func NewSpawnPortal(w WorldData, pos Pt, cooldown Int, waves []Wave) (p SpawnPor
 	p.Waves = waves
 	p.worldData = w
 	return
+}
+
+func (p *SpawnPortal) Clone() SpawnPortal {
+	clone := *p
+	clone.Waves = slices.Clone(p.Waves)
+	return clone
 }
 
 func (p *SpawnPortal) CurrentWave() *Wave {

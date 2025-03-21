@@ -34,6 +34,7 @@ type GuiData struct {
 	DrawVirtualCursorDuringReplay  bool
 	MoveActualOSCursorDuringReplay bool
 	DrawSpawnPortal                bool
+	PlaybackBarHeight              Int
 }
 
 type Animations struct {
@@ -74,13 +75,16 @@ type Gui struct {
 	imgHighlightAttack    *ebiten.Image
 	imgBlack              *ebiten.Image
 	imgCursor             *ebiten.Image
+	imgPlayBar            *ebiten.Image
+	imgPlaybackPlay       *ebiten.Image
+	imgPlaybackPause      *ebiten.Image
+	imgPlaybackCursor     *ebiten.Image
 
 	world                  World
-	worldAtStart           World
 	frameIdx               Int
 	folderWatcher1         FolderWatcher
 	folderWatcher2         FolderWatcher
-	playback               bool
+	playbackExecution      bool
 	recordingFile          string
 	state                  GameState
 	textHeight             Int
@@ -90,6 +94,8 @@ type Gui struct {
 	buttonPause            Rectangle
 	buttonNewLevel         Rectangle
 	buttonRestartLevel     Rectangle
+	buttonPlaybackPlay     Rectangle
+	buttonPlaybackBar      Rectangle
 	justPressedKeys        []ebiten.Key // keys pressed in this frame
 	mousePt                Pt           // mouse position in this frame
 	leftButtonJustPressed  bool         // left mouse button state in this frame
@@ -101,6 +107,7 @@ type Gui struct {
 	ai                     AI
 	visWorld               VisWorld
 	layout                 Pt
+	playbackPaused         bool
 }
 
 type uploadData struct {
@@ -130,12 +137,12 @@ func main() {
 	// g.db = ConnectToDbSql()
 	// g.world = NewWorld(RInt(I(0), I(10000000)))
 
-	g.textHeight = I(75)
+	g.textHeight = I(40)
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 
-	// replayFile := "recordings/recorded-inputs-2024-12-29-000000.mln"
-	replayFile := ""
+	replayFile := "recordings/recorded-inputs-2025-03-21-000000.mln"
+	// replayFile := ""
 	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\denis\\20250311-213937.mln008"
 
 	if len(os.Args) == 2 {
@@ -161,12 +168,12 @@ func main() {
 	}
 
 	if replayFile != "" {
-		g.playback = true
+		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
 		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
 		g.state = Playback
 	} else {
-		g.playback = false
+		g.playbackExecution = false
 		g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
@@ -206,8 +213,13 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 func (g *Gui) getWindowSize() Pt {
 	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
 	windowSize := playSize
-	windowSize.Add(Pt{g.guiMargin.Times(TWO), g.guiMargin})
-	windowSize.Y.Add(g.textHeight)
+	windowSize.X.Add(g.guiMargin.Times(TWO))
+	windowSize.Y.Add(g.guiMargin)
+	windowSize.Y.Add(g.textHeight.Times(TWO))
+	if g.playbackExecution {
+		windowSize.Y.Add(g.textHeight)
+	}
+
 	return windowSize
 }
 

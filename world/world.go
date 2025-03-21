@@ -78,14 +78,10 @@ type World struct {
 	BlockSize            Int
 	EnemyMoveCooldownIdx Int
 
-	Ammos            []Ammo
-	SpawnPortals     []SpawnPortal
-	PillarKeyDropped bool
-	HoundKeyDropped  bool
-	PortalKeyDropped bool
-	KingSpawned      bool
-	vision           Vision
-	EmbeddedFS       *embed.FS
+	Ammos        []Ammo
+	SpawnPortals []SpawnPortal
+	vision       Vision
+	EmbeddedFS   *embed.FS
 }
 
 func (w *World) Clone() World {
@@ -95,9 +91,13 @@ func (w *World) Clone() World {
 		clone.Enemies = append(clone.Enemies, w.Enemies[i].Clone())
 	}
 	clone.Obstacles = w.Obstacles.Clone()
+	clone.vision = NewVision(w.Obstacles.Size())
 	clone.AttackableTiles = w.AttackableTiles.Clone()
 	clone.Ammos = slices.Clone(w.Ammos)
-	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
+	clone.SpawnPortals = []SpawnPortal{}
+	for i := range w.SpawnPortals {
+		clone.SpawnPortals = append(clone.SpawnPortals, w.SpawnPortals[i].Clone())
+	}
 	clone.History = slices.Clone(w.History)
 	clone.SpawnPortalDatas = slices.Clone(w.SpawnPortalDatas)
 	return clone

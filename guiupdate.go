@@ -116,6 +116,10 @@ func (g *Gui) UserRequestedRestartLevel() bool {
 	return g.JustPressed(ebiten.KeyR) || g.JustClicked(g.buttonRestartLevel)
 }
 
+func (g *Gui) UserRequestedPlaybackPause() bool {
+	return g.JustPressed(ebiten.KeySpace) || g.JustClicked(g.buttonPlaybackPlay)
+}
+
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		// seed, targetDifficulty := GetNextLevel(g.username)
@@ -195,6 +199,36 @@ func (g *Gui) UpdatePlayback() {
 	if g.world.Player.Health.Leq(ZERO) {
 		g.state = GameLost
 		return
+	}
+
+	if g.UserRequestedPlaybackPause() {
+		g.playbackPaused = !g.playbackPaused
+	}
+
+	// Choose target frame.
+	targetFrameIdx := g.frameIdx
+
+	// Compute the target frame index based on where on the play bar the user
+	// clicked.
+	if g.JustClicked(g.buttonPlaybackBar) {
+		// Get the distance between the start and the cursor on the play bar.
+		dx := g.mousePt.X.Minus(g.buttonPlaybackBar.Corner1.X)
+		nFrames := I(len(g.playthrough.History))
+		targetFrameIdx = dx.Times(nFrames).DivBy(g.buttonPlaybackBar.Width())
+	}
+
+	if targetFrameIdx != g.frameIdx {
+		// Rewind.
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
+
+		// Replay the world.
+		for i := I(0); i.Lt(targetFrameIdx); i.Inc() {
+			input := g.playthrough.History[i.ToInt()]
+			g.world.Step(input)
+		}
+
+		// Set the current frame idx.
+		g.frameIdx = targetFrameIdx
 	}
 
 	// Get input from recording.
