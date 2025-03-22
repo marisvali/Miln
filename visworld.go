@@ -112,7 +112,22 @@ func (v *VisWorld) UpdateWhichObjectsExist(w *World) {
 	v.Objects = aliveObjects
 }
 
-func (v *VisWorld) Step(w *World) {
+func (v *VisWorld) Step(w *World, input PlayerInput, guiData GuiData) {
+	if input.LeftButtonPressed && !input.Move && guiData.HighlightMoveNotOk {
+		moveFailed := TemporaryAnimation{}
+		moveFailed.Animation = v.Animations.animMoveFailed
+		moveFailed.NFramesLeft = I(20)
+		moveFailed.ScreenPos = input.MousePt
+		v.Temporary = append(v.Temporary, &moveFailed)
+	}
+	if input.RightButtonPressed && !input.Shoot && guiData.HighlightAttack {
+		attackFailed := TemporaryAnimation{}
+		attackFailed.Animation = v.Animations.animAttackFailed
+		attackFailed.NFramesLeft = I(20)
+		attackFailed.ScreenPos = input.MousePt
+		v.Temporary = append(v.Temporary, &attackFailed)
+	}
+
 	v.UpdateWhichObjectsExist(w)
 
 	// Remove obsolete animations.
