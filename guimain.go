@@ -108,6 +108,7 @@ type Gui struct {
 	visWorld               VisWorld
 	layout                 Pt
 	playbackPaused         bool
+	instructionalText      string
 }
 
 type uploadData struct {
@@ -128,7 +129,7 @@ const (
 )
 
 func main() {
-	ebiten.SetWindowPosition(10, 100)
+	ebiten.SetWindowPosition(1000, 100)
 
 	var g Gui
 	g.username = getUsername()
@@ -216,9 +217,6 @@ func (g *Gui) getWindowSize() Pt {
 	windowSize.X.Add(g.guiMargin.Times(TWO))
 	windowSize.Y.Add(g.guiMargin)
 	windowSize.Y.Add(g.textHeight.Times(TWO))
-	if g.playbackExecution {
-		windowSize.Y.Add(g.textHeight)
-	}
 
 	return windowSize
 }

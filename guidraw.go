@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	. "github.com/marisvali/miln/gamelib"
@@ -19,9 +18,16 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
 	yPlayRegion := g.guiMargin
-	yInstructionalText := yPlayRegion.Plus(playSize.Y)
-	yButtons := yInstructionalText.Plus(g.textHeight)
-	yPlayback := yButtons.Plus(g.textHeight)
+	var yInstructionalText, yButtons, yPlayback Int
+	if !g.playbackExecution {
+		yInstructionalText = yPlayRegion.Plus(playSize.Y)
+		yButtons = yInstructionalText.Plus(g.textHeight)
+		yPlayback = yButtons.Plus(g.textHeight)
+	} else {
+		yInstructionalText = yPlayRegion.Plus(playSize.Y)
+		yButtons = yInstructionalText.Plus(g.textHeight)
+		yPlayback = yButtons
+	}
 
 	{
 		upperLeft := Pt{g.guiMargin, yPlayRegion}
@@ -39,7 +45,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		g.DrawInstructionalText(textRegion)
 	}
 
-	{
+	if !g.playbackExecution {
 		// upperLeft := Pt{buttonRegionX, I(screen.Bounds().Dy()).Minus(g.textHeight)}
 		// lowerRight := upperLeft.Plus(Pt{I(screen.Bounds().Dx()), g.textHeight})
 		upperLeft := Pt{ZERO, yButtons}
@@ -254,21 +260,6 @@ func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alp
 }
 
 func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
-	var message string
-	if g.state == GameOngoing {
-		message = "Kill everyone! left click - move, right click - shoot"
-	} else if g.state == GamePaused {
-		message = "Paused. Kill everyone! left click - move, right click - shoot"
-	} else if g.state == GameWon {
-		message = "You won, congratulations!"
-	} else if g.state == GameLost {
-		message = "You lost."
-	} else if g.state == Playback {
-		// message = fmt.Sprintf("Playing back frame %d / %d", g.frameIdx, len(g.playerInputs))
-	} else {
-		Check(fmt.Errorf("unhandled game state: %d", g.state))
-	}
-
 	DrawSprite(screen, g.imgTextBackground, 0, 0,
 		float64(screen.Bounds().Dx()),
 		float64(screen.Bounds().Dy()))
@@ -277,7 +268,7 @@ func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
 	r.Min = screen.Bounds().Min
 	r.Max = image.Point{screen.Bounds().Max.X, r.Min.Y + screen.Bounds().Dy()}
 	textBox := screen.SubImage(r).(*ebiten.Image)
-	g.DrawText(textBox, message, true, g.imgTextColor.At(0, 0))
+	g.DrawText(textBox, g.instructionalText, true, g.imgTextColor.At(0, 0))
 }
 
 func (g *Gui) DrawText(screen *ebiten.Image, message string, centerX bool, color color.Color) {
@@ -359,9 +350,9 @@ func (g *Gui) DrawPlaybackBar(screen *ebiten.Image) {
 	g.buttonPlaybackBar = FromImageRectangle(bar.Bounds())
 
 	// Playback bar cursor.
-	factor := g.frameIdx.ToFloat64() / float64(len(g.playthrough.History))
-	cursorX := factor * g.buttonPlaybackBar.Width().ToFloat64()
 	cursorWidth := float64(playbarHeight)
 	cursorHeight := float64(playbarHeight)
+	factor := g.frameIdx.ToFloat64() / float64(len(g.playthrough.History))
+	cursorX := factor*g.buttonPlaybackBar.Width().ToFloat64() - cursorWidth/2
 	DrawSprite(bar, g.imgPlaybackCursor, cursorX, 0, cursorWidth, cursorHeight)
 }

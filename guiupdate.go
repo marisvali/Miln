@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	. "github.com/marisvali/miln/gamelib"
@@ -77,6 +78,8 @@ func (g *Gui) UpdateGameOngoing() {
 		return
 	}
 
+	g.instructionalText = "Kill everyone! left click - move, right click - shoot"
+
 	var input PlayerInput
 	// Get input from player.
 	input.MousePt = g.mousePt
@@ -144,6 +147,7 @@ func (g *Gui) UpdateGamePaused() {
 		g.UpdateGameOngoing()
 		return
 	}
+	g.instructionalText = "Paused. Kill everyone! left click - move, right click - shoot"
 }
 
 func (g *Gui) UpdateGameWon() {
@@ -157,6 +161,7 @@ func (g *Gui) UpdateGameWon() {
 		g.UpdateGamePaused()
 		return
 	}
+	g.instructionalText = "You won, congratulations!"
 }
 
 func (g *Gui) UpdateGameLost() {
@@ -170,37 +175,10 @@ func (g *Gui) UpdateGameLost() {
 		g.UpdateGamePaused()
 		return
 	}
+	g.instructionalText = "You lost."
 }
 
 func (g *Gui) UpdatePlayback() {
-	if g.UserRequestedPause() {
-		g.state = GamePaused
-		return
-	}
-	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
-		g.UpdateGamePaused()
-		return
-	}
-	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
-		g.UpdateGamePaused()
-		return
-	}
-	if g.frameIdx.ToInt() >= len(g.playthrough.History) {
-		g.state = GameOngoing
-		g.UpdateGameOngoing()
-		return
-	}
-	if g.world.AllEnemiesDead() {
-		g.state = GameWon
-		return
-	}
-	if g.world.Player.Health.Leq(ZERO) {
-		g.state = GameLost
-		return
-	}
-
 	if g.UserRequestedPlaybackPause() {
 		g.playbackPaused = !g.playbackPaused
 	}
@@ -246,5 +224,16 @@ func (g *Gui) UpdatePlayback() {
 	g.world.Step(input)
 	g.visWorld.Step(&g.world, input, g.GuiData)
 
-	g.frameIdx.Inc()
+	if g.frameIdx.Lt(I(len(g.playthrough.History) - 1)) {
+		g.frameIdx.Inc()
+	}
+
+	g.instructionalText = fmt.Sprintf("Playing back frame %d / %d.",
+		g.frameIdx.Plus(ONE).ToInt64(), len(g.playthrough.History))
+	if g.world.AllEnemiesDead() {
+		g.instructionalText += " Won."
+	}
+	if g.world.Player.Health.Leq(ZERO) {
+		g.instructionalText += " Lost."
+	}
 }
