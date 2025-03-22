@@ -127,8 +127,19 @@ func (g *Gui) JustPressed(key ebiten.Key) bool {
 	return slices.Contains(g.justPressedKeys, key)
 }
 
+func (g *Gui) Pressed(key ebiten.Key) bool {
+	return slices.Contains(g.pressedKeys, key)
+}
+
 func (g *Gui) JustClicked(button Rectangle) bool {
 	if !inpututil.IsMouseButtonJustPressed(ebiten.MouseButton0) {
+		return false
+	}
+	return button.ContainsPt(g.mousePt)
+}
+
+func (g *Gui) LeftClickPressedOn(button Rectangle) bool {
+	if !ebiten.IsMouseButtonPressed(ebiten.MouseButton0) {
 		return false
 	}
 	return button.ContainsPt(g.mousePt)

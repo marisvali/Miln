@@ -35,6 +35,9 @@ type GuiData struct {
 	MoveActualOSCursorDuringReplay bool
 	DrawSpawnPortal                bool
 	PlaybackBarHeight              Int
+	FrameSkipArrow                 Int
+	FrameSkipShiftArrow            Int
+	FrameSkipAltArrow              Int
 }
 
 type Animations struct {
@@ -96,6 +99,7 @@ type Gui struct {
 	buttonRestartLevel     Rectangle
 	buttonPlaybackPlay     Rectangle
 	buttonPlaybackBar      Rectangle
+	pressedKeys            []ebiten.Key
 	justPressedKeys        []ebiten.Key // keys pressed in this frame
 	mousePt                Pt           // mouse position in this frame
 	leftButtonJustPressed  bool         // left mouse button state in this frame

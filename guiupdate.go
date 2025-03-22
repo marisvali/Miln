@@ -24,6 +24,8 @@ func (g *Gui) Update() error {
 
 	// Get input once, so we don't need to get it every time we need it in
 	// other functions.
+	g.pressedKeys = g.pressedKeys[:0]
+	g.pressedKeys = inpututil.AppendPressedKeys(g.pressedKeys)
 	g.justPressedKeys = g.justPressedKeys[:0]
 	g.justPressedKeys = inpututil.AppendJustPressedKeys(g.justPressedKeys)
 	x, y := ebiten.CursorPosition()
@@ -179,6 +181,8 @@ func (g *Gui) UpdateGameLost() {
 }
 
 func (g *Gui) UpdatePlayback() {
+	nFrames := I(len(g.playthrough.History))
+
 	if g.UserRequestedPlaybackPause() {
 		g.playbackPaused = !g.playbackPaused
 	}
@@ -188,21 +192,54 @@ func (g *Gui) UpdatePlayback() {
 
 	// Compute the target frame index based on where on the play bar the user
 	// clicked.
-	if g.JustClicked(g.buttonPlaybackBar) {
+	if g.LeftClickPressedOn(g.buttonPlaybackBar) {
 		// Get the distance between the start and the cursor on the play bar.
 		dx := g.mousePt.X.Minus(g.buttonPlaybackBar.Corner1.X)
-		nFrames := I(len(g.playthrough.History))
 		targetFrameIdx = dx.Times(nFrames).DivBy(g.buttonPlaybackBar.Width())
+	}
+
+	if g.JustPressed(ebiten.KeyLeft) && g.Pressed(ebiten.KeyAlt) {
+		targetFrameIdx.Subtract(g.FrameSkipAltArrow)
+	}
+
+	if g.JustPressed(ebiten.KeyRight) && g.Pressed(ebiten.KeyAlt) {
+		targetFrameIdx.Add(g.FrameSkipAltArrow)
+	}
+
+	if g.Pressed(ebiten.KeyLeft) && g.Pressed(ebiten.KeyShift) {
+		targetFrameIdx.Subtract(g.FrameSkipShiftArrow)
+	}
+
+	if g.Pressed(ebiten.KeyRight) && g.Pressed(ebiten.KeyShift) {
+		targetFrameIdx.Add(g.FrameSkipShiftArrow)
+	}
+
+	if g.Pressed(ebiten.KeyLeft) && !g.Pressed(ebiten.KeyShift) && !g.Pressed(ebiten.KeyAlt) {
+		targetFrameIdx.Subtract(g.FrameSkipArrow)
+	}
+
+	if g.Pressed(ebiten.KeyRight) && !g.Pressed(ebiten.KeyShift) && !g.Pressed(ebiten.KeyAlt) {
+		targetFrameIdx.Add(g.FrameSkipArrow)
+	}
+
+	if targetFrameIdx.Lt(ZERO) {
+		targetFrameIdx = ZERO
+	}
+
+	if targetFrameIdx.Geq(nFrames) {
+		targetFrameIdx = nFrames.Minus(ONE)
 	}
 
 	if targetFrameIdx != g.frameIdx {
 		// Rewind.
 		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
+		g.visWorld = NewVisWorld(g.Animations)
 
 		// Replay the world.
 		for i := I(0); i.Lt(targetFrameIdx); i.Inc() {
 			input := g.playthrough.History[i.ToInt()]
 			g.world.Step(input)
+			g.visWorld.Step(&g.world, input, g.GuiData)
 		}
 
 		// Set the current frame idx.
@@ -221,15 +258,17 @@ func (g *Gui) UpdatePlayback() {
 	}
 
 	// input = g.ai.Step(&g.world)
-	g.world.Step(input)
-	g.visWorld.Step(&g.world, input, g.GuiData)
+	if !g.playbackPaused {
+		g.world.Step(input)
+		g.visWorld.Step(&g.world, input, g.GuiData)
 
-	if g.frameIdx.Lt(I(len(g.playthrough.History) - 1)) {
-		g.frameIdx.Inc()
+		if g.frameIdx.Lt(nFrames.Minus(ONE)) {
+			g.frameIdx.Inc()
+		}
 	}
 
 	g.instructionalText = fmt.Sprintf("Playing back frame %d / %d.",
-		g.frameIdx.Plus(ONE).ToInt64(), len(g.playthrough.History))
+		g.frameIdx.Plus(ONE).ToInt64(), nFrames.ToInt64())
 	if g.world.AllEnemiesDead() {
 		g.instructionalText += " Won."
 	}

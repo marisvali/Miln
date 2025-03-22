@@ -14,5 +14,8 @@
   "DrawEnemyHealth": true,
   "DrawVirtualCursorDuringReplay": true,
   "MoveActualOSCursorDuringReplay": false,
-  "DrawSpawnPortal": false
+  "DrawSpawnPortal": false,
+  "FrameSkipArrow": 1,
+  "FrameSkipShiftArrow": 10,
+  "FrameSkipAltArrow": 1
 }
