@@ -112,6 +112,10 @@ func (p *Player) Pos() Pt {
 	return p.pos
 }
 
+func (p *Player) SetPos(pos Pt) {
+	p.pos = pos
+}
+
 func (p *Player) State() string {
 	return p.state
 }

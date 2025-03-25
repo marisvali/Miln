@@ -14,8 +14,7 @@ func main() {
 	if action == "download" {
 		DownloadRecordings()
 	} else if action == "extract" {
-		dir := os.Args[2]
-		Extract(dir)
+		Extract()
 	} else if action == "updatever" {
 		UpdateVersion()
 	}

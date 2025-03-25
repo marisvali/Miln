@@ -1,212 +1,280 @@
 package ai
 
 import (
+	"embed"
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	"github.com/stretchr/testify/assert"
 	_ "image/png"
-	"math/rand"
-	"os"
-	"path/filepath"
-	"slices"
 	"testing"
 )
 
-func IsGameWon(w *World) bool {
-	for _, enemy := range w.Enemies {
-		if enemy.Alive() {
-			return false
+//go:embed data/*
+var embeddedFS embed.FS
+
+func GoToFrame(playthrough Playthrough, frameIdx int) World {
+	world := NewWorld(playthrough.Seed, playthrough.TargetDifficulty, &embeddedFS)
+	for i := 0; i < frameIdx; i++ {
+		input := playthrough.History[i]
+		world.Step(input)
+	}
+	return world
+}
+
+func ValidMove(world *World, pos Pt) bool {
+	freePositions := world.Player.ComputeFreePositions(world)
+	return freePositions.At(pos)
+}
+
+func ValidAttack(world *World, pos Pt) bool {
+	attackablePositions := world.VulnerableEnemyPositions()
+	attackablePositions.IntersectWith(world.AttackableTiles)
+	return attackablePositions.At(pos)
+}
+
+func AmmoAtPos(world *World, pos Pt) bool {
+	for _, ammo := range world.Ammos {
+		if ammo.Pos == pos {
+			return true
 		}
 	}
-	for _, portal := range w.SpawnPortals {
-		if portal.Active() {
-			return false
+	return false
+}
+
+type TargetSeeker struct {
+	vision    Vision
+	world     *World
+	obstacles MatBool
+}
+
+func NewTargetSeeker(world *World) (h TargetSeeker) {
+	h.world = world
+	h.vision = NewVision(world.Obstacles.Size())
+	// For the purposes of this calculator, both terrain obstacles and enemies
+	// constitute obstacles for vision.
+	h.obstacles = world.Obstacles.Clone()
+	h.obstacles.Add(h.world.EnemyPositions())
+	return h
+}
+
+// Get all the positions that are visible from the positions indicated by the
+// "startPositions" matrix.
+func (h *TargetSeeker) computeVisiblePositions(startPositions MatBool) MatBool {
+	positions := startPositions.ToSlice()
+	allVisible := NewMatBool(h.obstacles.Size())
+	for _, pos := range positions {
+		visible := h.vision.Compute(pos, h.obstacles)
+		allVisible.Add(visible)
+	}
+	return allVisible
+}
+
+// NumMovesUntilTargetVisible computes the minimum number of moves required to see
+// one of the positions in "targets". We consider "startPos" to be the
+// first position from which we start looking/moving. Here we are talking about
+// moves in the sense of a player move: if the player is at position X, in 1
+// move he can change his position to any of the positions visible from X that
+// are not occupied by an enemy or a terrain obstacle.
+// 0 - a target is visible from startPos already and no moves are required
+// 1 - a target will become visible after making 1 move from startPos
+// 2 - a target will become visible after making 2 moves from startPos
+// ..
+// -1 - no target is reachable from startPos, no matter the number of moves
+func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) int {
+	// lookoutPositions - the positions from which we will look out and check
+	// if we see a target.
+	lookoutPositions := NewMatBool(h.obstacles.Size())
+	lookoutPositions.Set(startPos)
+
+	// Try a maximum of 10 moves for now, even though normally there should be
+	// a better stop condition like "all possible positions have been visited".
+	for iMove := 0; iMove < 10; iMove++ {
+		visiblePositions := h.computeVisiblePositions(lookoutPositions)
+		// Check if any targets are visible from the current start positions.
+		visibleTargets := visiblePositions.Clone()
+		visibleTargets.IntersectWith(targets)
+		if len(visibleTargets.ToSlice()) > 0 {
+			// A target is visible.
+			return iMove
 		}
+		// Compute the lookout positions for the next move.
+		// They are all the positions visible at this move, minus the obstacles
+		// and minus the current lookoutPositions (no sense recomputing for the
+		// positions in lookoutPositions).
+		newLookoutPositions := visiblePositions
+		newLookoutPositions.Subtract(h.obstacles)
+		newLookoutPositions.Subtract(lookoutPositions)
+		lookoutPositions = newLookoutPositions
 	}
-	return true
+	return -1 // Haven't reached any target.
 }
 
-func IsGameLost(w *World) bool {
-	return w.Player.Health.Leq(ZERO)
-}
-
-func IsGameOver(w *World) bool {
-	return IsGameWon(w) || IsGameLost(w)
-}
-
-func ComputeMeanSquaredError(expectedOutcome []float64, actualOutcome []float64) (error float64) {
-	if len(expectedOutcome) != len(actualOutcome) {
-		Check(fmt.Errorf("expected equal lengths, got %d %d",
-			len(expectedOutcome), len(actualOutcome)))
+// NumMovesToAmmo returns the minimum number of move actions required to end up
+// on a tile with ammo on it.
+func NumMovesToAmmo(world *World, pos Pt) int {
+	ammos := NewMatBool(world.Obstacles.Size())
+	for _, ammo := range world.Ammos {
+		ammos.Set(ammo.Pos)
 	}
-
-	sum := float64(0)
-	for i := range expectedOutcome {
-		dif := expectedOutcome[i] - actualOutcome[i]
-		sum += dif * dif
-		// fmt.Printf("%d %d %d\n", expectedOutcome[i].ToInt(), actualOutcome[i].ToInt(), sum.ToInt())
-	}
-	error = sum / float64(len(expectedOutcome))
-	return
-}
-
-func RunLevelWithAI(seed, targetDifficulty Int) (playerHealth Int) {
-	w := NewWorld(seed, targetDifficulty)
-	ai := AI{}
-	for {
-		input := ai.Step(&w)
-		w.Step(input)
-		if IsGameOver(&w) {
-			break
-		}
-	}
-	playerHealth = w.Player.Health
-	return
-}
-
-func RunPlaythrough(p Playthrough) (playerHealth Int, isGameOver bool) {
-	w := NewWorld(p.Seed, p.TargetDifficulty)
-	for _, input := range p.History {
-		w.Step(input)
-	}
-	playerHealth = w.Player.Health
-	isGameOver = IsGameOver(&w)
-	return
-}
-
-func ComputeMeanSquaredErrorOnDataset2(dir string, files []string) (actualOutcomes []float64) {
-	for _, file := range files {
-		fullPath := filepath.Join(dir, file)
-		data := ReadFile(fullPath)
-		playthrough := DeserializePlaythrough(data)
-		_, isGameOver := RunPlaythrough(playthrough)
-		if !isGameOver {
-			Check(fmt.Errorf("not cool"))
-		}
-		fmt.Printf("%d", playthrough.TargetDifficulty.ToInt())
-		actualOutcome := RunLevelWithAI(playthrough.Seed, playthrough.TargetDifficulty)
-		fmt.Printf(", %d\n", actualOutcome.ToInt())
-		actualOutcomes = append(actualOutcomes, actualOutcome.ToFloat64())
-	}
-
-	return actualOutcomes
-}
-
-func TestAI_MeanSquaredError(t *testing.T) {
-	dir := "d:\\gms\\Miln\\analysis\\2024-08-04 - 4. how do AI and statistics perform when the same levels are played multiple times\\data-set-6\\playthroughs"
-	// level difficulty, file
-	// 52, 20240804-064317.mln007
-	// 54, 20240804-064006.mln007
-	// 56, 20240804-063847.mln007
-	// 58, 20240804-063509.mln007
-	// 60, 20240804-064120.mln007
-	// 62, 20240804-063624.mln007
-	// 64, 20240804-064422.mln007
-	// 66, 20240804-064228.mln007
-	// 68, 20240804-063754.mln007
-	// 70, 20240804-063920.mln007
-
-	all := []string{
-		"20240804-064317.mln007",
-		"20240804-064006.mln007",
-		"20240804-063847.mln007",
-		"20240804-063509.mln007",
-		"20240804-064120.mln007",
-		"20240804-063624.mln007",
-		"20240804-064422.mln007",
-		"20240804-064228.mln007",
-		"20240804-063754.mln007",
-		"20240804-063920.mln007"}
-
-	allExpectedOutcomes := []float64{
-		0.666666667,
-		2.6,
-		1.333333333,
-		0.8,
-		1.333333333,
-		1,
-		0.333333333,
-		0.2,
-		0,
-		0.2}
-
-	allActualOutcomes := [][]float64{}
-	for i := 25; i <= 31; i++ {
-		MinFramesBetweenActions = i
-		actualOutcomes := ComputeMeanSquaredErrorOnDataset2(dir, all)
-		allActualOutcomes = append(allActualOutcomes, actualOutcomes)
-	}
-
-	sumsOutcomes := make([]float64, len(allActualOutcomes[0]))
-	for i := range allActualOutcomes {
-		for j := range allActualOutcomes[i] {
-			sumsOutcomes[j] += allActualOutcomes[i][j]
-		}
-	}
-	avgOutcomes := make([]float64, len(sumsOutcomes))
-	for i := range sumsOutcomes {
-		avgOutcomes[i] = sumsOutcomes[i] / float64(len(allActualOutcomes))
-	}
-	for i := range avgOutcomes {
-		fmt.Printf("%f\n", avgOutcomes[i])
-	}
-
-	meanSquaredError := ComputeMeanSquaredError(allExpectedOutcomes, avgOutcomes)
-	fmt.Printf("%f\n", meanSquaredError)
-
-	assert.True(t, true)
-}
-
-func BoolToInt(val bool) int {
-	if val {
-		return 1
-	} else {
+	if ammos.Get(pos) {
 		return 0
 	}
+
+	seeker := NewTargetSeeker(world)
+	return seeker.NumMovesUntilTargetVisible(pos, ammos) + 1
 }
 
-func TestAI_PlayerStats(t *testing.T) {
-	inputFilename := "d:\\gms\\Miln\\analysis\\2024-07-29 - set benchmark for AI\\data-set-1\\playthroughs\\20240709-112511.mln002"
+// NumMovesToEnemy returns the minimum number of move actions required to end up
+// on a tile from which a vulnerable enemy is visible.
+func NumMovesToEnemy(world *World, pos Pt) int {
+	seeker := NewTargetSeeker(world)
+	return seeker.NumMovesUntilTargetVisible(pos, world.VulnerableEnemyPositions())
+}
 
-	playthrough := DeserializePlaythrough(ReadFile(inputFilename))
-	// Create a new CSV file
-	outFile, err := os.Create("output.csv")
-	Check(err)
-	defer CloseFile(outFile)
+// NumFramesUntilAttacked returns the number of frames until an enemy attacks pos.
+// 0 - there's an enemy at this position right now
+// 1 - after 1 frame, the player will be attacked
+// ..
+// -1 - the position will never be attacked (e.g. there are no more enemies)
+func NumFramesUntilAttacked(world *World, pos Pt) int {
+	if len(world.Enemies) == 0 {
+		return -1
+	}
 
-	_, err = outFile.WriteString("frame_idx,moved,shot\n")
-	Check(err)
-	for frameIdx, input := range playthrough.History {
-		if input.Move || input.Shoot {
+	// Clone the world as we're going to modify it.
+	w := world.Clone()
 
-			_, err = outFile.WriteString(fmt.Sprintf("%d,%d,%d\n", frameIdx, BoolToInt(input.Move), BoolToInt(input.Shoot)))
-			Check(err)
+	// Put the player at pos so that enemies will come to it.
+	w.Player.SetPos(pos)
+	w.Player.OnMap = true
+	w.Player.JustHit = false
+
+	// If an enemy doesn't hit within 100k frames, it's not happening.
+	input := PlayerInput{} // Don't move, don't attack.
+	for frameIdx := 0; frameIdx < 100000; frameIdx++ {
+		w.Step(input)
+		if w.Player.JustHit {
+			return frameIdx
 		}
 	}
-	assert.True(t, true)
+	return -1
 }
 
-func TestAI_GeneratePlaySequence(t *testing.T) {
-	originalSequence := []int{}
-	for i := 52; i <= 70; i = i + 2 {
-		originalSequence = append(originalSequence, i)
+// FitnessOfMoveAction returns the fitness of a specific move action at a certain moment
+// in time, by
+func FitnessOfMoveAction(world *World, pos Pt) int {
+	if ValidMove(world, pos) {
+		// If the action isn't even valid, the fitness of the action is zero.
+		return 0
+	}
+	// The action is valid so other factors come into play.
+
+	// Compute how safe the position is.
+	safetyFitness := 0
+	framesUntilAttacked := NumFramesUntilAttacked(world, pos)
+	// Use time instead of frames because I have an easier time understanding
+	// how dangerous a position feels based on how much time it takes for it
+	// to be attacked. For example, I know the average for a playthrough was
+	// 1 click every 0.6 seconds.
+	timeUntilAttacked := float32(framesUntilAttacked) / 60.0
+	if timeUntilAttacked <= 0.3 {
+		safetyFitness = 0
+	}
+	if timeUntilAttacked > 0.3 && timeUntilAttacked <= 0.6 {
+		safetyFitness = 5
+	}
+	if timeUntilAttacked > 0.6 && timeUntilAttacked <= 1 {
+		safetyFitness = 10
+	}
+	if timeUntilAttacked > 1 && timeUntilAttacked <= 2 {
+		safetyFitness = 15
+	}
+	if timeUntilAttacked > 2 {
+		safetyFitness = 20
 	}
 
-	finalSequence := []int{}
-	for i := 0; i < 10; i++ {
-		s := slices.Clone(originalSequence)
-		rand.Shuffle(len(s), func(i, j int) { s[i], s[j] = s[j], s[i] })
-		finalSequence = append(finalSequence, s...)
+	if safetyFitness == 0 {
+		// If the position is too dangerous, the fitness is zero.
+		return 0
 	}
 
-	// seed := 15
-	content := ""
-	for i := range finalSequence {
-		line := fmt.Sprintf("%d %d\n", finalSequence[i]*3+7, finalSequence[i])
-		content = content + line
+	ammoFitness := 0
+	currentAmmo := world.Player.AmmoCount.ToInt()
+	numMovesToAmmo := NumMovesToAmmo(world, pos)
+	if currentAmmo == 0 {
+		if numMovesToAmmo == 0 {
+			ammoFitness = 10
+		}
+		if numMovesToAmmo == 1 {
+			ammoFitness = 5
+		}
+		if numMovesToAmmo == 2 {
+			ammoFitness = 2
+		}
 	}
-	filename := "play-sequence.txt"
-	WriteFile(filename, []byte(content))
+
+	if currentAmmo > 1 && currentAmmo <= 3 {
+		if numMovesToAmmo == 0 {
+			ammoFitness = 6
+		}
+		if numMovesToAmmo == 1 {
+			ammoFitness = 2
+		}
+		if numMovesToAmmo == 2 {
+			ammoFitness = 1
+		}
+	}
+
+	if currentAmmo > 3 {
+		if numMovesToAmmo == 0 {
+			ammoFitness = 2
+		}
+		if numMovesToAmmo == 1 {
+			ammoFitness = 1
+		}
+	}
+
+	enemyFitness := 0
+	movesToVisibleEnemy := NumMovesToEnemy(world, pos)
+	if currentAmmo > 0 {
+		if movesToVisibleEnemy == 0 {
+			enemyFitness = 10
+		}
+		if movesToVisibleEnemy == 1 {
+			enemyFitness = 5
+		}
+		if movesToVisibleEnemy == 2 {
+			enemyFitness = 2
+		}
+	}
+
+	// if there is some safety, then the other factors come into play
+	return safetyFitness + ammoFitness + enemyFitness
+}
+
+func TestAI(t *testing.T) {
+	inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"
+	playthrough := DeserializePlaythrough(ReadFile(inputFile))
+	// Go to a frame before which the player jumps on an ammo.
+	world := GoToFrame(playthrough, 315)
+
+	// numMovesToAmmo := NumMovesToEnemy(&world, world.Player.Pos())
+	// fmt.Println(numMovesToAmmo)
+	pt := world.Player.Pos()
+	pt.X.Add(TWO)
+	numFramesUntilAttacked := NumFramesUntilAttacked(&world, pt)
+	fmt.Println(numFramesUntilAttacked)
+	fmt.Println(float32(numFramesUntilAttacked) / 60.0)
+
+	// worldSize := world.Obstacles.Size()
+	// for y := 0; y < worldSize.Y.ToInt(); y++ {
+	// 	for x := 0; x < worldSize.X.ToInt(); x++ {
+	// 		valid := ValidAttack(&world, IPt(x, y))
+	// 		fmt.Printf("%t ", valid)
+	// 	}
+	// 	fmt.Printf("\n")
+	// }
+
 	assert.True(t, true)
 }
