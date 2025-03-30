@@ -1,12 +1,14 @@
 package ai
 
 import (
+	"cmp"
 	"embed"
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	"github.com/stretchr/testify/assert"
 	_ "image/png"
+	"slices"
 	"testing"
 )
 
@@ -28,6 +30,9 @@ func ValidMove(world *World, pos Pt) bool {
 }
 
 func ValidAttack(world *World, pos Pt) bool {
+	if world.Player.AmmoCount == ZERO {
+		return false
+	}
 	attackablePositions := world.VulnerableEnemyPositions()
 	attackablePositions.IntersectWith(world.AttackableTiles)
 	return attackablePositions.At(pos)
@@ -161,10 +166,10 @@ func NumFramesUntilAttacked(world *World, pos Pt) int {
 	return -1
 }
 
-// FitnessOfMoveAction returns the fitness of a specific move action at a certain moment
-// in time, by
+// FitnessOfMoveAction returns the fitness of a specific move action at a
+// certain moment. The action is "the player moves to pos".
 func FitnessOfMoveAction(world *World, pos Pt) int {
-	if ValidMove(world, pos) {
+	if !ValidMove(world, pos) {
 		// If the action isn't even valid, the fitness of the action is zero.
 		return 0
 	}
@@ -178,6 +183,9 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 	// to be attacked. For example, I know the average for a playthrough was
 	// 1 click every 0.6 seconds.
 	timeUntilAttacked := float32(framesUntilAttacked) / 60.0
+	if timeUntilAttacked <= 0.05 {
+		safetyFitness = 0
+	}
 	if timeUntilAttacked <= 0.3 {
 		safetyFitness = 0
 	}
@@ -253,28 +261,256 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 	return safetyFitness + ammoFitness + enemyFitness
 }
 
-func TestAI(t *testing.T) {
-	inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"
-	playthrough := DeserializePlaythrough(ReadFile(inputFile))
-	// Go to a frame before which the player jumps on an ammo.
-	world := GoToFrame(playthrough, 315)
+// FitnessOfAttackAction returns the fitness of a specific attack action at a
+// certain moment. The action is "the player attacks pos".
+func FitnessOfAttackAction(world *World, pos Pt) int {
+	if !ValidAttack(world, pos) {
+		// If the action isn't even valid, the fitness of the action is zero.
+		return 0
+	}
+	// The action is valid so other factors come into play.
 
-	// numMovesToAmmo := NumMovesToEnemy(&world, world.Player.Pos())
-	// fmt.Println(numMovesToAmmo)
-	pt := world.Player.Pos()
-	pt.X.Add(TWO)
-	numFramesUntilAttacked := NumFramesUntilAttacked(&world, pt)
-	fmt.Println(numFramesUntilAttacked)
-	fmt.Println(float32(numFramesUntilAttacked) / 60.0)
+	// there's some extra usefulness if the enemy will finally die with this shot
+	// also there's some usefulness in paralyzing the enemy for a while
+	// weeurjiuefiuergeugriuegr etc etc cleanup comments etc
+	input := PlayerInput{}
+	input.Shoot = true
+	input.ShootPt = pos
+	w := world.Clone()
+	w.Step(input)
 
-	// worldSize := world.Obstacles.Size()
-	// for y := 0; y < worldSize.Y.ToInt(); y++ {
-	// 	for x := 0; x < worldSize.X.ToInt(); x++ {
-	// 		valid := ValidAttack(&world, IPt(x, y))
-	// 		fmt.Printf("%t ", valid)
-	// 	}
-	// 	fmt.Printf("\n")
+	if len(w.Enemies) == 0 {
+		// Just won the game.
+		return 1000
+	}
+
+	// Compute how safe the current position is.
+	safetyFitness := 0
+	framesUntilAttacked := NumFramesUntilAttacked(&w, w.Player.Pos())
+	// Use time instead of frames because I have an easier time understanding
+	// how dangerous a position feels based on how much time it takes for it
+	// to be attacked. For example, I know the average for a playthrough was
+	// 1 click every 0.6 seconds.
+	timeUntilAttacked := float32(framesUntilAttacked) / 60.0
+	if timeUntilAttacked <= 0.3 {
+		safetyFitness = 0
+	}
+	if timeUntilAttacked > 0.3 && timeUntilAttacked <= 0.6 {
+		safetyFitness = 5
+	}
+	if timeUntilAttacked > 0.6 && timeUntilAttacked <= 1 {
+		safetyFitness = 10
+	}
+	if timeUntilAttacked > 1 && timeUntilAttacked <= 2 {
+		safetyFitness = 15
+	}
+	if timeUntilAttacked > 2 {
+		safetyFitness = 20 + int(timeUntilAttacked*3)
+	}
+
+	if safetyFitness < 10 {
+		// If the current position is too dangerous, the fitness is zero.
+		return 0
+	}
+
+	// Prefer attacking to moving, if it's safe and possible.
+	biasForAttacking := 20
+
+	return safetyFitness + biasForAttacking
+}
+
+type Action struct {
+	Move    bool
+	Pos     Pt
+	Fitness int
+	Rank    int
+}
+
+func (a Action) String() string {
+	if a.Move {
+		return fmt.Sprintf("rank: %3d fitness: %3d move:  %d %d", a.Rank, a.Fitness, a.Pos.X.ToInt(), a.Pos.Y.ToInt())
+	} else {
+		return fmt.Sprintf("rank: %3d fitness: %3d shoot: %d %d", a.Rank, a.Fitness, a.Pos.X.ToInt(), a.Pos.Y.ToInt())
+	}
+}
+
+func RankedActionsPerFrame(playthrough Playthrough, frameIdx int) (actions []Action) {
+	world := GoToFrame(playthrough, frameIdx)
+
+	// Compute the fitness of every move action.
+	worldSize := world.Obstacles.Size()
+	for y := 0; y < worldSize.Y.ToInt(); y++ {
+		for x := 0; x < worldSize.X.ToInt(); x++ {
+			fitness := FitnessOfMoveAction(&world, IPt(x, y))
+			action := Action{}
+			action.Move = true
+			action.Pos = IPt(x, y)
+			action.Fitness = fitness
+			actions = append(actions, action)
+		}
+	}
+
+	// Compute the fitness of every attack action.
+	for y := 0; y < worldSize.Y.ToInt(); y++ {
+		for x := 0; x < worldSize.X.ToInt(); x++ {
+			fitness := FitnessOfAttackAction(&world, IPt(x, y))
+			action := Action{}
+			action.Move = false
+			action.Pos = IPt(x, y)
+			action.Fitness = fitness
+			actions = append(actions, action)
+		}
+	}
+
+	// Sort.
+	cmpActions := func(a, b Action) int {
+		return cmp.Compare(b.Fitness, a.Fitness)
+	}
+	slices.SortFunc(actions, cmpActions)
+
+	// Rank.
+	actions[0].Rank = 1
+	for i := 1; i < len(actions); i++ {
+		if actions[i].Fitness == actions[i-1].Fitness {
+			actions[i].Rank = actions[i-1].Rank
+		} else {
+			actions[i].Rank = actions[i-1].Rank + 1
+		}
+	}
+
+	return actions
+}
+
+// func GetPlayerActions(playthrough Playthrough, frameIdx int) (actions []Action) {
+//
+// }
+
+func InputToAction(input PlayerInput) (action Action) {
+	if input.Move {
+		action.Move = true
+		action.Pos = input.MovePt
+	} else if input.Shoot {
+		action.Move = false
+		action.Pos = input.ShootPt
+	} else {
+		panic(fmt.Errorf("bad"))
+	}
+	return action
+}
+
+func FindActionRank(action Action, actions []Action) int {
+	for _, a := range actions {
+		if action.Pos == a.Pos && action.Move == a.Move {
+			return a.Rank
+		}
+	}
+	panic(fmt.Errorf("bad"))
+}
+
+func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int) {
+	for i := 0; i < len(playthrough.History); i++ {
+		input := playthrough.History[i]
+		if input.Move || input.Shoot {
+			framesWithActions = append(framesWithActions, i)
+		}
+	}
+	return
+}
+
+func GetDecisionFrames(framesWithActions []int) (decisionFrames []int) {
+	// Assume player decides about 5 frames after the last action.
+	// decisionFrames = append(decisionFrames, framesWithActions[0]-15)
+	// for i := 0; i < len(framesWithActions)-1; i++ {
+	// 	decisionFrames = append(decisionFrames, framesWithActions[i]+5)
 	// }
+
+	// Since the player can only do valid actions and he is protected by auto
+	// aims, it's possible that a previously invalid action became valid by the
+	// time the player acted.
+	// For example the player might decide to shoot a guy, but by the time he
+	// got around to clicking, the guy moved (real case). Now, the previously
+	// best course of action became impossible, technically, because the guy
+	// moved and attacking the previous position is useless. But, the auto-aim
+	// will save you from this and right-clicking on the previous position will
+	// result in an attack on the enemy's new position.
+	// So, just.. screw it for now. Have the algorithm compute the best decision
+	// on exactly the frame when the player acts.
+	decisionFrames = slices.Clone(framesWithActions)
+	return
+}
+
+func GetRanksOfPlayerActions(playthrough Playthrough, framesWithActions []int, decisionFrames []int) (ranksOfPlayerActions []int) {
+	for actionIdx := 0; actionIdx < len(framesWithActions); actionIdx++ {
+		rankedActions := RankedActionsPerFrame(playthrough, decisionFrames[actionIdx])
+		playerAction := InputToAction(playthrough.History[framesWithActions[actionIdx]])
+		rank := FindActionRank(playerAction, rankedActions)
+		ranksOfPlayerActions = append(ranksOfPlayerActions, rank)
+	}
+	return
+}
+
+func ModelFitness(ranksOfPlayerActions []int) (modelFitness int) {
+	for i := 0; i < len(ranksOfPlayerActions); i++ {
+		diff := ranksOfPlayerActions[i] - 1
+		modelFitness += diff * diff
+	}
+	return modelFitness
+}
+
+func DebugRank(framesWithActions []int, decisionFrames []int,
+	ranksOfPlayerActions []int, playthrough Playthrough, actionIdx int) {
+	fmt.Printf("frame with player action: %d\n", framesWithActions[actionIdx])
+	fmt.Printf("decision frame: %d\n", decisionFrames[actionIdx])
+	println(ranksOfPlayerActions[actionIdx])
+	world := GoToFrame(playthrough, decisionFrames[actionIdx])
+	fmt.Printf("%+v\n", InputToAction(playthrough.History[framesWithActions[actionIdx]]))
+
+	println("debugging now")
+	println(FitnessOfAttackAction(&world, IPt(7, 4)))
+
+	// Compute the fitness of every move action.
+	worldSize := world.Obstacles.Size()
+	for y := 0; y < worldSize.Y.ToInt(); y++ {
+		for x := 0; x < worldSize.X.ToInt(); x++ {
+			fitness := FitnessOfMoveAction(&world, IPt(x, y))
+			fmt.Printf("%3d ", fitness)
+		}
+		fmt.Printf("\n")
+	}
+
+	// Compute the fitness of every attack action.
+	fmt.Printf("\n")
+	for y := 0; y < worldSize.Y.ToInt(); y++ {
+		for x := 0; x < worldSize.X.ToInt(); x++ {
+			fitness := FitnessOfAttackAction(&world, IPt(x, y))
+			fmt.Printf("%3d ", fitness)
+		}
+		fmt.Printf("\n")
+	}
+}
+
+func TestAI(t *testing.T) {
+	// inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"
+	inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170924.mln010"
+	playthrough := DeserializePlaythrough(ReadFile(inputFile))
+	framesWithActions := GetFramesWithActions(playthrough)
+	decisionFrames := GetDecisionFrames(framesWithActions)
+	ranksOfPlayerActions := GetRanksOfPlayerActions(playthrough, framesWithActions, decisionFrames)
+	fmt.Printf("%v\n", ranksOfPlayerActions)
+	for actionIdx := range ranksOfPlayerActions {
+		fmt.Printf("%2d ", ranksOfPlayerActions[actionIdx])
+	}
+	println()
+	for actionIdx := range ranksOfPlayerActions {
+		fmt.Printf("%2d ", actionIdx)
+	}
+	println()
+
+	modelFitness := ModelFitness(ranksOfPlayerActions)
+	fmt.Printf("modelFitness: %d\n", modelFitness)
+
+	DebugRank(framesWithActions, decisionFrames, ranksOfPlayerActions, playthrough,
+		3)
 
 	assert.True(t, true)
 }
