@@ -489,28 +489,55 @@ func DebugRank(framesWithActions []int, decisionFrames []int,
 	}
 }
 
-func TestAI(t *testing.T) {
-	// inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"
-	inputFile := "d:\\gms\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170924.mln010"
+func ModelFitnessForPlaythrough(inputFile string) int {
 	playthrough := DeserializePlaythrough(ReadFile(inputFile))
 	framesWithActions := GetFramesWithActions(playthrough)
 	decisionFrames := GetDecisionFrames(framesWithActions)
 	ranksOfPlayerActions := GetRanksOfPlayerActions(playthrough, framesWithActions, decisionFrames)
-	fmt.Printf("%v\n", ranksOfPlayerActions)
-	for actionIdx := range ranksOfPlayerActions {
-		fmt.Printf("%2d ", ranksOfPlayerActions[actionIdx])
-	}
-	println()
-	for actionIdx := range ranksOfPlayerActions {
-		fmt.Printf("%2d ", actionIdx)
-	}
-	println()
-
 	modelFitness := ModelFitness(ranksOfPlayerActions)
-	fmt.Printf("modelFitness: %d\n", modelFitness)
+	return modelFitness
+}
 
-	DebugRank(framesWithActions, decisionFrames, ranksOfPlayerActions, playthrough,
-		3)
+func TestAI(t *testing.T) {
+	inputFiles := []string{
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171419.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171357.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171333.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171313.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171250.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171229.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171159.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171136.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171111.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171054.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171030.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171010.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170947.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170924.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170900.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170838.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170817.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170755.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170735.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170716.mln010",
+		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"}
 
+	for _, inputFile := range inputFiles {
+		modelFitness := ModelFitnessForPlaythrough(inputFile)
+		fmt.Printf("modelFitness: %d\n", modelFitness)
+	}
+
+	// fmt.Printf("%v\n", ranksOfPlayerActions)
+	// for actionIdx := range ranksOfPlayerActions {
+	// 	fmt.Printf("%2d ", ranksOfPlayerActions[actionIdx])
+	// }
+	// println()
+	// for actionIdx := range ranksOfPlayerActions {
+	// 	fmt.Printf("%2d ", actionIdx)
+	// }
+	// println()
+	//
+	// DebugRank(framesWithActions, decisionFrames, ranksOfPlayerActions, playthrough,
+	// 	16)
 	assert.True(t, true)
 }
