@@ -1,14 +1,13 @@
 package gamelib
 
 import (
-	"fmt"
 	"image/color"
 	"math/rand"
 	"testing"
 )
 
 // BenchmarkCol tests how fast Col() is, so we can compare with color.NRGBA{}.
-// 2.156 ns/op
+// 2.056 ns/op
 func BenchmarkCol(b *testing.B) {
 	// Initialize.
 	rr := uint8(rand.Intn(100))
@@ -18,21 +17,13 @@ func BenchmarkCol(b *testing.B) {
 	c := Col(rr, rg, rb, ra)
 
 	// Run benchmark loop.
-	b.ResetTimer()
-	x := uint32(0)
-	for n := 0; n < b.N; n++ {
-		r, g, b, a := c.RGBA()
-		// Accumulate result for final side effect.
-		x += r + g + b + a
+	for b.Loop() {
+		c.RGBA()
 	}
-
-	// Final side effect.
-	fmt.Println(x)
-	fmt.Println(b.N)
 }
 
 // BenchmarkNRGBA tests how fast color.NRGBA{} is, so we can compare with Col().
-// 3.571 ns/op
+// 3.271 ns/op
 // Compiler optimizations can mess up the benchmarks. If the conditions are
 // right, the benchmark will show 0.2667 ns/op. But that only happens in
 // conditions that almost never hold in regular code, which makes that benchmark
@@ -57,15 +48,7 @@ func BenchmarkNRGBA(b *testing.B) {
 	c = color.NRGBA{rr, rg, rb, ra}
 
 	// Run benchmark loop.
-	b.ResetTimer()
-	x := uint32(0)
-	for n := 0; n < b.N; n++ {
-		r, g, b, a := c.RGBA()
-		// Accumulate result for final side effect.
-		x += r + g + b + a
+	for b.Loop() {
+		c.RGBA()
 	}
-
-	// Final side effect.
-	fmt.Println(x)
-	fmt.Println(b.N)
 }

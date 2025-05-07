@@ -2,7 +2,6 @@ package world
 
 import (
 	"bytes"
-	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
 	"os"
@@ -33,7 +32,7 @@ func RunPlaythrough(p Playthrough) {
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
 	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250319-170648.mln010"))
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
 }
@@ -72,24 +71,14 @@ func BenchmarkSerializedPlaythrough_WithoutCompression(b *testing.B) {
 	w := GetLargeWorld()
 
 	// Run benchmark loop.
-	b.ResetTimer()
-	x := byte(0)
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		// Serialize.
 		buf := new(bytes.Buffer)
 		Serialize(buf, int64(Version))
 		Serialize(buf, w.Seed.ToInt64())
 		Serialize(buf, w.TargetDifficulty.ToInt64())
 		SerializeSlice(buf, w.History)
-
-		// Accumulate result for final side effect.
-		data := buf.Bytes()
-		x += data[len(data)/3]
 	}
-
-	// Final side effect.
-	fmt.Println(x)
-	fmt.Println(b.N)
 }
 
 // Check how much time it takes to compress a serialized world.
@@ -105,18 +94,9 @@ func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 	SerializeSlice(buf, w.History)
 
 	// Run benchmark loop.
-	b.ResetTimer()
-	x := byte(0)
-	for n := 0; n < b.N; n++ {
-		data := Zip(buf.Bytes())
-
-		// Accumulate result for final side effect.
-		x += data[len(data)/2]
+	for b.Loop() {
+		Zip(buf.Bytes())
 	}
-
-	// Final side effect.
-	fmt.Println(x)
-	fmt.Println(b.N)
 }
 
 func BenchmarkWorldClone(b *testing.B) {
@@ -124,17 +104,7 @@ func BenchmarkWorldClone(b *testing.B) {
 	w := GetLargeWorld()
 
 	// Run benchmark loop.
-	b.ResetTimer()
-	x := 0
-	for n := 0; n < b.N; n++ {
-		w1 := w.Clone()
-
-		// Accumulate result for final side effect.
-		p := w1.History[len(w1.History)/2]
-		x += p.MousePt.X.ToInt()
+	for b.Loop() {
+		w.Clone()
 	}
-
-	// Final side effect.
-	fmt.Println(x)
-	fmt.Println(b.N)
 }
