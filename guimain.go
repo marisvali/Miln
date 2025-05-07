@@ -11,6 +11,7 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	_ "image/png"
+	"io/fs"
 	"os"
 )
 
@@ -92,7 +93,7 @@ type Gui struct {
 	state                  GameState
 	textHeight             Int
 	guiMargin              Int
-	EmbeddedFS             *embed.FS
+	FSys                   fs.FS
 	buttonRegionWidth      Int
 	buttonPause            Rectangle
 	buttonNewLevel         Rectangle
@@ -154,9 +155,10 @@ func main() {
 		replayFile = os.Args[1]
 	}
 
-	if !FileExists("data") {
-		g.EmbeddedFS = &embeddedFiles
+	if !FileExists(os.DirFS("."), "data") {
+		g.FSys = &embeddedFiles
 	} else {
+		g.FSys = os.DirFS(".")
 		g.folderWatcher1.Folder = "data/gui"
 		g.folderWatcher2.Folder = "data/world"
 		// Initialize watchers.
@@ -175,14 +177,14 @@ func main() {
 	if replayFile != "" {
 		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.FSys)
 		g.state = Playback
 	} else {
 		g.playbackExecution = false
 		// g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
-		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
+		g.world = NewWorld(seed, targetDifficulty, g.FSys)
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())

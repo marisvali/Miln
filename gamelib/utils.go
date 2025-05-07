@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"database/sql"
-	"embed"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -58,15 +57,8 @@ func ReadFile(name string) []byte {
 	return data
 }
 
-func FileExists(name string) bool {
-	if _, err := os.Stat(name); err == nil {
-		return true
-	}
-	return false
-}
-
-func FileExistsEmbedded(name string, efs *embed.FS) bool {
-	file, err := efs.Open(name)
+func FileExists(fsys fs.FS, name string) bool {
+	file, err := fsys.Open(name)
 	if err == nil {
 		CloseFile(file)
 		return true
@@ -75,24 +67,24 @@ func FileExistsEmbedded(name string, efs *embed.FS) bool {
 	}
 }
 
-func GetNewRecordingFile() string {
-	if !FileExists("recordings") {
+func GetNewRecordingFile(fsys fs.FS) string {
+	if !FileExists(fsys, "recordings") {
 		return ""
 	}
 	date := time.Now()
 	for i := 0; i < 1000000; i++ {
 		filename := fmt.Sprintf("recordings/recorded-inputs-%04d-%02d-%02d-%06d.mln",
 			date.Year(), date.Month(), date.Day(), i)
-		if !FileExists(filename) {
+		if !FileExists(fsys, filename) {
 			return filename
 		}
 	}
 	panic("Cannot record, no available filename found.")
 }
 
-func GetLatestRecordingFile() string {
+func GetLatestRecordingFile(fsys fs.FS) string {
 	dir := "recordings"
-	if !FileExists(dir) {
+	if !FileExists(fsys, dir) {
 		return ""
 	}
 	entries, err := os.ReadDir(dir)
@@ -195,17 +187,8 @@ func ReadAllText(filename string) string {
 	return string(data)
 }
 
-func LoadJSON(filename string, v any) {
-	file, err := os.Open(filename)
-	Check(err)
-	data, err := io.ReadAll(file)
-	Check(err)
-	err = json.Unmarshal(data, v)
-	Check(err)
-}
-
-func LoadJSONEmbedded(filename string, efs *embed.FS, v any) {
-	data, err := efs.ReadFile(filename)
+func LoadJSON(fsys fs.FS, filename string, v any) {
+	data, err := fs.ReadFile(fsys, filename)
 	Check(err)
 	err = json.Unmarshal(data, v)
 	Check(err)
@@ -318,20 +301,6 @@ func ZipToFile(filename string, data []byte) {
 	WriteFile(filename, Zip(data))
 }
 
-func LoadImage(str string) *ebiten.Image {
-	file, err := os.Open(str)
-	defer func(file *os.File) { Check(file.Close()) }(file)
-	Check(err)
-
-	img, _, err := image.Decode(file)
-	Check(err)
-	if err != nil {
-		return nil
-	}
-
-	return ebiten.NewImageFromImage(img)
-}
-
 func SaveImage(str string, img *ebiten.Image) {
 	file, err := os.Create(str)
 	defer func(file *os.File) { Check(file.Close()) }(file)
@@ -341,8 +310,8 @@ func SaveImage(str string, img *ebiten.Image) {
 	Check(err)
 }
 
-func LoadImageEmbedded(str string, efs *embed.FS) *ebiten.Image {
-	file, err := efs.Open(str)
+func LoadImage(fsys fs.FS, str string) *ebiten.Image {
+	file, err := fsys.Open(str)
 	defer func(file fs.File) { Check(file.Close()) }(file)
 	Check(err)
 

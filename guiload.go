@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/hajimehoshi/ebiten/v2"
 	. "github.com/marisvali/miln/gamelib"
 	_ "image/png"
 )
@@ -16,44 +15,44 @@ func (g *Gui) loadGuiData() {
 	// want to crash as soon as possible. We might be in the browser, in which
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
-	if g.EmbeddedFS == nil {
+	if g.FSys == nil {
 		CheckCrashes = false
 	}
 	for {
 		CheckFailed = nil
-		g.LoadJSON("data/gui/gui.json", &g.GuiData)
-		g.imgGround = g.LoadImage("data/gui/ground.png")
-		g.imgTree = g.LoadImage("data/gui/tree.png")
-		g.imgPlayerHealth = g.LoadImage("data/gui/player-health.png")
-		g.imgPlayerAmmo = g.LoadImage("data/gui/player-ammo.png")
-		g.imgHound = g.LoadImage("data/gui/enemy2.png")
-		g.imgEnemyHealth = g.LoadImage("data/gui/enemy-health.png")
-		g.imgEnemyCooldown = g.LoadImage("data/gui/enemy-cooldown.png")
-		g.imgBeam = g.LoadImage("data/gui/beam.png")
-		g.imgShadow = g.LoadImage("data/gui/shadow.png")
-		g.imgTextBackground = g.LoadImage("data/gui/text-background.png")
-		g.imgTextColor = g.LoadImage("data/gui/text-color.png")
-		g.imgAmmo = g.LoadImage("data/gui/ammo.png")
-		g.imgSpawnPortal = g.LoadImage("data/gui/spawn-portal.png")
-		g.imgPlayerHitEffect = g.LoadImage("data/gui/player-hit-effect.png")
-		g.imgHighlightMoveOk = g.LoadImage("data/gui/highlight-move-ok.png")
-		g.imgHighlightMoveNotOk = g.LoadImage("data/gui/highlight-move-not-ok.png")
-		g.imgHighlightAttack = g.LoadImage("data/gui/highlight-attack.png")
-		g.imgBlack = g.LoadImage("data/gui/black.png")
-		g.imgCursor = g.LoadImage("data/gui/cursor.png")
-		g.imgPlaybackPlay = g.LoadImage("data/gui/playback-play.png")
-		g.imgPlaybackPause = g.LoadImage("data/gui/playback-pause.png")
-		g.imgPlayBar = g.LoadImage("data/gui/playbar.png")
-		g.imgPlaybackCursor = g.LoadImage("data/gui/playback-cursor.png")
-		g.animMoveFailed = g.NewAnimation("data/gui/move-failed")
-		g.animAttackFailed = g.NewAnimation("data/gui/attack-failed")
-		g.animPlayer1 = g.NewAnimation("data/gui/player1")
-		g.animPlayer2 = g.NewAnimation("data/gui/player2")
-		g.animHoundSearching = g.NewAnimation("data/gui/hound-searching")
-		g.animHoundPreparingToAttack = g.NewAnimation("data/gui/hound-preparing-to-attack")
-		g.animHoundAttacking = g.NewAnimation("data/gui/hound-attacking")
-		g.animHoundHit = g.NewAnimation("data/gui/hound-hit")
-		g.animHoundDead = g.NewAnimation("data/gui/hound-dead")
+		LoadJSON(g.FSys, "data/gui/gui.json", &g.GuiData)
+		g.imgGround = LoadImage(g.FSys, "data/gui/ground.png")
+		g.imgTree = LoadImage(g.FSys, "data/gui/tree.png")
+		g.imgPlayerHealth = LoadImage(g.FSys, "data/gui/player-health.png")
+		g.imgPlayerAmmo = LoadImage(g.FSys, "data/gui/player-ammo.png")
+		g.imgHound = LoadImage(g.FSys, "data/gui/enemy2.png")
+		g.imgEnemyHealth = LoadImage(g.FSys, "data/gui/enemy-health.png")
+		g.imgEnemyCooldown = LoadImage(g.FSys, "data/gui/enemy-cooldown.png")
+		g.imgBeam = LoadImage(g.FSys, "data/gui/beam.png")
+		g.imgShadow = LoadImage(g.FSys, "data/gui/shadow.png")
+		g.imgTextBackground = LoadImage(g.FSys, "data/gui/text-background.png")
+		g.imgTextColor = LoadImage(g.FSys, "data/gui/text-color.png")
+		g.imgAmmo = LoadImage(g.FSys, "data/gui/ammo.png")
+		g.imgSpawnPortal = LoadImage(g.FSys, "data/gui/spawn-portal.png")
+		g.imgPlayerHitEffect = LoadImage(g.FSys, "data/gui/player-hit-effect.png")
+		g.imgHighlightMoveOk = LoadImage(g.FSys, "data/gui/highlight-move-ok.png")
+		g.imgHighlightMoveNotOk = LoadImage(g.FSys, "data/gui/highlight-move-not-ok.png")
+		g.imgHighlightAttack = LoadImage(g.FSys, "data/gui/highlight-attack.png")
+		g.imgBlack = LoadImage(g.FSys, "data/gui/black.png")
+		g.imgCursor = LoadImage(g.FSys, "data/gui/cursor.png")
+		g.imgPlaybackPlay = LoadImage(g.FSys, "data/gui/playback-play.png")
+		g.imgPlaybackPause = LoadImage(g.FSys, "data/gui/playback-pause.png")
+		g.imgPlayBar = LoadImage(g.FSys, "data/gui/playbar.png")
+		g.imgPlaybackCursor = LoadImage(g.FSys, "data/gui/playback-cursor.png")
+		g.animMoveFailed = NewAnimation(g.FSys, "data/gui/move-failed")
+		g.animAttackFailed = NewAnimation(g.FSys, "data/gui/attack-failed")
+		g.animPlayer1 = NewAnimation(g.FSys, "data/gui/player1")
+		g.animPlayer2 = NewAnimation(g.FSys, "data/gui/player2")
+		g.animHoundSearching = NewAnimation(g.FSys, "data/gui/hound-searching")
+		g.animHoundPreparingToAttack = NewAnimation(g.FSys, "data/gui/hound-preparing-to-attack")
+		g.animHoundAttacking = NewAnimation(g.FSys, "data/gui/hound-attacking")
+		g.animHoundHit = NewAnimation(g.FSys, "data/gui/hound-hit")
+		g.animHoundDead = NewAnimation(g.FSys, "data/gui/hound-dead")
 		if CheckFailed == nil {
 			break
 		}
@@ -62,28 +61,4 @@ func (g *Gui) loadGuiData() {
 
 	g.visWorld = NewVisWorld(g.Animations)
 	g.updateWindowSize()
-}
-
-func (g *Gui) LoadJSON(filename string, v any) {
-	if g.EmbeddedFS != nil {
-		LoadJSONEmbedded(filename, g.EmbeddedFS, v)
-	} else {
-		LoadJSON(filename, v)
-	}
-}
-
-func (g *Gui) LoadImage(filename string) *ebiten.Image {
-	if g.EmbeddedFS != nil {
-		return LoadImageEmbedded(filename, &embeddedFiles)
-	} else {
-		return LoadImage(filename)
-	}
-}
-
-func (g *Gui) NewAnimation(filename string) Animation {
-	if g.EmbeddedFS != nil {
-		return NewAnimationEmbedded(filename, g.EmbeddedFS)
-	} else {
-		return NewAnimation(filename)
-	}
 }

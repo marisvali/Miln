@@ -2,10 +2,10 @@ package world
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
+	"io/fs"
 	"math"
 	"slices"
 )
@@ -85,7 +85,7 @@ type World struct {
 	PortalKeyDropped bool
 	KingSpawned      bool
 	vision           Vision
-	EmbeddedFS       *embed.FS
+	FSys             fs.FS
 }
 
 func (w *World) Clone() World {
@@ -188,14 +188,6 @@ type PortalSeed struct {
 	NUltraHounds Int
 }
 
-func (w *World) LoadJSON(filename string, v any) {
-	if w.EmbeddedFS != nil {
-		LoadJSONEmbedded(filename, w.EmbeddedFS, v)
-	} else {
-		LoadJSON(filename, v)
-	}
-}
-
 func (w *World) loadWorldData() {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
@@ -206,14 +198,14 @@ func (w *World) loadWorldData() {
 	// want to crash as soon as possible. We might be in the browser, in which
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
-	if w.EmbeddedFS == nil {
+	if w.FSys == nil {
 		CheckCrashes = false
 	}
 	for {
 		CheckFailed = nil
-		w.LoadJSON("data/world/world.json", &w)
-		w.LoadJSON("data/world/"+w.NEntitiesPath, &w.NEntities)
-		w.LoadJSON("data/world/"+w.EnemyParamsPath, &w.EnemyParams)
+		LoadJSON(w.FSys, "data/world/world.json", &w)
+		LoadJSON(w.FSys, "data/world/"+w.NEntitiesPath, &w.NEntities)
+		LoadJSON(w.FSys, "data/world/"+w.EnemyParamsPath, &w.EnemyParams)
 		if CheckFailed == nil {
 			break
 		}
@@ -222,8 +214,8 @@ func (w *World) loadWorldData() {
 	return
 }
 
-func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
-	w.EmbeddedFS = efs
+func NewWorld(seed Int, difficulty Int, fsys fs.FS) (w World) {
+	w.FSys = fsys
 	w.loadWorldData()
 	w.Seed = seed
 	RSeed(w.Seed)
