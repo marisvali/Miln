@@ -11,8 +11,8 @@ import (
 )
 
 func Test_WorldRegression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20240804-073523.mln007"))
-	expected := string(ReadFile("playthroughs/20240804-073523.mln007-hash"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250319-170648.mln010"))
+	expected := string(ReadFile("playthroughs/20250319-170648.mln010-hash"))
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.TargetDifficulty, nil)

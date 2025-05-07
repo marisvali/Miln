@@ -367,7 +367,7 @@ func (w *World) RegressionId() string {
 	buf := new(bytes.Buffer)
 	Serialize(buf, w.Seed.ToInt64())
 	Serialize(buf, w.Player.Health)
-	Serialize(buf, w.Player.Pos)
+	Serialize(buf, w.Player.Pos())
 	Serialize(buf, int64(len(w.Enemies)))
 	for _, e := range w.Enemies {
 		switch e.(type) {
