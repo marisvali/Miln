@@ -90,14 +90,14 @@ func (g *Gui) ClosestTileToMouse(tiles []Pt) (tile Pt, dist Int) {
 func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 	if g.AutoAimAttack {
 		attackablePositions := g.world.VulnerableEnemyPositions()
-		attackablePositions.IntersectWith(g.world.AttackableTiles)
+		attackablePositions.IntersectWith(g.world.VisibleTiles)
 		tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
 		closeEnough := dist.Lt(g.BlockSize.Times(g.AutoAimAttackFactor).DivBy(I(100)))
 		attackOk := g.world.Player.OnMap && closeEnough
 		return attackOk, tilePos
 	} else {
 		attackablePositions := g.world.VulnerableEnemyPositions()
-		attackablePositions.IntersectWith(g.world.AttackableTiles)
+		attackablePositions.IntersectWith(g.world.VisibleTiles)
 		tilePos := g.ScreenToTile(g.mousePt)
 		mouseCursorIsOverAVulnerableEnemy :=
 			attackablePositions.InBounds(tilePos) &&

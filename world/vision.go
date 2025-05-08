@@ -10,7 +10,7 @@ type Vision struct {
 	cachedRelativeRelevantPts Matrix[[]Pt]
 	previousStart             Pt
 	previousObstacles         MatBool
-	previousAttackableTiles   MatBool
+	previousVisibleTiles      MatBool
 }
 
 func NewVision(size Pt) (v Vision) {
@@ -146,36 +146,36 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 	return true
 }
 
-func (v *Vision) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) {
+func (v *Vision) Compute(start Pt, obstacles MatBool) (visibleTiles MatBool) {
 	if start == v.previousStart && obstacles.Equal(v.previousObstacles) {
-		attackableTiles = v.previousAttackableTiles
+		visibleTiles = v.previousVisibleTiles
 		return
 	}
 
-	attackableTiles = NewMatBool(obstacles.Size())
+	visibleTiles = NewMatBool(obstacles.Size())
 
 	sz := obstacles.Size()
 	for y := ZERO; y.Lt(sz.Y); y.Inc() {
 		for x := ZERO; x.Lt(sz.X); x.Inc() {
 			end := Pt{x, y}
 			if v.isPathClear(start, end, obstacles) {
-				attackableTiles.Set(end)
+				visibleTiles.Set(end)
 			}
 		}
 	}
 
-	// Get all attackable tiles connected to the player's pos.
-	connectedTiles := attackableTiles.ConnectedPositions(start)
+	// Get all visible tiles connected to the player's pos.
+	connectedTiles := visibleTiles.ConnectedPositions(start)
 
-	// Eliminate tiles which were marked as attackable but are disconnected from
-	// the attackable region that contains the player's position.
+	// Eliminate tiles which were marked as visible but are disconnected from
+	// the visible region that contains the player's position.
 	// This is needed in order to eliminate tiles which are technically
 	// reachable if you respect the math, but which just look weird to people.
 	// Do the elimination by intersecting sets.
-	attackableTiles.IntersectWith(connectedTiles)
+	visibleTiles.IntersectWith(connectedTiles)
 
 	v.previousStart = start
 	v.previousObstacles = obstacles.Clone()
-	v.previousAttackableTiles = attackableTiles
+	v.previousVisibleTiles = visibleTiles
 	return
 }

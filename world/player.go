@@ -29,7 +29,7 @@ func NewPlayer() (p Player) {
 // player can move to from his current state.
 func (p *Player) ComputeFreePositions(w *World) (free MatBool) {
 	if p.OnMap {
-		free = w.AttackableTiles.Clone()
+		free = w.VisibleTiles.Clone()
 	} else {
 		free = NewMatBool(w.Obstacles.Size())
 		free.SetAll()
@@ -81,7 +81,7 @@ func (p *Player) Step(w *World, input PlayerInput) {
 	}
 
 	if input.Shoot &&
-		w.AttackableTiles.At(input.ShootPt) &&
+		w.VisibleTiles.At(input.ShootPt) &&
 		(!w.UseAmmo || w.UseAmmo && w.Player.AmmoCount.IsPositive()) {
 
 		shotEnemies := []*Enemy{}

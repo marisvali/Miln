@@ -72,7 +72,7 @@ type World struct {
 	Enemies              []Enemy
 	Beam                 Beam
 	Obstacles            MatBool
-	AttackableTiles      MatBool
+	VisibleTiles         MatBool
 	TimeStep             Int
 	BeamMax              Int
 	BlockSize            Int
@@ -95,7 +95,7 @@ func (w *World) Clone() World {
 		clone.Enemies = append(clone.Enemies, w.Enemies[i].Clone())
 	}
 	clone.Obstacles = w.Obstacles.Clone()
-	clone.AttackableTiles = w.AttackableTiles.Clone()
+	clone.VisibleTiles = w.VisibleTiles.Clone()
 	clone.Ammos = slices.Clone(w.Ammos)
 	clone.SpawnPortals = slices.Clone(w.SpawnPortals)
 	clone.History = slices.Clone(w.History)
@@ -249,7 +249,7 @@ func NewWorld(seed Int, difficulty Int, fsys fs.FS) (w World) {
 	// Note: this was true when the player started on the map, so it might not
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 	return
 }
 
@@ -272,7 +272,7 @@ func NewWorldFromString(level string) (w World) {
 	// Note: this was true when the player started on the map, so it might not
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 	return
 }
 
@@ -410,13 +410,13 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 	return pt.DivBy(w.BlockSize)
 }
 
-func (w *World) computeAttackableTiles() {
-	// Compute which tiles are attackable.
+func (w *World) computeVisibleTiles() {
+	// Compute which tiles are visible.
 	obstacles := w.Obstacles.Clone()
 	for _, enemy := range w.Enemies {
 		obstacles.Set(enemy.Pos())
 	}
-	w.AttackableTiles = w.vision.Compute(w.Player.Pos(), obstacles)
+	w.VisibleTiles = w.vision.Compute(w.Player.Pos(), obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
@@ -448,7 +448,7 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
 	w.Player.Step(w, input)
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 
 	stepEnemies := true
 	if w.Boardgame && !input.Move && !input.Shoot {

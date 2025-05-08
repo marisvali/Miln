@@ -34,7 +34,7 @@ func ValidAttack(world *World, pos Pt) bool {
 		return false
 	}
 	attackablePositions := world.VulnerableEnemyPositions()
-	attackablePositions.IntersectWith(world.AttackableTiles)
+	attackablePositions.IntersectWith(world.VisibleTiles)
 	return attackablePositions.At(pos)
 }
 
