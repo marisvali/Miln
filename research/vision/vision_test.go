@@ -14,20 +14,20 @@ func TestRelevantPts(t *testing.T) {
 	// println()
 	// println()
 
-	a := NewAttackableTiles()
+	a := NewVisibleTiles()
 
 	dummy := ZERO
 	sz := obstacles.Size()
 	for y := ZERO; y.Lt(sz.Y); y.Inc() {
 		for x := ZERO; x.Lt(sz.X); x.Inc() {
-			attackable := a.Compute(Pt{x, y}, obstacles)
-			if attackable.At(Pt{I(2), I(2)}) {
+			visible := a.Compute(Pt{x, y}, obstacles)
+			if visible.At(Pt{I(2), I(2)}) {
 				dummy.Inc()
 			}
 		}
 	}
-	// attackable := a.Compute(Pt{ZERO, ZERO}, obstacles)
-	// if attackable.At(Pt{I(2), I(2)}) {
+	// visible := a.Compute(Pt{ZERO, ZERO}, obstacles)
+	// if visible.At(Pt{I(2), I(2)}) {
 	// 	dummy.Inc()
 	// }
 

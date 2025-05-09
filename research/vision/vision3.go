@@ -30,18 +30,18 @@ func (c *LineSquareIntersectionCache) Intersection(l Line, s Square) bool {
 	return val
 }
 
-type AttackableTiles3 struct {
+type VisibleTiles3 struct {
 	cachedRelativeRelevantPts   Matrix[[]Pt]
 	lineSquareIntersectionCache LineSquareIntersectionCache
 }
 
-func NewAttackableTiles3(size Pt) (a AttackableTiles3) {
+func NewVisibleTiles3(size Pt) (a VisibleTiles3) {
 	a.cachedRelativeRelevantPts = NewMatrix[[]Pt](size)
 	a.lineSquareIntersectionCache = NewLineSquareIntersectionCache()
 	return
 }
 
-func (a *AttackableTiles3) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
+func (a *VisibleTiles3) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	pts = a.cachedRelativeRelevantPts.Get(dif)
 	if pts != nil {
 		// We have previously computed this.
@@ -87,7 +87,7 @@ func (a *AttackableTiles3) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	return
 }
 
-func (a *AttackableTiles3) isPathClear(start, end Pt, obstacles MatBool) bool {
+func (a *VisibleTiles3) isPathClear(start, end Pt, obstacles MatBool) bool {
 	if start == end {
 		return true
 	}
@@ -159,15 +159,15 @@ func (a *AttackableTiles3) isPathClear(start, end Pt, obstacles MatBool) bool {
 	return true
 }
 
-func (a *AttackableTiles3) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) {
-	attackableTiles = NewMatBool(obstacles.Size())
+func (a *VisibleTiles3) Compute(start Pt, obstacles MatBool) (visibleTiles MatBool) {
+	visibleTiles = NewMatBool(obstacles.Size())
 
 	sz := obstacles.Size()
 	for y := ZERO; y.Lt(sz.Y); y.Inc() {
 		for x := ZERO; x.Lt(sz.X); x.Inc() {
 			end := Pt{x, y}
 			if a.isPathClear(start, end, obstacles) {
-				attackableTiles.Set(end)
+				visibleTiles.Set(end)
 			}
 		}
 	}

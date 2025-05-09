@@ -1,33 +1,20 @@
 {
-  "NObstaclesMin": 12,
-  "NObstaclesMax": 12,
+  "NObstaclesMin": 15,
+  "NObstaclesMax": 15,
   "SpawnPortalDatas": [
     {
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
           "NHoundMin": 1,
-          "NHoundMax": 1,
-          "NHoundMin": 1,
           "NHoundMax": 1
-        },
+        }
+      ]
+    },
+    {
+      "Waves": [
         {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
+          "SecondsAfterLastWave": 0,
           "NHoundMin": 1,
           "NHoundMax": 1
         }
@@ -38,28 +25,6 @@
         {
           "SecondsAfterLastWave": 0,
           "NHoundMin": 1,
-          "NHoundMax": 1,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
           "NHoundMax": 1
         }
       ]
@@ -69,29 +34,7 @@
         {
           "SecondsAfterLastWave": 0,
           "NHoundMin": 1,
-          "NHoundMax": 1,
-          "NHoundMin": 1,
           "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 2,
-          "NHoundMax": 2
         }
       ]
     },
@@ -99,33 +42,6 @@
       "Waves": [
         {
           "SecondsAfterLastWave": 0,
-          "NHoundMin": 1,
-          "NHoundMax": 1,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 2,
-          "NHoundMax": 2
-        },
-        {
-          "SecondsAfterLastWave": 10,
-          "NHoundMin": 1,
-          "NHoundMax": 1
-        },
-        {
-          "SecondsAfterLastWave": 10,
           "NHoundMin": 1,
           "NHoundMax": 1
         }

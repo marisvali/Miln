@@ -2,10 +2,10 @@ package world
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
+	"io/fs"
 	"math"
 	"slices"
 )
@@ -72,16 +72,16 @@ type World struct {
 	Enemies              []Enemy
 	Beam                 Beam
 	Obstacles            MatBool
-	AttackableTiles      MatBool
+	VisibleTiles         MatBool
 	TimeStep             Int
 	BeamMax              Int
 	BlockSize            Int
 	EnemyMoveCooldownIdx Int
 
-	Ammos        []Ammo
-	SpawnPortals []SpawnPortal
-	vision       Vision
-	EmbeddedFS   *embed.FS
+	Ammos            []Ammo
+	SpawnPortals     []SpawnPortal
+	vision           Vision
+	FSys             fs.FS
 }
 
 func (w *World) Clone() World {
@@ -92,7 +92,7 @@ func (w *World) Clone() World {
 	}
 	clone.Obstacles = w.Obstacles.Clone()
 	clone.vision = NewVision(w.Obstacles.Size())
-	clone.AttackableTiles = w.AttackableTiles.Clone()
+	clone.VisibleTiles = w.VisibleTiles.Clone()
 	clone.Ammos = slices.Clone(w.Ammos)
 	clone.SpawnPortals = []SpawnPortal{}
 	for i := range w.SpawnPortals {
@@ -188,15 +188,7 @@ type PortalSeed struct {
 	NUltraHounds Int
 }
 
-func (w *World) LoadJSON(filename string, v any) {
-	if w.EmbeddedFS != nil {
-		LoadJSONEmbedded(filename, w.EmbeddedFS, v)
-	} else {
-		LoadJSON(filename, v)
-	}
-}
-
-func (w *World) loadWorldData() {
+func LoadWorldData(fsys fs.FS) WorldData {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
@@ -206,28 +198,28 @@ func (w *World) loadWorldData() {
 	// want to crash as soon as possible. We might be in the browser, in which
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
-	if w.EmbeddedFS == nil {
+	var wd WorldData
+	if fsys == nil {
 		CheckCrashes = false
 	}
 	for {
 		CheckFailed = nil
-		w.LoadJSON("data/world/world.json", &w)
-		w.LoadJSON("data/world/"+w.NEntitiesPath, &w.NEntities)
-		w.LoadJSON("data/world/"+w.EnemyParamsPath, &w.EnemyParams)
+		LoadJSON(fsys, "data/world/world.json", &wd)
+		LoadJSON(fsys, "data/world/"+wd.NEntitiesPath, &wd.NEntities)
+		LoadJSON(fsys, "data/world/"+wd.EnemyParamsPath, &wd.EnemyParams)
 		if CheckFailed == nil {
 			break
 		}
 	}
 	CheckCrashes = true
-	return
+	return wd
 }
 
-func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
-	w.EmbeddedFS = efs
-	w.loadWorldData()
+func NewWorld(seed Int, worldData WorldData) (w World) {
+	w.WorldData = worldData
 	w.Seed = seed
 	RSeed(w.Seed)
-	w.TargetDifficulty = difficulty
+	w.TargetDifficulty = ZERO
 	w.Id = uuid.New()
 	w.Obstacles = ValidRandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())
@@ -257,7 +249,7 @@ func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
 	// Note: this was true when the player started on the map, so it might not
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 	return
 }
 
@@ -280,7 +272,7 @@ func NewWorldFromString(level string) (w World) {
 	// Note: this was true when the player started on the map, so it might not
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 	return
 }
 
@@ -367,7 +359,7 @@ func (w *World) RegressionId() string {
 	buf := new(bytes.Buffer)
 	Serialize(buf, w.Seed.ToInt64())
 	Serialize(buf, w.Player.Health)
-	Serialize(buf, w.Player.Pos)
+	Serialize(buf, w.Player.Pos())
 	Serialize(buf, int64(len(w.Enemies)))
 	for _, e := range w.Enemies {
 		switch e.(type) {
@@ -418,13 +410,13 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 	return pt.DivBy(w.BlockSize)
 }
 
-func (w *World) computeAttackableTiles() {
-	// Compute which tiles are attackable.
+func (w *World) computeVisibleTiles() {
+	// Compute which tiles are visible.
 	obstacles := w.Obstacles.Clone()
 	for _, enemy := range w.Enemies {
 		obstacles.Set(enemy.Pos())
 	}
-	w.AttackableTiles = w.vision.Compute(w.Player.Pos(), obstacles)
+	w.VisibleTiles = w.vision.Compute(w.Player.Pos(), obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
@@ -456,7 +448,7 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 func (w *World) Step(input PlayerInput) {
 	w.History = append(w.History, input)
 	w.Player.Step(w, input)
-	w.computeAttackableTiles()
+	w.computeVisibleTiles()
 
 	stepEnemies := true
 	if w.Boardgame && !input.Move && !input.Shoot {
@@ -548,18 +540,4 @@ func (w *World) SpawnAmmos() {
 		}
 		w.Ammos = append(w.Ammos, ammo)
 	}
-}
-
-func (w *World) AllEnemiesDead() bool {
-	for _, enemy := range w.Enemies {
-		if enemy.Alive() {
-			return false
-		}
-	}
-	for _, portal := range w.SpawnPortals {
-		if portal.Active() {
-			return false
-		}
-	}
-	return true
 }

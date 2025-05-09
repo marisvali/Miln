@@ -7,16 +7,16 @@ import (
 
 type PtSlice []Pt
 
-type AttackableTiles2 struct {
+type VisibleTiles2 struct {
 	cachedRelativeRelevantPts Matrix[PtSlice]
 }
 
-func NewAttackableTiles2(size Pt) (a AttackableTiles2) {
+func NewVisibleTiles2(size Pt) (a VisibleTiles2) {
 	a.cachedRelativeRelevantPts = NewMatrix[PtSlice](size)
 	return
 }
 
-func (a *AttackableTiles2) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
+func (a *VisibleTiles2) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	pts = a.cachedRelativeRelevantPts.Get(dif)
 	if pts != nil {
 		// We have previously computed this.
@@ -61,7 +61,7 @@ func (a *AttackableTiles2) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	return
 }
 
-func (a *AttackableTiles2) isPathClear(start, end Pt, obstacles MatBool) bool {
+func (a *VisibleTiles2) isPathClear(start, end Pt, obstacles MatBool) bool {
 	if start == end {
 		return true
 	}
@@ -133,15 +133,15 @@ func (a *AttackableTiles2) isPathClear(start, end Pt, obstacles MatBool) bool {
 	return true
 }
 
-func (a *AttackableTiles2) Compute(start Pt, obstacles MatBool) (attackableTiles MatBool) {
-	attackableTiles = NewMatBool(obstacles.Size())
+func (a *VisibleTiles2) Compute(start Pt, obstacles MatBool) (visibleTiles MatBool) {
+	visibleTiles = NewMatBool(obstacles.Size())
 
 	sz := obstacles.Size()
 	for y := ZERO; y.Lt(sz.Y); y.Inc() {
 		for x := ZERO; x.Lt(sz.X); x.Inc() {
 			end := Pt{x, y}
 			if a.isPathClear(start, end, obstacles) {
-				attackableTiles.Set(end)
+				visibleTiles.Set(end)
 			}
 		}
 	}

@@ -114,11 +114,11 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 		}
 	}
 
-	// Mark un-attackable tiles.
+	// Mark tiles that the player can't see.
 	if g.world.Player.OnMap {
 		for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 			for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
-				if !g.world.AttackableTiles.At(pt) {
+				if !g.world.VisibleTiles.At(pt) {
 					g.DrawTile(screen, g.imgShadow, pt)
 				}
 			}

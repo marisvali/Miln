@@ -17,8 +17,7 @@ func (g *Gui) Update() error {
 	if g.folderWatcher2.FolderContentsChanged() {
 		// Reload world, and rely on the fact that this is makes the new world
 		// load the new parameters from world.json.
-		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
-			g.EmbeddedFS)
+		g.world = NewWorld(g.world.Seed, LoadWorldData(g.FSys))
 		g.updateWindowSize()
 	}
 
@@ -69,7 +68,8 @@ func (g *Gui) UpdateGameOngoing() {
 		g.UpdateGamePaused()
 		return
 	}
-	if g.world.AllEnemiesDead() {
+
+	if g.AllEnemiesDead() {
 		g.state = GameWon
 		g.uploadCurrentWorld()
 		return
@@ -127,9 +127,8 @@ func (g *Gui) UserRequestedPlaybackPause() bool {
 
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
-		// seed, targetDifficulty := GetNextLevel(g.username)
-		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
-		g.world = NewWorld(seed, targetDifficulty, g.EmbeddedFS)
+		seed := RInt(I(0), I(1000000))
+		g.world = NewWorld(seed, LoadWorldData(g.FSys))
 		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
@@ -137,8 +136,7 @@ func (g *Gui) UpdateGamePaused() {
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed, g.world.TargetDifficulty,
-			g.EmbeddedFS)
+		g.world = NewWorld(g.world.Seed, LoadWorldData(g.FSys))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
@@ -215,7 +213,11 @@ func (g *Gui) UpdatePlayback() {
 	}
 
 	if g.Pressed(ebiten.KeyLeft) && !g.Pressed(ebiten.KeyShift) && !g.Pressed(ebiten.KeyAlt) {
-		targetFrameIdx.Subtract(g.FrameSkipArrow)
+		if g.playbackPaused {
+			targetFrameIdx.Subtract(g.FrameSkipArrow)
+		} else {
+			targetFrameIdx.Subtract(g.FrameSkipArrow.Times(TWO))
+		}
 	}
 
 	if g.Pressed(ebiten.KeyRight) && !g.Pressed(ebiten.KeyShift) && !g.Pressed(ebiten.KeyAlt) {
@@ -232,7 +234,7 @@ func (g *Gui) UpdatePlayback() {
 
 	if targetFrameIdx != g.frameIdx {
 		// Rewind.
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.EmbeddedFS)
+		g.world = NewWorld(g.playthrough.Seed, LoadWorldData(g.FSys))
 		g.visWorld = NewVisWorld(g.Animations)
 
 		// Replay the world.
@@ -269,10 +271,30 @@ func (g *Gui) UpdatePlayback() {
 
 	g.instructionalText = fmt.Sprintf("Playing back frame %d / %d.",
 		g.frameIdx.Plus(ONE).ToInt64(), nFrames.ToInt64())
-	if g.world.AllEnemiesDead() {
+	if input.LeftButtonPressed {
+		g.instructionalText += " Left button pressed."
+	}
+	if input.RightButtonPressed {
+		g.instructionalText += " Right button pressed."
+	}
+	if g.AllEnemiesDead() {
 		g.instructionalText += " Won."
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.instructionalText += " Lost."
 	}
+}
+
+func (g *Gui) AllEnemiesDead() bool {
+	for _, enemy := range g.world.Enemies {
+		if enemy.Alive() {
+			return false
+		}
+	}
+	for _, portal := range g.world.SpawnPortals {
+		if portal.Active() {
+			return false
+		}
+	}
+	return true
 }

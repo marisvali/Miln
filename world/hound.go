@@ -97,7 +97,7 @@ func (g *Hound) searching(justEnteredState bool, w *World) {
 	}
 
 	// If player is visible, prepare to attack.
-	if w.Player.OnMap && w.AttackableTiles.At(g.pos) {
+	if w.Player.OnMap && w.VisibleTiles.At(g.pos) {
 		g.state = PreparingToAttack
 		return
 	}
@@ -134,7 +134,7 @@ func (g *Hound) preparingToAttack(justEnteredState bool, w *World) {
 	}
 
 	// If player is no longer visible, go back to searching.
-	if !w.Player.OnMap || !w.AttackableTiles.At(g.pos) {
+	if !w.Player.OnMap || !w.VisibleTiles.At(g.pos) {
 		g.state = Searching
 		return
 	}
@@ -175,7 +175,7 @@ func (g *Hound) attacking(justEnteredState bool, w *World) {
 	}
 
 	// If player is no longer visible, go back to searching.
-	if !w.Player.OnMap || !w.AttackableTiles.At(g.pos) {
+	if !w.Player.OnMap || !w.VisibleTiles.At(g.pos) {
 		g.state = Searching
 		return
 	}
@@ -206,7 +206,7 @@ func (g *Hound) hit(justEnteredState bool, w *World) {
 	g.hitCooldownIdx.Dec()
 	if g.hitCooldownIdx.IsZero() {
 		// If player is visible, prepare to attack.
-		if w.Player.OnMap && w.AttackableTiles.At(g.pos) {
+		if w.Player.OnMap && w.VisibleTiles.At(g.pos) {
 			g.state = PreparingToAttack
 			return
 		} else {

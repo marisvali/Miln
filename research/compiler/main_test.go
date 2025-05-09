@@ -61,3 +61,36 @@ func BenchmarkPossibleOptimization2(b *testing.B) {
 	result = 17
 	fmt.Println(result)
 }
+
+// Typical result:
+// BenchmarkNoOptimizationWithBLoop-12    	     142	   8356441 ns/op
+func BenchmarkNoOptimizationWithBLoop(b *testing.B) {
+	result := 0
+	for b.Loop() {
+		result += TimeConsumingFunction()
+	}
+	fmt.Println(result)
+}
+
+// Typical result:
+// BenchmarkPossibleOptimization1WithBLoop-12    	     140	   8392801 ns/op
+func BenchmarkPossibleOptimization1WithBLoop(b *testing.B) {
+	result := 0
+	for b.Loop() {
+		result += TimeConsumingFunction()
+	}
+	// Don't print result.
+	// fmt.Println(result)
+}
+
+// Typical result:
+// BenchmarkPossibleOptimization2WithBLoop-12    	     142	   8312732 ns/op
+func BenchmarkPossibleOptimization2WithBLoop(b *testing.B) {
+	result := 0
+	for b.Loop() {
+		result += TimeConsumingFunction()
+	}
+	// Make computation irrelevant for the final output of the code.
+	result = 17
+	fmt.Println(result)
+}

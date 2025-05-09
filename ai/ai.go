@@ -29,7 +29,7 @@ func ClosestEnemy(pt Pt, w *World) Enemy {
 // 	_, isUltraHound := e.(*UltraHound)
 // 	return (w.Player.HitPermissions.CanHitUltraHound || !isUltraHound) &&
 // 		e.FreezeCooldownIdx().IsZero() &&
-// 		w.AttackableTiles.At(e.Pos())
+// 		w.VisibleTiles.At(e.Pos())
 // }
 
 func InDangerZone(w *World, pos Pt) bool {
@@ -62,7 +62,7 @@ func (a *AI) MoveRandomly(w *World) (input PlayerInput) {
 	return
 }
 
-func (a *AI) MoveToRandomAttackableTile(freePts []Pt) (input PlayerInput) {
+func (a *AI) MoveToRandomVisibleTile(freePts []Pt) (input PlayerInput) {
 	if len(freePts) > 0 {
 		input.MovePt = RElem(freePts)
 	} else {
