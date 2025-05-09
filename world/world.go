@@ -188,7 +188,7 @@ type PortalSeed struct {
 	NUltraHounds Int
 }
 
-func (w *World) loadWorldData() {
+func LoadWorldData(fsys fs.FS) WorldData {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
@@ -198,28 +198,28 @@ func (w *World) loadWorldData() {
 	// want to crash as soon as possible. We might be in the browser, in which
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
-	if w.FSys == nil {
+	var wd WorldData
+	if fsys == nil {
 		CheckCrashes = false
 	}
 	for {
 		CheckFailed = nil
-		LoadJSON(w.FSys, "data/world/world.json", &w)
-		LoadJSON(w.FSys, "data/world/"+w.NEntitiesPath, &w.NEntities)
-		LoadJSON(w.FSys, "data/world/"+w.EnemyParamsPath, &w.EnemyParams)
+		LoadJSON(fsys, "data/world/world.json", &wd)
+		LoadJSON(fsys, "data/world/"+wd.NEntitiesPath, &wd.NEntities)
+		LoadJSON(fsys, "data/world/"+wd.EnemyParamsPath, &wd.EnemyParams)
 		if CheckFailed == nil {
 			break
 		}
 	}
 	CheckCrashes = true
-	return
+	return wd
 }
 
-func NewWorld(seed Int, difficulty Int, fsys fs.FS) (w World) {
-	w.FSys = fsys
-	w.loadWorldData()
+func NewWorld(seed Int, worldData WorldData) (w World) {
+	w.WorldData = worldData
 	w.Seed = seed
 	RSeed(w.Seed)
-	w.TargetDifficulty = difficulty
+	w.TargetDifficulty = ZERO
 	w.Id = uuid.New()
 	w.Obstacles = ValidRandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
 	w.vision = NewVision(w.Obstacles.Size())

@@ -13,7 +13,7 @@ func Test_WorldRegression1(t *testing.T) {
 	expected := string(ReadFile("playthroughs/20250319-170648.mln010-hash"))
 
 	// Run the playthrough.
-	w := NewWorld(playthrough.Seed, playthrough.TargetDifficulty, os.DirFS("playthroughs"))
+	w := NewWorld(playthrough.Seed, LoadWorldData(os.DirFS("playthroughs")))
 	for _, input := range playthrough.History {
 		w.Step(input)
 	}
@@ -24,7 +24,7 @@ func Test_WorldRegression1(t *testing.T) {
 }
 
 func RunPlaythrough(p Playthrough) {
-	w := NewWorld(p.Seed, p.TargetDifficulty, os.DirFS("playthroughs"))
+	w := NewWorld(p.Seed, LoadWorldData(os.DirFS("playthroughs")))
 	for _, input := range p.History {
 		w.Step(input)
 	}
@@ -58,7 +58,7 @@ func GetLargeWorld() World {
 	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250505-170603.mln010"))
 
 	// Run the playthrough.
-	w := NewWorld(playthrough.Seed, playthrough.TargetDifficulty, os.DirFS("playthroughs"))
+	w := NewWorld(playthrough.Seed, LoadWorldData(os.DirFS("playthroughs")))
 	for _, input := range playthrough.History {
 		w.Step(input)
 	}

@@ -16,7 +16,7 @@ import (
 var embeddedFS embed.FS
 
 func GoToFrame(playthrough Playthrough, frameIdx int) World {
-	world := NewWorld(playthrough.Seed, playthrough.TargetDifficulty, &embeddedFS)
+	world := NewWorld(playthrough.Seed, LoadWorldData(&embeddedFS))
 	for i := 0; i < frameIdx; i++ {
 		input := playthrough.History[i]
 		world.Step(input)

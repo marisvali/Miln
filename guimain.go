@@ -177,14 +177,14 @@ func main() {
 	if replayFile != "" {
 		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.TargetDifficulty, g.FSys)
+		g.world = NewWorld(g.playthrough.Seed, LoadWorldData(g.FSys))
 		g.state = Playback
 	} else {
 		g.playbackExecution = false
 		// g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
-		seed, targetDifficulty := RInt(I(0), I(1000000)), RInt(I(60), I(70))
-		g.world = NewWorld(seed, targetDifficulty, g.FSys)
+		seed := RInt(I(0), I(1000000))
+		g.world = NewWorld(seed, LoadWorldData(g.FSys))
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
