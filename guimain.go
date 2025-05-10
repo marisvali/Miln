@@ -177,7 +177,7 @@ func main() {
 	if replayFile != "" {
 		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, LoadWorldData(g.FSys))
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.WorldData)
 		g.state = Playback
 	} else {
 		g.playbackExecution = false

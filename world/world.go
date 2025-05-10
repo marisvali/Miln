@@ -66,7 +66,6 @@ type WorldObject interface {
 }
 
 type World struct {
-	WorldData
 	Playthrough
 	Player               Player
 	Enemies              []Enemy
@@ -104,6 +103,7 @@ func (w *World) Clone() World {
 }
 
 type Playthrough struct {
+	WorldData
 	Id               uuid.UUID
 	Seed             Int
 	TargetDifficulty Int
