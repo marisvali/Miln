@@ -1,8 +1,10 @@
 package gamelib
 
 import (
+	"bytes"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"slices"
 	"testing"
 )
 
@@ -86,4 +88,40 @@ func TestDbHttp(t *testing.T) {
 	UploadDataToDbHttp("test-user", 19, id, []byte("mele 2"))
 	UploadDataToDbHttp("test-user", 19, id, []byte("mele totusi, da -------"))
 	assert.Equal(t, true, true)
+}
+
+func TestSeralizationInt(t *testing.T) {
+	var x Int
+	buf := new(bytes.Buffer)
+	x = I64(103)
+	Serialize(buf, x)
+	var y Int
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationStruct(t *testing.T) {
+	type Struct struct {
+		A Int
+		B Int
+	}
+	var x Struct
+	x.A = I64(103)
+	x.B = I64(93772)
+	buf := new(bytes.Buffer)
+	Serialize(buf, x)
+	var y Struct
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationSlice(t *testing.T) {
+	var x []int64
+	x = make([]int64, 3)
+	x[0], x[1], x[2] = 3, 12, 9
+	buf := new(bytes.Buffer)
+	SerializeSlice(buf, x)
+	var y []int64
+	DeserializeSlice(buf, &y)
+	assert.True(t, slices.Equal(x, y))
 }
