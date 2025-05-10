@@ -78,10 +78,10 @@ type World struct {
 	BlockSize            Int
 	EnemyMoveCooldownIdx Int
 
-	Ammos            []Ammo
-	SpawnPortals     []SpawnPortal
-	vision           Vision
-	FSys             fs.FS
+	Ammos        []Ammo
+	SpawnPortals []SpawnPortal
+	vision       Vision
+	FSys         fs.FS
 }
 
 func (w *World) Clone() World {
@@ -369,16 +369,14 @@ func (w *World) RegressionId() string {
 		Serialize(buf, e.Health())
 		Serialize(buf, e.Pos())
 	}
-	SerializeSlice(buf, w.Obstacles.ToSlice())
+	Serialize(buf, w.Obstacles.ToSlice())
 	return HashBytes(buf.Bytes())
 }
 
 func (w *World) SerializedPlaythrough() []byte {
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
-	Serialize(buf, w.Seed.ToInt64())
-	Serialize(buf, w.TargetDifficulty.ToInt64())
-	SerializeSlice(buf, w.History)
+	Serialize(buf, w.Playthrough)
 	return Zip(buf.Bytes())
 }
 
@@ -392,11 +390,7 @@ func DeserializePlaythrough(data []byte) (p Playthrough) {
 			"with version %d",
 			Version, token))
 	}
-	Deserialize(buf, &token)
-	p.Seed = I64(token)
-	Deserialize(buf, &token)
-	p.TargetDifficulty = I64(token)
-	DeserializeSlice(buf, &p.History)
+	Deserialize(buf, &p)
 	return
 }
 

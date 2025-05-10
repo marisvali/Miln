@@ -120,8 +120,33 @@ func TestSeralizationSlice(t *testing.T) {
 	x = make([]int64, 3)
 	x[0], x[1], x[2] = 3, 12, 9
 	buf := new(bytes.Buffer)
-	SerializeSlice(buf, x)
+	Serialize(buf, x)
 	var y []int64
-	DeserializeSlice(buf, &y)
+	Deserialize(buf, &y)
 	assert.True(t, slices.Equal(x, y))
+}
+
+func TestSeralizationSliceOfSlice(t *testing.T) {
+	type T1 struct {
+		X []int64
+	}
+	type T2 struct {
+		X []T1
+		Y int64
+	}
+	var x T2
+	x.X = make([]T1, 2)
+	x.X[0].X = make([]int64, 2)
+	x.X[0].X[0] = 39
+	x.X[0].X[1] = 927
+	x.X[1].X = make([]int64, 2)
+	x.X[1].X[0] = 3333
+	x.X[1].X[1] = -3
+	x.Y = 931
+
+	buf := new(bytes.Buffer)
+	Serialize(buf, x)
+	var y T2
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
 }
