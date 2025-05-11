@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func Test_WorldRegression1(t *testing.T) {
+func TestWorld_Regression1(t *testing.T) {
 	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250319-170648.mln010"))
 	expected := string(ReadFile("playthroughs/20250319-170648.mln010-hash"))
 
@@ -102,4 +102,33 @@ func BenchmarkWorldClone(b *testing.B) {
 	for b.Loop() {
 		w.Clone()
 	}
+}
+
+func TestWorld_PredictableRandomness(t *testing.T) {
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
+
+	// Run the playthrough halfway through.
+	w1 := NewWorld(playthrough.Seed, playthrough.Level)
+	for i := 0; i < len(playthrough.History)/2; i++ {
+		w1.Step(playthrough.History[i])
+	}
+
+	w2 := w1.Clone()
+
+	// Finish running the playthrough.
+	// Intersperse global randoms to show that each world behaves predictably:
+	// - its randomness is independent of global randomness
+	// - clones have the same randomness
+	noise := ZERO
+	for i := len(playthrough.History) / 2; i < len(playthrough.History); i++ {
+		w1.Step(playthrough.History[i])
+		noise.Add(RInt(I(0), I(10)))
+		w2.Step(playthrough.History[i])
+	}
+
+	println(noise.ToInt64())
+	println(w1.RegressionId())
+	println(w2.RegressionId())
+
+	assert.Equal(t, w1.RegressionId(), w2.RegressionId())
 }

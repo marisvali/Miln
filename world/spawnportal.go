@@ -11,13 +11,8 @@ type Wave struct {
 	NHounds              Int
 }
 
-func NewWave(wd WaveData) (w Wave) {
-	w.SecondsAfterLastWave = wd.SecondsAfterLastWave
-	w.NHounds = RInt(wd.NHoundMin, wd.NHoundMax)
-	return
-}
-
 type SpawnPortal struct {
+	Rand
 	pos         Pt
 	Health      Int
 	MaxHealth   Int
@@ -28,7 +23,8 @@ type SpawnPortal struct {
 	worldParams WorldParams
 }
 
-func NewSpawnPortal(p SpawnPortalParams, w WorldParams) (sp SpawnPortal) {
+func NewSpawnPortal(seed Int, p SpawnPortalParams, w WorldParams) (sp SpawnPortal) {
+	sp.RSeed(seed)
 	sp.pos = p.Pos
 	sp.MaxHealth = I(1)
 	sp.Health = sp.MaxHealth
@@ -100,7 +96,7 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if wave.NHounds.IsPositive() {
-		w.Enemies = append(w.Enemies, NewHound(p.worldParams, p.pos))
+		w.Enemies = append(w.Enemies, NewHound(p.RInt63(), p.worldParams, p.pos))
 		wave.NHounds.Dec()
 	}
 

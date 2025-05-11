@@ -40,6 +40,7 @@ type WorldObject interface {
 
 type World struct {
 	Playthrough
+	Rand
 	Player               Player
 	Enemies              []Enemy
 	Beam                 Beam
@@ -135,11 +136,11 @@ func (l *Level) Clone() Level {
 func NewWorld(seed Int, l Level) (w World) {
 	w.Level = l
 	w.Seed = seed
-	RSeed(w.Seed)
+	w.RSeed(w.Seed)
 	w.Id = uuid.New()
 	for _, spParams := range l.SpawnPortalsParams {
 		w.SpawnPortals = append(w.SpawnPortals,
-			NewSpawnPortal(spParams, w.WorldParams))
+			NewSpawnPortal(w.RInt63(), spParams, w.WorldParams))
 	}
 	w.vision = NewVision(w.Obstacles.Size())
 
@@ -410,7 +411,7 @@ func (w *World) SpawnAmmos() {
 
 		// Spawn ammo.
 		ammo := Ammo{
-			Pos:   occ.OccupyRandomPos(),
+			Pos:   occ.OccupyRandomPos(&w.Rand),
 			Count: I(3),
 		}
 		w.Ammos = append(w.Ammos, ammo)

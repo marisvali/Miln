@@ -96,17 +96,17 @@ func (m *MatBool) Negate() {
 	return
 }
 
-func (m MatBool) RandomUnoccupiedPos() (p Pt) {
+func (m MatBool) RandomUnoccupiedPos(r *Rand) (p Pt) {
 	for {
-		p = m.RandomPos()
+		p = m.RandomPos(r)
 		if !m.Get(p) {
 			return
 		}
 	}
 }
 
-func (m *MatBool) OccupyRandomPos() (p Pt) {
-	p = m.RandomUnoccupiedPos()
+func (m *MatBool) OccupyRandomPos(r *Rand) (p Pt) {
+	p = m.RandomUnoccupiedPos(r)
 	m.Set(p)
 	return
 }

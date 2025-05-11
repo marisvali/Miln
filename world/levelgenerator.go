@@ -47,7 +47,7 @@ func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 	// Create matrix with obstacles.
 	m = NewMatBool(Pt{nRows, nCols})
 	for i := ZERO; i.Lt(nObstacles); i.Inc() {
-		m.OccupyRandomPos()
+		m.OccupyRandomPos(&DefaultRand)
 	}
 	return
 }
@@ -109,13 +109,16 @@ func GenerateLevel(fsys fs.FS) (l Level) {
 	for _, portal := range p.SpawnPortalDatas {
 		// Build Waves from WaveDatas.
 		var waves []Wave
-		for _, wave := range portal.Waves {
-			waves = append(waves, NewWave(wave))
+		for _, wd := range portal.Waves {
+			var wave Wave
+			wave.SecondsAfterLastWave = wd.SecondsAfterLastWave
+			wave.NHounds = RInt(wd.NHoundMin, wd.NHoundMax)
+			waves = append(waves, wave)
 		}
 
 		// Build spawn portal using waves.
 		l.SpawnPortalsParams = append(l.SpawnPortalsParams,
-			SpawnPortalParams{occ.OccupyRandomPos(),
+			SpawnPortalParams{occ.OccupyRandomPos(&DefaultRand),
 				RInt(p.SpawnPortalCooldownMin, p.SpawnPortalCooldownMax),
 				waves})
 	}

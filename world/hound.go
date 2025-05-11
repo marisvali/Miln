@@ -5,6 +5,7 @@ import (
 )
 
 type Hound struct {
+	Rand
 	EnemyBase
 	state                        EnemyState
 	previousState                EnemyState
@@ -22,8 +23,9 @@ type Hound struct {
 	randomTarget                 Pt
 }
 
-func NewHound(w WorldParams, pos Pt) *Hound {
+func NewHound(seed Int, w WorldParams, pos Pt) *Hound {
 	var g Hound
+	g.RSeed(seed)
 	g.pos = pos
 	g.maxHealth = w.HoundMaxHealth
 	g.health = g.maxHealth
@@ -81,7 +83,7 @@ func (g *Hound) searching(justEnteredState bool, w *World) {
 	// towards.
 	if justEnteredState {
 		g.moveCooldownIdx = g.moveCooldownMultiplier
-		g.randomTarget = w.Obstacles.RandomUnoccupiedPos()
+		g.randomTarget = w.Obstacles.RandomUnoccupiedPos(&g.Rand)
 	}
 
 	// React to being hit.
@@ -263,7 +265,7 @@ func (e *Hound) moveRandomly(w *World) {
 			// For some reason we can't go towards the random target anymore.
 			// Maybe we reached it. Maybe it became inaccessible because someone
 			// is blocking the way. Either way, get a new random target.
-			e.randomTarget = m.RandomUnoccupiedPos()
+			e.randomTarget = m.RandomUnoccupiedPos(&e.Rand)
 		}
 	}
 }

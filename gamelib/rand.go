@@ -1,0 +1,72 @@
+package gamelib
+
+import (
+	"fmt"
+	"time"
+)
+
+// Rand is a source of random numbers.
+// The main point of it is to work easier with Int.
+type Rand struct {
+	// rngSource is implemented in rng.go, which is just copy-pasted from Go's
+	// rand.Rand package. The reason for the copy-paste is that there is no
+	// way to clone a rand.Rand object such that the two objects now behave
+	// identically and produce the same random numbers going forward. However,
+	// I need this functionality, it is very useful for playing around with
+	// simulations.
+	// It turns out I can just implement my own Rand quite easily. I don't need
+	// most of the functions in rand.Rand and I can get everything I want with
+	// rngSource. Thank you, open source.
+	rng rngSource
+}
+
+func NewRand(seed Int) Rand {
+	var r Rand
+	r.rng.Seed(seed.ToInt64())
+	return r
+}
+
+func (r *Rand) RSeed(seed Int) {
+	r.rng.Seed(seed.ToInt64())
+}
+
+// RInt returns a random number in the interval [min, max].
+// min must be smaller than max.
+// The difference between min and max must be at most max.MaxInt64 - 1.
+func (r *Rand) RInt(min Int, max Int) Int {
+	if max.Lt(min) {
+		panic(fmt.Errorf("min larger than max: %d %d", min, max))
+	}
+
+	dif := max.Minus(min).Plus(I(1)) // this will panic if the difference
+	// between min and max is greater than max.MaxInt64 - 1
+
+	randomValue := I64(r.rng.Int63())
+	return randomValue.Mod(dif).Plus(min)
+}
+
+// RInt63 returns a non-negative pseudo-random 63-bit integer as an Int.
+func (r *Rand) RInt63() Int {
+	return I64(r.rng.Int63())
+}
+
+// RElem returns a random element from a slice.
+func RElem[T any](r Rand, s []T) T {
+	return s[r.RInt(I(0), I(len(s)-1)).ToInt()]
+}
+
+// Provide global functions for convenience.
+
+var DefaultRand Rand
+
+func init() {
+	DefaultRand.rng.Seed(time.Now().Unix())
+}
+
+func RSeed(seed Int) {
+	DefaultRand.rng.Seed(seed.ToInt64())
+}
+
+func RInt(min Int, max Int) Int {
+	return DefaultRand.RInt(min, max)
+}

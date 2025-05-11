@@ -84,9 +84,9 @@ func (m *Matrix[T]) IndexToPt(i Int) (p Pt) {
 	return
 }
 
-func (m *Matrix[T]) RandomPos() Pt {
+func (m *Matrix[T]) RandomPos(r *Rand) Pt {
 	var pt Pt
-	pt.X = RInt(ZERO, m.Size().X.Minus(ONE))
-	pt.Y = RInt(ZERO, m.Size().Y.Minus(ONE))
+	pt.X = r.RInt(ZERO, m.Size().X.Minus(ONE))
+	pt.Y = r.RInt(ZERO, m.Size().Y.Minus(ONE))
 	return pt
 }
