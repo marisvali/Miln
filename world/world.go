@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
-	"io/fs"
 	"math"
 	"slices"
 )
@@ -17,26 +16,14 @@ type Beam struct {
 
 const Version = 999
 
-type WaveData struct {
-	SecondsAfterLastWave Int
-	NHoundMin            Int
-	NHoundMax            Int
-}
-
-type SpawnPortalData struct {
-	Waves []WaveData
-}
-
-type NEntities struct {
-	NObstaclesMin    Int
-	NObstaclesMax    Int
-	SpawnPortalDatas []SpawnPortalData
-}
-
-type EnemyParams struct {
-	SpawnPortalCooldownMin Int
-	SpawnPortalCooldownMax Int
-
+type WorldParams struct {
+	Boardgame                      bool
+	UseAmmo                        bool
+	AmmoLimit                      Int
+	EnemyMoveCooldown              Int
+	EnemiesAggroWhenVisible        bool
+	SpawnPortalCooldownMin         Int
+	SpawnPortalCooldownMax         Int
 	HoundMaxHealth                 Int
 	HoundMoveCooldownMultiplier    Int
 	HoundPreparingToAttackCooldown Int
@@ -44,20 +31,6 @@ type EnemyParams struct {
 	HoundHitCooldown               Int
 	HoundHitsPlayer                bool
 	HoundAggroDistance             Int
-}
-
-type WorldData struct {
-	NumRows                 Int
-	NumCols                 Int
-	NEntitiesPath           string
-	EnemyParamsPath         string
-	Boardgame               bool
-	UseAmmo                 bool
-	AmmoLimit               Int
-	EnemyMoveCooldown       Int
-	EnemiesAggroWhenVisible bool
-	NEntities
-	EnemyParams
 }
 
 type WorldObject interface {
@@ -75,34 +48,42 @@ type World struct {
 	BeamMax              Int
 	BlockSize            Int
 	EnemyMoveCooldownIdx Int
-
-	Ammos        []Ammo
-	SpawnPortals []SpawnPortal
-	vision       Vision
-	FSys         fs.FS
+	Ammos                []Ammo
+	SpawnPortals         []SpawnPortal
+	vision               Vision
 }
 
 func (w *World) Clone() World {
+	// Copy all non-slice variables.
+	// Does shallow copies of slices as well, but those should be overwritten
+	// below by deep copies.
 	clone := *w
+
+	// Do deep copies for slices.
+	clone.History = slices.Clone(w.History)
+
+	clone.Level = w.Level.Clone()
+
 	clone.Enemies = []Enemy{}
 	for i := range w.Enemies {
 		clone.Enemies = append(clone.Enemies, w.Enemies[i].Clone())
 	}
-	clone.Obstacles = w.Obstacles.Clone()
-	clone.vision = NewVision(w.Obstacles.Size())
+
 	clone.VisibleTiles = w.VisibleTiles.Clone()
+
 	clone.Ammos = slices.Clone(w.Ammos)
+
 	clone.SpawnPortals = []SpawnPortal{}
 	for i := range w.SpawnPortals {
 		clone.SpawnPortals = append(clone.SpawnPortals, w.SpawnPortals[i].Clone())
 	}
-	clone.History = slices.Clone(w.History)
-	clone.SpawnPortalDatas = slices.Clone(w.SpawnPortalDatas)
+
+	clone.vision = NewVision(w.Obstacles.Size())
 	return clone
 }
 
 type Playthrough struct {
-	WorldData2
+	Level
 	Id      uuid.UUID
 	Seed    Int
 	History []PlayerInput
@@ -118,166 +99,47 @@ type PlayerInput struct {
 	ShootPt            Pt // tile-coordinates
 }
 
-func LevelX() string {
-	return `
-----x----
---x---xx-
---x----x-
---x------
---x--xxx-
----------
----x-----
--x---xxxx
--xx------
----------
-`
-}
-
-func FirstUnoccupiedPos(m MatBool) (unoccupiedPos Pt) {
-	unoccupiedPos = IPt(0, 0)
-	for ; unoccupiedPos.Y.Lt(m.Size().Y); unoccupiedPos.Y.Inc() {
-		for ; unoccupiedPos.X.Lt(m.Size().X); unoccupiedPos.X.Inc() {
-			if !m.At(unoccupiedPos) {
-				return
-			}
-		}
-	}
-	panic(fmt.Errorf("no unoccupied position found"))
-}
-
-func IsLevelValid(m MatBool) bool {
-	// Get all unoccupied positions connected to the first unoccupied position.
-	m2 := m.ConnectedPositions(FirstUnoccupiedPos(m))
-
-	// Check if all unoccupied positions in m are also unoccupied in m2.
-	// If yes, all unoccupied positions are connected.
-	// Unoccupied positions in m2 are true, while in m they are false. So negate
-	// m2 and compare m2 and m.
-	m2.Negate()
-	return m.Equal(m2)
-}
-
-func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
-	// Create matrix with obstacles.
-	m = NewMatBool(Pt{nRows, nCols})
-	for i := ZERO; i.Lt(nObstacles); i.Inc() {
-		m.OccupyRandomPos()
-	}
-	return
-}
-
-func ValidRandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
-	nTries := 0
-	for {
-		nTries++
-		if nTries > 1000 {
-			panic(fmt.Errorf("failed to generate valid level for nObstacles: %d nRows: %d nCols: %d", nObstacles, nRows, nCols))
-		}
-		m = RandomLevel(nObstacles, nRows, nCols)
-		if IsLevelValid(m) {
-			return
-		}
-	}
-}
-
-type PortalSeed struct {
-	Cooldown     Int
-	NHounds      Int
-	NUltraHounds Int
-}
-
-func LoadWorldData(fsys fs.FS) WorldData {
-	// Read from the disk over and over until a full read is possible.
-	// This repetition is meant to avoid crashes due to reading files
-	// while they are still being written.
-	// It's a hack but possibly a quick and very useful one.
-	// This repeated reading is only useful when we're not reading from the
-	// embedded filesystem. When we're reading from the embedded filesystem we
-	// want to crash as soon as possible. We might be in the browser, in which
-	// case we want to see an error in the developer console instead of a page
-	// that keeps trying to load and reports nothing.
-	var wd WorldData
-	if fsys == nil {
-		CheckCrashes = false
-	}
-	for {
-		CheckFailed = nil
-		LoadJSON(fsys, "data/world/world.json", &wd)
-		LoadJSON(fsys, "data/world/"+wd.NEntitiesPath, &wd.NEntities)
-		LoadJSON(fsys, "data/world/"+wd.EnemyParamsPath, &wd.EnemyParams)
-		if CheckFailed == nil {
-			break
-		}
-	}
-	CheckCrashes = true
-	return wd
-}
-
-type WaveData2 struct {
-	SecondsAfterLastWave Int
-	NHoundMin            Int
-	NHoundMax            Int
-}
-
-type SpawnPortalData2 struct {
+type SpawnPortalParams struct {
 	Pos                 Pt
 	SpawnPortalCooldown Int
 	Waves               []Wave
 }
 
-type NEntities2 struct {
-	Obstacles        MatBool
-	SpawnPortalDatas []SpawnPortalData2
+type Entities struct {
+	Obstacles          MatBool
+	SpawnPortalsParams []SpawnPortalParams
 }
 
-type WorldData2 struct {
-	Boardgame               bool
-	UseAmmo                 bool
-	AmmoLimit               Int
-	EnemyMoveCooldown       Int
-	EnemiesAggroWhenVisible bool
-	NEntities2
-	EnemyParams
+type Level struct {
+	Entities
+	WorldParams
 }
 
-func WorldDataToWorldData2(wd WorldData) (wd2 WorldData2) {
-	wd2.Boardgame = wd.Boardgame
-	wd2.UseAmmo = wd.UseAmmo
-	wd2.AmmoLimit = wd.AmmoLimit
-	wd2.EnemyMoveCooldown = wd.EnemyMoveCooldown
-	wd2.EnemiesAggroWhenVisible = wd.EnemiesAggroWhenVisible
-	wd2.EnemyParams = wd.EnemyParams
+func (l *Level) Clone() Level {
+	// Copy all non-slice variables.
+	// Does shallow copies of slices as well, but those should be overwritten
+	// below by deep copies.
+	clone := *l
 
-	wd2.Obstacles = ValidRandomLevel(RInt(wd.NObstaclesMin, wd.NObstaclesMax), wd.NumRows, wd.NumCols)
-
-	occ := wd2.Obstacles.Clone()
-	for _, portal := range wd.SpawnPortalDatas {
-		// Build Waves from WaveDatas.
-		var waves []Wave
-		for _, wave := range portal.Waves {
-			waves = append(waves, NewWave(wave))
-		}
-
-		// Build spawn portal using waves.
-		wd2.SpawnPortalDatas = append(wd2.SpawnPortalDatas,
-			SpawnPortalData2{occ.OccupyRandomPos(),
-				RInt(wd.SpawnPortalCooldownMin, wd.SpawnPortalCooldownMax),
-				waves})
+	// Do deep copies for slices.
+	clone.Obstacles = l.Obstacles.Clone()
+	clone.SpawnPortalsParams = []SpawnPortalParams{}
+	for _, spp := range l.SpawnPortalsParams {
+		clone.SpawnPortalsParams = append(clone.SpawnPortalsParams,
+			SpawnPortalParams{spp.Pos, spp.SpawnPortalCooldown,
+				slices.Clone(spp.Waves)})
 	}
-	return
+	return clone
 }
 
-func NewWorld(seed Int, wd WorldData2) (w World) {
-	w.WorldData2 = wd
+func NewWorld(seed Int, l Level) (w World) {
+	w.Level = l
 	w.Seed = seed
 	RSeed(w.Seed)
 	w.Id = uuid.New()
-	for _, portal := range wd.SpawnPortalDatas {
-		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
-			w.WorldData2,
-			portal.Pos,
-			portal.SpawnPortalCooldown,
-			slices.Clone(portal.Waves)))
+	for _, spParams := range l.SpawnPortalsParams {
+		w.SpawnPortals = append(w.SpawnPortals,
+			NewSpawnPortal(spParams, w.WorldParams))
 	}
 	w.vision = NewVision(w.Obstacles.Size())
 
@@ -286,29 +148,6 @@ func NewWorld(seed Int, wd WorldData2) (w World) {
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
 	w.Player.AmmoLimit = w.AmmoLimit
-
-	// GUI needs this even without the world ever doing a step.
-	// Note: this was true when the player started on the map, so it might not
-	// be relevant now that the player doesn't start on the map. But, keep it
-	// in case things change again.
-	w.computeVisibleTiles()
-	return
-}
-
-func NewWorldFromString(level string) (w World) {
-	var pos1 []Pt
-	w.Id = uuid.New()
-	w.Obstacles, pos1, _ = LevelFromString(level)
-	w.vision = NewVision(w.Obstacles.Size())
-
-	for _, pos := range pos1 {
-		w.Enemies = append(w.Enemies, NewHound(w.WorldData2, pos))
-	}
-
-	// Params
-	w.BlockSize = I(1000)
-	w.BeamMax = I(15)
-	w.Player = NewPlayer()
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -506,7 +345,7 @@ func (w *World) Step(input PlayerInput) {
 			w.Enemies[i].Step(w)
 		}
 
-		// Step SpawnPortalDatas.
+		// Step SpawnPortalsParams.
 		for i := range w.SpawnPortals {
 			w.SpawnPortals[i].Step(w)
 		}
@@ -525,7 +364,7 @@ func (w *World) Step(input PlayerInput) {
 	}
 	w.Enemies = newEnemies
 
-	// Cull dead SpawnPortalDatas.
+	// Cull dead SpawnPortalsParams.
 	newPortals := []SpawnPortal{}
 	for i := range w.SpawnPortals {
 		if w.SpawnPortals[i].Health.IsPositive() {

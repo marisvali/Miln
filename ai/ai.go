@@ -207,7 +207,7 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	// for _, e := range w.Enemies {
 	// 	if _, isKing := e.(*King); isKing {
 	// 		if e.Pos() == input.ShootPt {
-	// 			for _, sp := range w.SpawnPortals {
+	// 			for _, sp := range w.SpawnPortalsParams {
 	// 				if sp.Pos() == e.Pos() {
 	// 					input.Shoot = false
 	// 					break

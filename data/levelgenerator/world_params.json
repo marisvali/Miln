@@ -1,7 +1,11 @@
 {
+  "Boardgame": false,
+  "UseAmmo": true,
+  "AmmoLimit": 10,
+  "EnemyMoveCooldown": 80,
+  "EnemiesAggroWhenVisible": true,
   "SpawnPortalCooldownMin": 100,
   "SpawnPortalCooldownMax": 100,
-
   "HoundMaxHealth": 3,
   "HoundMoveCooldownMultiplier": 1,
   "HoundPreparingToAttackCooldown": 100,

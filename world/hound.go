@@ -22,7 +22,7 @@ type Hound struct {
 	randomTarget                 Pt
 }
 
-func NewHound(w WorldData2, pos Pt) *Hound {
+func NewHound(w WorldParams, pos Pt) *Hound {
 	var g Hound
 	g.pos = pos
 	g.maxHealth = w.HoundMaxHealth

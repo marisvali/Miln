@@ -2,7 +2,6 @@ package ai
 
 import (
 	"cmp"
-	"embed"
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
@@ -12,11 +11,8 @@ import (
 	"testing"
 )
 
-//go:embed data/*
-var embeddedFS embed.FS
-
 func GoToFrame(playthrough Playthrough, frameIdx int) World {
-	world := NewWorld(playthrough.Seed, LoadWorldData(&embeddedFS))
+	world := NewWorld(playthrough.Seed, playthrough.Level)
 	for i := 0; i < frameIdx; i++ {
 		input := playthrough.History[i]
 		world.Step(input)

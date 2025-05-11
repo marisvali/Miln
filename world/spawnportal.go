@@ -18,23 +18,23 @@ func NewWave(wd WaveData) (w Wave) {
 }
 
 type SpawnPortal struct {
-	pos        Pt
-	Health     Int
-	MaxHealth  Int
-	MaxTimeout Int
-	TimeoutIdx Int
-	Waves      []Wave
-	frameIdx   Int
-	worldData  WorldData2
+	pos         Pt
+	Health      Int
+	MaxHealth   Int
+	MaxTimeout  Int
+	TimeoutIdx  Int
+	Waves       []Wave
+	frameIdx    Int
+	worldParams WorldParams
 }
 
-func NewSpawnPortal(w WorldData2, pos Pt, cooldown Int, waves []Wave) (p SpawnPortal) {
-	p.pos = pos
-	p.MaxHealth = I(1)
-	p.Health = p.MaxHealth
-	p.MaxTimeout = cooldown
-	p.Waves = waves
-	p.worldData = w
+func NewSpawnPortal(p SpawnPortalParams, w WorldParams) (sp SpawnPortal) {
+	sp.pos = p.Pos
+	sp.MaxHealth = I(1)
+	sp.Health = sp.MaxHealth
+	sp.MaxTimeout = p.SpawnPortalCooldown
+	sp.Waves = slices.Clone(p.Waves)
+	sp.worldParams = w
 	return
 }
 
@@ -100,7 +100,7 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if wave.NHounds.IsPositive() {
-		w.Enemies = append(w.Enemies, NewHound(p.worldData, p.pos))
+		w.Enemies = append(w.Enemies, NewHound(p.worldParams, p.pos))
 		wave.NHounds.Dec()
 	}
 

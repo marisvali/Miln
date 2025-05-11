@@ -4,7 +4,6 @@ import (
 	"bytes"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
-	"os"
 	"testing"
 )
 
@@ -13,7 +12,7 @@ func Test_WorldRegression1(t *testing.T) {
 	expected := string(ReadFile("playthroughs/20250319-170648.mln010-hash"))
 
 	// Run the playthrough.
-	w := NewWorld(playthrough.Seed, LoadWorldData(os.DirFS("playthroughs")))
+	w := NewWorld(playthrough.Seed, playthrough.Level)
 	for _, input := range playthrough.History {
 		w.Step(input)
 	}
@@ -24,14 +23,14 @@ func Test_WorldRegression1(t *testing.T) {
 }
 
 func RunPlaythrough(p Playthrough) {
-	w := NewWorld(p.Seed, LoadWorldData(os.DirFS("playthroughs")))
+	w := NewWorld(p.Seed, p.Level)
 	for _, input := range p.History {
 		w.Step(input)
 	}
 }
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250510-104800.mln999"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
 	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
@@ -42,23 +41,23 @@ func BenchmarkPlaythroughSpeed(b *testing.B) {
 // performed every frame without impacting the FPS?
 
 // Typical output:
-// BenchmarkSerializedPlaythrough_WithoutCompression-12    	 145	  8.246808 ms/op
-// BenchmarkSerializedPlaythrough_Compression-12    	     218	  5.373649 ms/op
-// BenchmarkWorldClone-12    	   						    5740	  0.201694 ms/op
+// BenchmarkSerializedPlaythrough_WithoutCompression-12    	 139	   8.553581 ms/op
+// BenchmarkSerializedPlaythrough_Compression-12    	     249	   4.754636 ms/op
+// BenchmarkWorldClone-12    	    						5881	   0.207990 ms/op
 // Conclusion: serializing is too expensive to perform every frame, better to
 // just clone the world and send it to a go routine once every K frames, where
 // it can then be serialized and saved to a file or uploaded to a database.
 
-// Get large world (17122 frames, 285 sec).
+// Get large world (17522 frames, 292 sec).
 // Note: I don't really care about the final state of the world, I just need a
 // world that ran for a relatively long time.
 
 func GetLargeWorld() World {
 	// Load the playthrough.
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250510-104800.mln999"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
 
 	// Run the playthrough.
-	w := NewWorld(playthrough.Seed, LoadWorldData(os.DirFS("playthroughs")))
+	w := NewWorld(playthrough.Seed, playthrough.Level)
 	for _, input := range playthrough.History {
 		w.Step(input)
 	}

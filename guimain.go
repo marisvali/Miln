@@ -160,7 +160,7 @@ func main() {
 	} else {
 		g.FSys = os.DirFS(".")
 		g.folderWatcher1.Folder = "data/gui"
-		g.folderWatcher2.Folder = "data/world"
+		g.folderWatcher2.Folder = "data/levelgenerator"
 		// Initialize watchers.
 		// Check if folder contents changed but do nothing with the result
 		// because we just want the watchers to initialize their internal
@@ -177,16 +177,15 @@ func main() {
 	if replayFile != "" {
 		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.WorldData2)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 		g.state = Playback
 	} else {
 		g.playbackExecution = false
 		// g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed := RInt(I(0), I(1000000))
-		wd := LoadWorldData(g.FSys)
-		wd2 := WorldDataToWorldData2(wd)
-		g.world = NewWorld(seed, wd2)
+		level := GenerateLevel(g.FSys)
+		g.world = NewWorld(seed, level)
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
