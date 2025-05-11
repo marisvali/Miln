@@ -70,7 +70,6 @@ type World struct {
 	Player               Player
 	Enemies              []Enemy
 	Beam                 Beam
-	Obstacles            MatBool
 	VisibleTiles         MatBool
 	TimeStep             Int
 	BeamMax              Int
@@ -103,11 +102,10 @@ func (w *World) Clone() World {
 }
 
 type Playthrough struct {
-	WorldData
-	Id               uuid.UUID
-	Seed             Int
-	TargetDifficulty Int
-	History          []PlayerInput
+	WorldData2
+	Id      uuid.UUID
+	Seed    Int
+	History []PlayerInput
 }
 
 type PlayerInput struct {
@@ -215,16 +213,45 @@ func LoadWorldData(fsys fs.FS) WorldData {
 	return wd
 }
 
-func NewWorld(seed Int, worldData WorldData) (w World) {
-	w.WorldData = worldData
-	w.Seed = seed
-	RSeed(w.Seed)
-	w.TargetDifficulty = ZERO
-	w.Id = uuid.New()
-	w.Obstacles = ValidRandomLevel(RInt(w.NObstaclesMin, w.NObstaclesMax), w.NumRows, w.NumCols)
-	w.vision = NewVision(w.Obstacles.Size())
-	occ := w.Obstacles.Clone()
-	for _, portal := range w.SpawnPortalDatas {
+type WaveData2 struct {
+	SecondsAfterLastWave Int
+	NHoundMin            Int
+	NHoundMax            Int
+}
+
+type SpawnPortalData2 struct {
+	Pos                 Pt
+	SpawnPortalCooldown Int
+	Waves               []Wave
+}
+
+type NEntities2 struct {
+	Obstacles        MatBool
+	SpawnPortalDatas []SpawnPortalData2
+}
+
+type WorldData2 struct {
+	Boardgame               bool
+	UseAmmo                 bool
+	AmmoLimit               Int
+	EnemyMoveCooldown       Int
+	EnemiesAggroWhenVisible bool
+	NEntities2
+	EnemyParams
+}
+
+func WorldDataToWorldData2(wd WorldData) (wd2 WorldData2) {
+	wd2.Boardgame = wd.Boardgame
+	wd2.UseAmmo = wd.UseAmmo
+	wd2.AmmoLimit = wd.AmmoLimit
+	wd2.EnemyMoveCooldown = wd.EnemyMoveCooldown
+	wd2.EnemiesAggroWhenVisible = wd.EnemiesAggroWhenVisible
+	wd2.EnemyParams = wd.EnemyParams
+
+	wd2.Obstacles = ValidRandomLevel(RInt(wd.NObstaclesMin, wd.NObstaclesMax), wd.NumRows, wd.NumCols)
+
+	occ := wd2.Obstacles.Clone()
+	for _, portal := range wd.SpawnPortalDatas {
 		// Build Waves from WaveDatas.
 		var waves []Wave
 		for _, wave := range portal.Waves {
@@ -232,12 +259,27 @@ func NewWorld(seed Int, worldData WorldData) (w World) {
 		}
 
 		// Build spawn portal using waves.
-		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
-			w.WorldData,
-			occ.OccupyRandomPos(),
-			RInt(w.SpawnPortalCooldownMin, w.SpawnPortalCooldownMax),
-			waves))
+		wd2.SpawnPortalDatas = append(wd2.SpawnPortalDatas,
+			SpawnPortalData2{occ.OccupyRandomPos(),
+				RInt(wd.SpawnPortalCooldownMin, wd.SpawnPortalCooldownMax),
+				waves})
 	}
+	return
+}
+
+func NewWorld(seed Int, wd WorldData2) (w World) {
+	w.WorldData2 = wd
+	w.Seed = seed
+	RSeed(w.Seed)
+	w.Id = uuid.New()
+	for _, portal := range wd.SpawnPortalDatas {
+		w.SpawnPortals = append(w.SpawnPortals, NewSpawnPortal(
+			w.WorldData2,
+			portal.Pos,
+			portal.SpawnPortalCooldown,
+			slices.Clone(portal.Waves)))
+	}
+	w.vision = NewVision(w.Obstacles.Size())
 
 	// Params
 	w.BlockSize = I(1000)
@@ -260,7 +302,7 @@ func NewWorldFromString(level string) (w World) {
 	w.vision = NewVision(w.Obstacles.Size())
 
 	for _, pos := range pos1 {
-		w.Enemies = append(w.Enemies, NewHound(w.WorldData, pos))
+		w.Enemies = append(w.Enemies, NewHound(w.WorldData2, pos))
 	}
 
 	// Params

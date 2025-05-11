@@ -25,10 +25,10 @@ type SpawnPortal struct {
 	TimeoutIdx Int
 	Waves      []Wave
 	frameIdx   Int
-	worldData  WorldData
+	worldData  WorldData2
 }
 
-func NewSpawnPortal(w WorldData, pos Pt, cooldown Int, waves []Wave) (p SpawnPortal) {
+func NewSpawnPortal(w WorldData2, pos Pt, cooldown Int, waves []Wave) (p SpawnPortal) {
 	p.pos = pos
 	p.MaxHealth = I(1)
 	p.Health = p.MaxHealth

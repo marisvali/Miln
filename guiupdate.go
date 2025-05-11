@@ -15,9 +15,10 @@ func (g *Gui) Update() error {
 		g.loadGuiData()
 	}
 	if g.folderWatcher2.FolderContentsChanged() {
-		// Reload world, and rely on the fact that this is makes the new world
-		// load the new parameters from world.json.
-		g.world = NewWorld(g.world.Seed, LoadWorldData(g.FSys))
+		// Reload world.
+		wd := LoadWorldData(g.FSys)
+		wd2 := WorldDataToWorldData2(wd)
+		g.world = NewWorld(g.world.Seed, wd2)
 		g.updateWindowSize()
 	}
 
@@ -128,7 +129,9 @@ func (g *Gui) UserRequestedPlaybackPause() bool {
 func (g *Gui) UpdateGamePaused() {
 	if g.UserRequestedNewLevel() {
 		seed := RInt(I(0), I(1000000))
-		g.world = NewWorld(seed, LoadWorldData(g.FSys))
+		wd := LoadWorldData(g.FSys)
+		wd2 := WorldDataToWorldData2(wd)
+		g.world = NewWorld(seed, wd2)
 		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
@@ -136,7 +139,7 @@ func (g *Gui) UpdateGamePaused() {
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed, LoadWorldData(g.FSys))
+		g.world = NewWorld(g.world.Seed, g.world.WorldData2)
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
@@ -234,7 +237,7 @@ func (g *Gui) UpdatePlayback() {
 
 	if targetFrameIdx != g.frameIdx {
 		// Rewind.
-		g.world = NewWorld(g.playthrough.Seed, LoadWorldData(g.FSys))
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.WorldData2)
 		g.visWorld = NewVisWorld(g.Animations)
 
 		// Replay the world.

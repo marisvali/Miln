@@ -147,9 +147,9 @@ func main() {
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 
-	// replayFile := "recordings/recorded-inputs-2025-03-21-000000.mln"
+	// replayFile := "d:\\Miln\\test.mln999"
 	replayFile := ""
-	// replayFile := "d:\\gms\\Miln\\analysis\\tools\\denis\\20250311-213937.mln008"
+	// g.recordingFile = "d:\\Miln\\test.mln999"
 
 	if len(os.Args) == 2 {
 		replayFile = os.Args[1]
@@ -177,14 +177,16 @@ func main() {
 	if replayFile != "" {
 		g.playbackExecution = true
 		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.WorldData)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.WorldData2)
 		g.state = Playback
 	} else {
 		g.playbackExecution = false
 		// g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed := RInt(I(0), I(1000000))
-		g.world = NewWorld(seed, LoadWorldData(g.FSys))
+		wd := LoadWorldData(g.FSys)
+		wd2 := WorldDataToWorldData2(wd)
+		g.world = NewWorld(seed, wd2)
 		// g.world = NewWorld(RInt(I(0), I(1000000)))
 		// InitializeIdInDbSql(g.db, g.world.Id)
 		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())

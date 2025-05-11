@@ -286,3 +286,23 @@ func (v Vertex) f2() {
 func (v Vertex) f3() {
 
 }
+
+type ValueReceiver struct {
+	X int
+	M []int
+}
+
+func (v ValueReceiver) Do() {
+	v.X = v.X + 1
+	v.M[1] = 13
+}
+
+func TestValueReceiver(t *testing.T) {
+	var v ValueReceiver
+	v.M = make([]int, 3)
+	fmt.Println(v.X)
+	fmt.Println(v.M[1])
+	v.Do()
+	fmt.Println(v.X)
+	fmt.Println(v.M[1])
+}

@@ -140,3 +140,47 @@ func TestSerializeWorldData(t *testing.T) {
 
 	assert.Equal(t, w1, w2)
 }
+
+type S9 struct {
+	X int
+}
+
+func (s *S9) GetX() int {
+	return s.X
+}
+
+type I1 interface {
+	GetX() int
+}
+
+type U1 struct {
+	Z int
+	I I1
+}
+
+func TestSerializeInterface(t *testing.T) {
+	var buf bytes.Buffer        // Stand-in for a buf connection
+	enc := gob.NewEncoder(&buf) // Will write to buf.
+	dec := gob.NewDecoder(&buf) // Will read from buf.
+
+	// Encode (send) some values.
+	gob.Register(&S9{})
+	var v S9
+	v.X = 149
+	var u1 U1
+	u1.Z = 3
+	u1.I = &v
+	err := enc.Encode(u1)
+	if err != nil {
+		log.Fatal("encode error:", err)
+	}
+
+	// Decode (receive) and print the values.
+	var u2 U1
+	err = dec.Decode(&u2)
+	if err != nil {
+		log.Fatal("decode error:", err)
+	}
+
+	assert.Equal(t, u1, u2)
+}
