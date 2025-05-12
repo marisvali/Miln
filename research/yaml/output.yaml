@@ -1,0 +1,33 @@
+TestInt: 84
+Param1: 13
+Param2: 17
+ArrInt:
+- 1
+- 2
+- 3
+- 4
+- 5
+ArrObj:
+- A1: 99
+  A2: 199
+- A1: 23
+  A2: 75
+Portals:
+- Waves:
+  - SecondsSincePreviousWave: 1
+    NGremlins: 2
+    NHounds: 3
+    NBau: 0
+  - SecondsSincePreviousWave: 3
+    NGremlins: 7
+    NHounds: 7
+    NBau: 0
+- Waves:
+  - SecondsSincePreviousWave: 91
+    NGremlins: 92
+    NHounds: 93
+    NBau: 0
+  - SecondsSincePreviousWave: 93
+    NGremlins: 97
+    NHounds: 99
+    NBau: 0

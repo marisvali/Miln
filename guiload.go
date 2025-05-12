@@ -20,7 +20,7 @@ func (g *Gui) loadGuiData() {
 	}
 	for {
 		CheckFailed = nil
-		LoadJSON(g.FSys, "data/gui/gui.json", &g.GuiData)
+		LoadYAML(g.FSys, "data/gui/gui.yaml", &g.GuiData)
 		g.imgGround = LoadImage(g.FSys, "data/gui/ground.png")
 		g.imgTree = LoadImage(g.FSys, "data/gui/tree.png")
 		g.imgPlayerHealth = LoadImage(g.FSys, "data/gui/player-health.png")

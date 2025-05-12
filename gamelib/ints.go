@@ -98,6 +98,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"strconv"
 )
 
 type Int struct {
@@ -367,4 +368,18 @@ func Max(a, b Int) Int {
 
 func (a *Int) UnmarshalJSON(b []byte) error {
 	return json.Unmarshal(b, &a.Val)
+}
+
+func (a Int) MarshalYAML() ([]byte, error) {
+	s := strconv.FormatInt(a.Val, 10)
+	return []byte(s), nil
+}
+
+func (a *Int) UnmarshalYAML(b []byte) error {
+	s := string(b)
+	n, err := fmt.Sscan(s, &a.Val)
+	if n != 1 {
+		Check(fmt.Errorf("failed to get exactly 1 int64 from string %s", s))
+	}
+	return err
 }

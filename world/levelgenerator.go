@@ -7,26 +7,26 @@ import (
 )
 
 type WaveData struct {
-	SecondsAfterLastWave Int
-	NHoundMin            Int
-	NHoundMax            Int
+	SecondsAfterLastWave Int `yaml:"SecondsAfterLastWave"`
+	NHoundMin            Int `yaml:"NHoundMin"`
+	NHoundMax            Int `yaml:"NHoundMax"`
 }
 
 type SpawnPortalData struct {
-	Waves []WaveData
+	Waves []WaveData `yaml:"Waves"`
 }
 
 type NEntities struct {
-	NumRows          Int
-	NumCols          Int
-	NObstaclesMin    Int
-	NObstaclesMax    Int
-	SpawnPortalDatas []SpawnPortalData
+	NumRows          Int               `yaml:"NumRows"`
+	NumCols          Int               `yaml:"NumCols"`
+	NObstaclesMin    Int               `yaml:"NObstaclesMin"`
+	NObstaclesMax    Int               `yaml:"NObstaclesMax"`
+	SpawnPortalDatas []SpawnPortalData `yaml:"SpawnPortalDatas"`
 }
 
 type LevelGeneratorParams struct {
-	NEntitiesPath   string
-	WorldParamsPath string
+	NEntitiesPath   string `yaml:"NEntitiesPath"`
+	WorldParamsPath string `yaml:"WorldParamsPath"`
 	NEntities
 	WorldParams
 }
@@ -82,9 +82,9 @@ func LoadLevelGeneratorParams(fsys fs.FS) LevelGeneratorParams {
 	}
 	for {
 		CheckFailed = nil
-		LoadJSON(fsys, "data/levelgenerator/level.json", &p)
-		LoadJSON(fsys, "data/levelgenerator/"+p.NEntitiesPath, &p.NEntities)
-		LoadJSON(fsys, "data/levelgenerator/"+p.WorldParamsPath, &p.WorldParams)
+		LoadYAML(fsys, "data/levelgenerator/level.yaml", &p)
+		LoadYAML(fsys, "data/levelgenerator/"+p.NEntitiesPath, &p.NEntities)
+		LoadYAML(fsys, "data/levelgenerator/"+p.WorldParamsPath, &p.WorldParams)
 		if CheckFailed == nil {
 			break
 		}

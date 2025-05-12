@@ -19,26 +19,26 @@ import (
 var embeddedFiles embed.FS
 
 type GuiData struct {
-	BlockSize                      Int
-	HighlightMoveOk                bool
-	HighlightMoveNotOk             bool
-	HighlightAttack                bool
-	AutoAimAttack                  bool
-	AutoAimAttackFactor            Int
-	AutoAimMove                    bool
-	AutoAimMoveFactor              Int
-	ShowFreezeCooldownAsMask       bool
-	ShowMoveCooldownAsMask         bool
-	ShowFreezeCooldownAsBar        bool
-	ShowMoveCooldownAsBar          bool
-	DrawEnemyHealth                bool
-	DrawVirtualCursorDuringReplay  bool
-	MoveActualOSCursorDuringReplay bool
-	DrawSpawnPortal                bool
-	PlaybackBarHeight              Int
-	FrameSkipArrow                 Int
-	FrameSkipShiftArrow            Int
-	FrameSkipAltArrow              Int
+	BlockSize                      Int  `yaml:"BlockSize"`
+	HighlightMoveOk                bool `yaml:"HighlightMoveOk"`
+	HighlightMoveNotOk             bool `yaml:"HighlightMoveNotOk"`
+	HighlightAttack                bool `yaml:"HighlightAttack"`
+	AutoAimAttack                  bool `yaml:"AutoAimAttack"`
+	AutoAimAttackFactor            Int  `yaml:"AutoAimAttackFactor"`
+	AutoAimMove                    bool `yaml:"AutoAimMove"`
+	AutoAimMoveFactor              Int  `yaml:"AutoAimMoveFactor"`
+	ShowFreezeCooldownAsMask       bool `yaml:"ShowFreezeCooldownAsMask"`
+	ShowMoveCooldownAsMask         bool `yaml:"ShowMoveCooldownAsMask"`
+	ShowFreezeCooldownAsBar        bool `yaml:"ShowFreezeCooldownAsBar"`
+	ShowMoveCooldownAsBar          bool `yaml:"ShowMoveCooldownAsBar"`
+	DrawEnemyHealth                bool `yaml:"DrawEnemyHealth"`
+	DrawVirtualCursorDuringReplay  bool `yaml:"DrawVirtualCursorDuringReplay"`
+	MoveActualOSCursorDuringReplay bool `yaml:"MoveActualOSCursorDuringReplay"`
+	DrawSpawnPortal                bool `yaml:"DrawSpawnPortal"`
+	PlaybackBarHeight              Int  `yaml:"PlaybackBarHeight"`
+	FrameSkipArrow                 Int  `yaml:"FrameSkipArrow"`
+	FrameSkipShiftArrow            Int  `yaml:"FrameSkipShiftArrow"`
+	FrameSkipAltArrow              Int  `yaml:"FrameSkipAltArrow"`
 }
 
 type Animations struct {

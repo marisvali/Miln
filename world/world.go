@@ -17,20 +17,20 @@ type Beam struct {
 const Version = 999
 
 type WorldParams struct {
-	Boardgame                      bool
-	UseAmmo                        bool
-	AmmoLimit                      Int
-	EnemyMoveCooldown              Int
-	EnemiesAggroWhenVisible        bool
-	SpawnPortalCooldownMin         Int
-	SpawnPortalCooldownMax         Int
-	HoundMaxHealth                 Int
-	HoundMoveCooldownMultiplier    Int
-	HoundPreparingToAttackCooldown Int
-	HoundAttackCooldownMultiplier  Int
-	HoundHitCooldown               Int
-	HoundHitsPlayer                bool
-	HoundAggroDistance             Int
+	Boardgame                      bool `yaml:"Boardgame"`
+	UseAmmo                        bool `yaml:"UseAmmo"`
+	AmmoLimit                      Int  `yaml:"AmmoLimit"`
+	EnemyMoveCooldown              Int  `yaml:"EnemyMoveCooldown"`
+	EnemiesAggroWhenVisible        bool `yaml:"EnemiesAggroWhenVisible"`
+	SpawnPortalCooldownMin         Int  `yaml:"SpawnPortalCooldownMin"`
+	SpawnPortalCooldownMax         Int  `yaml:"SpawnPortalCooldownMax"`
+	HoundMaxHealth                 Int  `yaml:"HoundMaxHealth"`
+	HoundMoveCooldownMultiplier    Int  `yaml:"HoundMoveCooldownMultiplier"`
+	HoundPreparingToAttackCooldown Int  `yaml:"HoundPreparingToAttackCooldown"`
+	HoundAttackCooldownMultiplier  Int  `yaml:"HoundAttackCooldownMultiplier"`
+	HoundHitCooldown               Int  `yaml:"HoundHitCooldown"`
+	HoundHitsPlayer                bool `yaml:"HoundHitsPlayer"`
+	HoundAggroDistance             Int  `yaml:"HoundAggroDistance"`
 }
 
 type WorldObject interface {

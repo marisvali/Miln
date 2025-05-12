@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-sql-driver/mysql"
+	"github.com/goccy/go-yaml"
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"image"
@@ -181,6 +182,13 @@ func LoadJSON(fsys fs.FS, filename string, v any) {
 	data, err := fs.ReadFile(fsys, filename)
 	Check(err)
 	err = json.Unmarshal(data, v)
+	Check(err)
+}
+
+func LoadYAML(fsys fs.FS, filename string, v any) {
+	data, err := fs.ReadFile(fsys, filename)
+	Check(err)
+	err = yaml.Unmarshal(data, v)
 	Check(err)
 }
 
