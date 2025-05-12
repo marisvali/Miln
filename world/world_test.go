@@ -8,8 +8,8 @@ import (
 )
 
 func TestWorld_Regression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250319-170648.mln010"))
-	expected := string(ReadFile("playthroughs/20250319-170648.mln010-hash"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
+	expected := string(ReadFile("playthroughs/20250511-091615.mln999-hash"))
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
