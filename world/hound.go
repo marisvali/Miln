@@ -32,7 +32,7 @@ func NewHound(seed Int, w WorldParams, pos Pt) *Hound {
 	g.moveCooldownMultiplier = w.HoundMoveCooldownMultiplier
 	g.preparingToAttackCooldown = w.HoundPreparingToAttackCooldown
 	g.attackCooldownMultiplier = w.HoundAttackCooldownMultiplier
-	g.hitCooldown = w.HoundHitCooldown
+	g.hitCooldown = w.HoundHitCooldownDuration
 	g.hitsPlayer = w.HoundHitsPlayer
 	g.aggroDistance = w.HoundAggroDistance
 	return &g
@@ -105,7 +105,7 @@ func (g *Hound) searching(justEnteredState bool, w *World) {
 	}
 
 	// Only move or reduce move tick down every w.EnemyMoveCooldown frames.
-	if w.EnemyMoveCooldownIdx.IsZero() {
+	if w.EnemyMoveCooldown.Ready() {
 		g.moveCooldownIdx.Dec()
 
 		if g.moveCooldownIdx.IsZero() {
@@ -184,7 +184,7 @@ func (g *Hound) attacking(justEnteredState bool, w *World) {
 
 	// Only go to player or reduce attack tick down every w.EnemyMoveCooldown
 	// frames.
-	if w.EnemyMoveCooldownIdx.IsZero() {
+	if w.EnemyMoveCooldown.Ready() {
 		// Tick down counter to when we attack.
 		g.attackCooldownIdx.Dec()
 

@@ -13,14 +13,13 @@ type Wave struct {
 
 type SpawnPortal struct {
 	Rand
-	pos         Pt
-	Health      Int
-	MaxHealth   Int
-	MaxTimeout  Int
-	TimeoutIdx  Int
-	Waves       []Wave
-	frameIdx    Int
-	worldParams WorldParams
+	pos           Pt
+	Health        Int
+	MaxHealth     Int
+	SpawnCooldown Cooldown
+	Waves         []Wave
+	frameIdx      Int
+	worldParams   WorldParams
 }
 
 func NewSpawnPortal(seed Int, p SpawnPortalParams, w WorldParams) (sp SpawnPortal) {
@@ -28,7 +27,7 @@ func NewSpawnPortal(seed Int, p SpawnPortalParams, w WorldParams) (sp SpawnPorta
 	sp.pos = p.Pos
 	sp.MaxHealth = I(1)
 	sp.Health = sp.MaxHealth
-	sp.MaxTimeout = p.SpawnPortalCooldown
+	sp.SpawnCooldown = NewCooldown(p.SpawnPortalCooldown)
 	sp.Waves = slices.Clone(p.Waves)
 	sp.worldParams = w
 	return
@@ -79,14 +78,13 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 
 func (p *SpawnPortal) Step(w *World) {
 	p.frameIdx.Inc()
-
-	if p.TimeoutIdx.IsPositive() {
-		p.TimeoutIdx.Dec()
+	p.SpawnCooldown.Update()
+	if !p.SpawnCooldown.Ready() {
 		return // Don't spawn.
 	}
 
-	if !(p.TimeoutIdx.IsZero() && w.EnemyMoveCooldownIdx.IsZero()) {
-		return // Only spawn when the enemy cooldown is at max.
+	if !w.EnemyMoveCooldown.Ready() {
+		return // Only spawn when the enemy cooldown is ready.
 	}
 
 	wave := p.CurrentWave()
@@ -100,7 +98,7 @@ func (p *SpawnPortal) Step(w *World) {
 		wave.NHounds.Dec()
 	}
 
-	p.TimeoutIdx = p.MaxTimeout
+	p.SpawnCooldown.Reset()
 }
 
 func (p *SpawnPortal) Active() bool {

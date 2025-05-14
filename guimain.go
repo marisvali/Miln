@@ -147,7 +147,7 @@ func main() {
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 
-	// replayFile := "d:\\Miln\\test.mln999"
+	// replayFile := "d:\\Miln\\code\\world\\playthroughs\\20250511-091615.mln999-new"
 	replayFile := ""
 	// g.recordingFile = "d:\\Miln\\test.mln999"
 

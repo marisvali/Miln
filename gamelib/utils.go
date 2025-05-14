@@ -633,3 +633,27 @@ func GameToOs(game, layout Pt) (os Pt) {
 	os = window.Plus(IPt(ebiten.WindowPosition()))
 	return
 }
+
+type Cooldown struct {
+	Duration Int
+	Idx      Int
+}
+
+func NewCooldown(duration Int) (m Cooldown) {
+	m.Duration = duration
+	return
+}
+
+func (m *Cooldown) Update() {
+	if m.Idx.IsPositive() {
+		m.Idx.Dec()
+	}
+}
+
+func (m *Cooldown) Reset() {
+	m.Idx = m.Duration
+}
+
+func (m *Cooldown) Ready() bool {
+	return m.Idx == ZERO
+}

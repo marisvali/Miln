@@ -20,7 +20,7 @@ type WorldParams struct {
 	Boardgame                      bool `yaml:"Boardgame"`
 	UseAmmo                        bool `yaml:"UseAmmo"`
 	AmmoLimit                      Int  `yaml:"AmmoLimit"`
-	EnemyMoveCooldown              Int  `yaml:"EnemyMoveCooldown"`
+	EnemyMoveCooldownDuration      Int  `yaml:"EnemyMoveCooldownDuration"`
 	EnemiesAggroWhenVisible        bool `yaml:"EnemiesAggroWhenVisible"`
 	SpawnPortalCooldownMin         Int  `yaml:"SpawnPortalCooldownMin"`
 	SpawnPortalCooldownMax         Int  `yaml:"SpawnPortalCooldownMax"`
@@ -28,7 +28,7 @@ type WorldParams struct {
 	HoundMoveCooldownMultiplier    Int  `yaml:"HoundMoveCooldownMultiplier"`
 	HoundPreparingToAttackCooldown Int  `yaml:"HoundPreparingToAttackCooldown"`
 	HoundAttackCooldownMultiplier  Int  `yaml:"HoundAttackCooldownMultiplier"`
-	HoundHitCooldown               Int  `yaml:"HoundHitCooldown"`
+	HoundHitCooldownDuration       Int  `yaml:"HoundHitCooldownDuration"`
 	HoundHitsPlayer                bool `yaml:"HoundHitsPlayer"`
 	HoundAggroDistance             Int  `yaml:"HoundAggroDistance"`
 }
@@ -41,17 +41,17 @@ type WorldObject interface {
 type World struct {
 	Playthrough
 	Rand
-	Player               Player
-	Enemies              []Enemy
-	Beam                 Beam
-	VisibleTiles         MatBool
-	TimeStep             Int
-	BeamMax              Int
-	BlockSize            Int
-	EnemyMoveCooldownIdx Int
-	Ammos                []Ammo
-	SpawnPortals         []SpawnPortal
-	vision               Vision
+	Player            Player
+	Enemies           []Enemy
+	Beam              Beam
+	VisibleTiles      MatBool
+	TimeStep          Int
+	BeamMax           Int
+	BlockSize         Int
+	EnemyMoveCooldown Cooldown
+	Ammos             []Ammo
+	SpawnPortals      []SpawnPortal
+	vision            Vision
 }
 
 func (w *World) Clone() World {
@@ -149,6 +149,7 @@ func NewWorld(seed Int, l Level) (w World) {
 	w.BeamMax = I(15)
 	w.Player = NewPlayer()
 	w.Player.AmmoLimit = w.AmmoLimit
+	w.EnemyMoveCooldown = NewCooldown(w.EnemyMoveCooldownDuration)
 
 	// GUI needs this even without the world ever doing a step.
 	// Note: this was true when the player started on the map, so it might not
@@ -337,9 +338,7 @@ func (w *World) Step(input PlayerInput) {
 			w.SpawnAmmos()
 		}
 
-		if w.EnemyMoveCooldownIdx.IsPositive() {
-			w.EnemyMoveCooldownIdx.Dec()
-		}
+		w.EnemyMoveCooldown.Update()
 
 		// Step the enemies.
 		for i := range w.Enemies {
@@ -351,8 +350,8 @@ func (w *World) Step(input PlayerInput) {
 			w.SpawnPortals[i].Step(w)
 		}
 
-		if w.EnemyMoveCooldownIdx.IsZero() {
-			w.EnemyMoveCooldownIdx = w.EnemyMoveCooldown
+		if w.EnemyMoveCooldown.Ready() {
+			w.EnemyMoveCooldown.Reset()
 		}
 	}
 

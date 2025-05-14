@@ -99,7 +99,7 @@ func GenerateLevel(fsys fs.FS) (l Level) {
 	l.Boardgame = p.Boardgame
 	l.UseAmmo = p.UseAmmo
 	l.AmmoLimit = p.AmmoLimit
-	l.EnemyMoveCooldown = p.EnemyMoveCooldown
+	l.EnemyMoveCooldownDuration = p.EnemyMoveCooldownDuration
 	l.EnemiesAggroWhenVisible = p.EnemiesAggroWhenVisible
 	l.WorldParams = p.WorldParams
 
