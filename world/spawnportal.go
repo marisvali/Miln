@@ -7,8 +7,8 @@ import (
 )
 
 type Wave struct {
-	SecondsAfterLastWave Int
-	NHounds              Int
+	SecondsAfterLastWave Int `yaml:"SecondsAfterLastWave"`
+	NHounds              Int `yaml:"NHounds"`
 }
 
 type SpawnPortal struct {

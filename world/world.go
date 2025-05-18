@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
+	"io/fs"
 	"math"
 	"slices"
 )
@@ -101,19 +102,19 @@ type PlayerInput struct {
 }
 
 type SpawnPortalParams struct {
-	Pos                 Pt
-	SpawnPortalCooldown Int
-	Waves               []Wave
+	Pos                 Pt     `yaml:"Pos"`
+	SpawnPortalCooldown Int    `yaml:"SpawnPortalCooldown"`
+	Waves               []Wave `yaml:"Waves"`
 }
 
 type Entities struct {
-	Obstacles          MatBool
-	SpawnPortalsParams []SpawnPortalParams
+	Obstacles          MatBool             `yaml:"Obstacles"`
+	SpawnPortalsParams []SpawnPortalParams `yaml:"SpawnPortalsParams"`
 }
 
 type Level struct {
-	Entities
-	WorldParams
+	Entities    `yaml:"Entities"`
+	WorldParams `yaml:"WorldParams"`
 }
 
 func (l *Level) Clone() Level {
@@ -131,6 +132,49 @@ func (l *Level) Clone() Level {
 				slices.Clone(spp.Waves)})
 	}
 	return clone
+}
+
+type LevelYaml struct {
+	Version Int `yaml:"Version"`
+	Seed    Int `yaml:"Seed"`
+	Level   `yaml:"Level"`
+}
+
+type VersionYaml struct {
+	Version Int `yaml:"Version"`
+}
+
+func (l *Level) SaveToYAML(seed Int, filename string) {
+	var lYaml LevelYaml
+	lYaml.Version = I(Version)
+	lYaml.Seed = seed
+	lYaml.Level = *l
+	SaveYAML(filename, lYaml)
+}
+
+func LoadLevelFromYAML(fsys fs.FS, filename string) (l Level, seed Int) {
+	var vYaml VersionYaml
+	LoadYAML(fsys, filename, &vYaml)
+	if vYaml.Version.ToInt64() != Version {
+		Check(fmt.Errorf("this code can't simulate this playthrough "+
+			"correctly - we are version %d and playthrough was generated "+
+			"with version %d",
+			Version, vYaml.Version.ToInt64()))
+	}
+
+	var lYaml LevelYaml
+	LoadYAML(fsys, filename, &lYaml)
+	return lYaml.Level, lYaml.Seed
+}
+
+func IsYamlLevel(filename string) bool {
+	b := ReadFile(filename)
+	versionS := "Version"
+	if len(b) <= len(versionS) {
+		return false
+	}
+	isYamlLevel := string(b[0:len(versionS)]) == versionS
+	return isYamlLevel
 }
 
 func NewWorld(seed Int, l Level) (w World) {

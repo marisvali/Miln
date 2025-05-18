@@ -52,6 +52,13 @@ func WriteFile(name string, data []byte) {
 	Check(err)
 }
 
+func DeleteFile(name string) {
+	err := os.Remove(name)
+	if !errors.Is(err, os.ErrNotExist) {
+		Check(err)
+	}
+}
+
 func ReadFile(name string) []byte {
 	data, err := os.ReadFile(name)
 	Check(err)
@@ -142,13 +149,6 @@ func GetLatestRecordingFile(fsys fs.FS) string {
 //	}
 // }
 //
-// func DeleteFile(name string) {
-//	name = "e:/" + name
-//	err := os.Remove(name)
-//	if !errors.Is(err, os.ErrNotExist) {
-//		Check(err)
-//	}
-// }
 
 func Serialize(w io.Writer, data any) {
 	enc := gob.NewEncoder(w)
@@ -190,6 +190,12 @@ func LoadYAML(fsys fs.FS, filename string, v any) {
 	Check(err)
 	err = yaml.Unmarshal(data, v)
 	Check(err)
+}
+
+func SaveYAML(filename string, v any) {
+	data, err := yaml.Marshal(v)
+	Check(err)
+	WriteFile(filename, data)
 }
 
 type FolderWatcher struct {

@@ -3,6 +3,7 @@ package gamelib
 import (
 	"fmt"
 	"slices"
+	"strings"
 )
 
 type MatBool struct {
@@ -157,4 +158,61 @@ func (m *MatBool) FromSlice(s []Pt) {
 
 func (m *MatBool) Equal(o MatBool) bool {
 	return m.size == o.size && slices.Equal(m.cells, o.cells)
+}
+
+func (m MatBool) MarshalYAML() ([]byte, error) {
+	var s string
+	nCols := m.size.X.ToInt()
+	nRows := m.size.Y.ToInt()
+
+	if nRows == 0 {
+		return []byte("empty"), nil
+	}
+
+	for i := 0; i < nRows; i++ {
+		row := m.cells[nCols*i : nCols*(i+1)]
+		var rowS string
+		for j := 0; j < len(row)-1; j++ {
+			if row[j] {
+				rowS += "X,"
+			} else {
+				rowS += ".,"
+			}
+		}
+		if row[len(row)-1] {
+			rowS += "X"
+		} else {
+			rowS += "."
+		}
+		s += "- [" + rowS + "]\n"
+	}
+	return []byte(s), nil
+}
+
+func (m *MatBool) UnmarshalYAML(b []byte) error {
+	s := string(b)
+
+	if strings.TrimSpace(s) == "empty" {
+		m.size = Pt{}
+		m.cells = []bool{}
+		return nil
+	}
+
+	rows := strings.Split(s, "\n")
+	for rowIdx := range rows {
+		trimmedRow := strings.TrimSpace(rows[rowIdx])
+		innerRow := trimmedRow[3 : len(trimmedRow)-1]
+		tokens := strings.Split(innerRow, ",")
+		zero := Pt{}
+		if m.size == zero {
+			m.size = IPt(len(tokens), len(rows))
+			m.cells = make([]bool, m.size.Y.Times(m.size.X).ToInt64())
+		}
+		for cellIdx, token := range tokens {
+			if strings.TrimSpace(token) == "X" {
+				m.Set(IPt(cellIdx, rowIdx))
+			}
+		}
+	}
+	return nil
 }

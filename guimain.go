@@ -13,6 +13,7 @@ import (
 	_ "image/png"
 	"io/fs"
 	"os"
+	"path/filepath"
 )
 
 //go:embed data/*
@@ -147,12 +148,12 @@ func main() {
 	g.guiMargin = I(50)
 	g.buttonRegionWidth = I(200)
 
-	// replayFile := "d:\\Miln\\code\\world\\playthroughs\\20250511-091615.mln999-new"
-	replayFile := ""
+	// inputFile := "d:\\Miln\\code\\world\\playthroughs\\20250511-091615.mln999-new"
+	inputFile := ""
 	// g.recordingFile = "d:\\Miln\\test.mln999"
 
 	if len(os.Args) == 2 {
-		replayFile = os.Args[1]
+		inputFile = os.Args[1]
 	}
 
 	if !FileExists(os.DirFS("."), "data") {
@@ -174,12 +175,25 @@ func main() {
 		g.folderWatcher2.FolderContentsChanged()
 	}
 
-	if replayFile != "" {
-		g.playbackExecution = true
-		g.playthrough = DeserializePlaythrough(ReadFile(replayFile))
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
-		g.state = Playback
+	if inputFile != "" {
+		if IsYamlLevel(inputFile) {
+			// Play level loaded from YAML file.
+			g.playbackExecution = false
+			level, seed := LoadLevelFromYAML(
+				os.DirFS(filepath.Dir(inputFile)),
+				filepath.Base(inputFile))
+			g.world = NewWorld(seed, level)
+			InitializeIdInDbHttp(g.username, Version, g.world.Id)
+			g.state = GameOngoing
+		} else {
+			// Replay a playthrough loaded from a file.
+			g.playbackExecution = true
+			g.playthrough = DeserializePlaythrough(ReadFile(inputFile))
+			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+			g.state = Playback
+		}
 	} else {
+		// Play random level.
 		g.playbackExecution = false
 		// g.recordingFile = GetNewRecordingFile()
 		// seed, targetDifficulty := GetNextLevel(g.username)
