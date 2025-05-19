@@ -64,7 +64,7 @@ func (a *AI) MoveRandomly(w *World) (input PlayerInput) {
 
 func (a *AI) MoveToRandomVisibleTile(freePts []Pt) (input PlayerInput) {
 	if len(freePts) > 0 {
-		input.MovePt = RElem(DefaultRand, freePts)
+		input.MovePt = RElem(&DefaultRand, freePts)
 	} else {
 		input.Move = false
 	}

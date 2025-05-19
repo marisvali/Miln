@@ -52,6 +52,32 @@ func WriteFile(name string, data []byte) {
 	Check(err)
 }
 
+// CopyFile copies a file (not a folder) from source to destination.
+// Apparently copying files has all sorts of edge cases and Go doesn't provide
+// a default function in its standard library for this because the developer
+// should decide how to handle the edge cases. In my case, I just want a new
+// file with the same contents as the old file. If the destination file already
+// exists, it is overwritten.
+func CopyFile(source, dest string) {
+	sourceFileStat, err := os.Stat(source)
+	Check(err)
+
+	if !sourceFileStat.Mode().IsRegular() {
+		Check(fmt.Errorf("%s is not a regular file", source))
+	}
+
+	sourceReader, err := os.Open(source)
+	Check(err)
+	defer func(file *os.File) { Check(file.Close()) }(sourceReader)
+
+	destWriter, err := os.Create(dest)
+	Check(err)
+	defer func(file *os.File) { Check(file.Close()) }(destWriter)
+
+	_, err = io.Copy(destWriter, sourceReader)
+	Check(err)
+}
+
 func DeleteFile(name string) {
 	err := os.Remove(name)
 	if !errors.Is(err, os.ErrNotExist) {
@@ -73,6 +99,27 @@ func FileExists(fsys fs.FS, name string) bool {
 	} else {
 		return false
 	}
+}
+
+func MakeDir(name string) {
+	err := os.MkdirAll(name, 0644)
+	Check(err)
+}
+
+func DeleteDir(name string) {
+	err := os.RemoveAll(name)
+	Check(err)
+}
+
+func ChDir(name string) {
+	err := os.Chdir(name)
+	Check(err)
+}
+
+func GetFiles(dir string, pattern string) []string {
+	files, err := filepath.Glob(dir + "/" + pattern)
+	Check(err)
+	return files
 }
 
 func GetNewRecordingFile(fsys fs.FS) string {
