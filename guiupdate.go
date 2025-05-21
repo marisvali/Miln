@@ -52,31 +52,29 @@ func (g *Gui) Update() error {
 
 func (g *Gui) UpdateGameOngoing() {
 	if g.UserRequestedPause() {
-		g.state = GamePaused
 		g.uploadCurrentWorld()
+		g.state = GamePaused
 		return
 	}
 	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
 		g.uploadCurrentWorld()
-		g.UpdateGamePaused()
+		g.RestartLevel()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
 		g.uploadCurrentWorld()
-		g.UpdateGamePaused()
+		g.StartNewLevel()
 		return
 	}
 
 	if g.AllEnemiesDead() {
-		g.state = GameWon
 		g.uploadCurrentWorld()
+		g.state = GameWon
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
-		g.state = GameLost
 		g.uploadCurrentWorld()
+		g.state = GameLost
 		return
 	}
 
@@ -125,26 +123,36 @@ func (g *Gui) UserRequestedPlaybackPause() bool {
 	return g.JustPressed(ebiten.KeySpace) || g.JustClicked(g.buttonPlaybackPlay)
 }
 
+func (g *Gui) StartNewLevel() {
+	seed := RInt(I(0), I(1000000))
+	level := GenerateLevel(g.FSys)
+	g.world = NewWorld(seed, level)
+	// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
+	// InitializeIdInDbSql(g.db, g.world.Id)
+	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	g.state = GameOngoing
+}
+
+func (g *Gui) RestartLevel() {
+	g.world = NewWorld(g.world.Seed, g.world.Level)
+	// InitializeIdInDbSql(g.db, g.world.Id)
+	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	g.state = GameOngoing
+}
+
 func (g *Gui) UpdateGamePaused() {
-	if g.UserRequestedNewLevel() {
-		seed := RInt(I(0), I(1000000))
-		level := GenerateLevel(g.FSys)
-		g.world = NewWorld(seed, level)
-		// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
-		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GameOngoing
+	if g.UserRequestedRestartLevel() {
+		g.RestartLevel()
 		return
 	}
-	if g.UserRequestedRestartLevel() {
-		g.world = NewWorld(g.world.Seed, g.world.Level)
-		// InitializeIdInDbSql(g.db, g.world.Id)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GameOngoing
+	if g.UserRequestedNewLevel() {
+		g.StartNewLevel()
 		return
 	}
 	if g.leftButtonJustPressed || g.rightButtonJustPressed {
 		g.state = GameOngoing
+		// Immediately execute UpdateGameOngoing in order for the click to be
+		// taken into account and the teleport/attack to take effect.
 		g.UpdateGameOngoing()
 		return
 	}
@@ -153,13 +161,11 @@ func (g *Gui) UpdateGamePaused() {
 
 func (g *Gui) UpdateGameWon() {
 	if g.UserRequestedRestartLevel() {
-		g.state = GamePaused
-		g.UpdateGamePaused()
+		g.RestartLevel()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GamePaused
-		g.UpdateGamePaused()
+		g.StartNewLevel()
 		return
 	}
 	g.instructionalText = "You won, congratulations!"
@@ -167,13 +173,11 @@ func (g *Gui) UpdateGameWon() {
 
 func (g *Gui) UpdateGameLost() {
 	if g.UserRequestedRestartLevel() {
-		g.state = GameOngoing
-		g.UpdateGamePaused()
+		g.RestartLevel()
 		return
 	}
 	if g.UserRequestedNewLevel() {
-		g.state = GameOngoing
-		g.UpdateGamePaused()
+		g.StartNewLevel()
 		return
 	}
 	g.instructionalText = "You lost."
