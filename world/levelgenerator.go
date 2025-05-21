@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
-	"io/fs"
 )
 
 type WaveData struct {
@@ -66,7 +65,7 @@ func ValidRandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
 	}
 }
 
-func LoadLevelGeneratorParams(fsys fs.FS) LevelGeneratorParams {
+func LoadLevelGeneratorParams(fsys FS) LevelGeneratorParams {
 	// Read from the disk over and over until a full read is possible.
 	// This repetition is meant to avoid crashes due to reading files
 	// while they are still being written.
@@ -93,7 +92,7 @@ func LoadLevelGeneratorParams(fsys fs.FS) LevelGeneratorParams {
 	return p
 }
 
-func GenerateLevel(fsys fs.FS) (l Level) {
+func GenerateLevel(fsys FS) (l Level) {
 	p := LoadLevelGeneratorParams(fsys)
 
 	l.Boardgame = p.Boardgame

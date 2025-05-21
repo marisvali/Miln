@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
-	"io/fs"
 	"math"
 	"slices"
 )
@@ -152,7 +151,7 @@ func (l *Level) SaveToYAML(seed Int, filename string) {
 	SaveYAML(filename, lYaml)
 }
 
-func LoadLevelFromYAML(fsys fs.FS, filename string) (l Level, seed Int) {
+func LoadLevelFromYAML(fsys FS, filename string) (l Level, seed Int) {
 	var vYaml VersionYaml
 	LoadYAML(fsys, filename, &vYaml)
 	if vYaml.Version.ToInt64() != Version {

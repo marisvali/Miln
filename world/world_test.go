@@ -135,7 +135,7 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 }
 
 func Test_LevelYaml(t *testing.T) {
-	fsys := os.DirFS(".")
+	fsys := os.DirFS(".").(FS)
 
 	var l Level
 	l.Boardgame = false

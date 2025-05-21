@@ -91,7 +91,7 @@ func ReadFile(name string) []byte {
 	return data
 }
 
-func FileExists(fsys fs.FS, name string) bool {
+func FileExists(fsys FS, name string) bool {
 	file, err := fsys.Open(name)
 	if err == nil {
 		CloseFile(file)
@@ -116,13 +116,23 @@ func ChDir(name string) {
 	Check(err)
 }
 
-func GetFiles(dir string, pattern string) []string {
-	files, err := filepath.Glob(dir + "/" + pattern)
+func GetFiles(fsys FS, dir string, pattern string) []string {
+	var files []string
+	entries, err := fsys.ReadDir(dir)
 	Check(err)
+	for _, entry := range entries {
+		checking := entry.Name()
+		fmt.Println(checking)
+		matched, err := filepath.Match(pattern, entry.Name())
+		Check(err)
+		if matched {
+			files = append(files, dir+"/"+entry.Name())
+		}
+	}
 	return files
 }
 
-func GetNewRecordingFile(fsys fs.FS) string {
+func GetNewRecordingFile(fsys FS) string {
 	if !FileExists(fsys, "recordings") {
 		return ""
 	}
@@ -137,7 +147,7 @@ func GetNewRecordingFile(fsys fs.FS) string {
 	panic("Cannot record, no available filename found.")
 }
 
-func GetLatestRecordingFile(fsys fs.FS) string {
+func GetLatestRecordingFile(fsys FS) string {
 	dir := "recordings"
 	if !FileExists(fsys, dir) {
 		return ""
@@ -225,15 +235,15 @@ func ReadAllText(filename string) string {
 	return string(data)
 }
 
-func LoadJSON(fsys fs.FS, filename string, v any) {
-	data, err := fs.ReadFile(fsys, filename)
+func LoadJSON(fsys FS, filename string, v any) {
+	data, err := fsys.ReadFile(filename)
 	Check(err)
 	err = json.Unmarshal(data, v)
 	Check(err)
 }
 
-func LoadYAML(fsys fs.FS, filename string, v any) {
-	data, err := fs.ReadFile(fsys, filename)
+func LoadYAML(fsys FS, filename string, v any) {
+	data, err := fsys.ReadFile(filename)
 	Check(err)
 	err = yaml.Unmarshal(data, v)
 	Check(err)
@@ -361,7 +371,7 @@ func SaveImage(str string, img *ebiten.Image) {
 	Check(err)
 }
 
-func LoadImage(fsys fs.FS, str string) *ebiten.Image {
+func LoadImage(fsys FS, str string) *ebiten.Image {
 	file, err := fsys.Open(str)
 	defer func(file fs.File) { Check(file.Close()) }(file)
 	Check(err)

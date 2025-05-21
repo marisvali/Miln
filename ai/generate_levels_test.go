@@ -97,7 +97,7 @@ func (a *AiInput) GenerateParam() Param {
 
 func Test_GenerateInputData(t *testing.T) {
 	workDir := "d:\\Miln\\stored\\experiment2\\ai-input"
-	fsys := os.DirFS(workDir)
+	fsys := os.DirFS(workDir).(FS)
 	var input AiInput
 	LoadYAML(fsys, "ai-input.yaml", &input)
 
@@ -131,9 +131,9 @@ func Test_GenerateInputData(t *testing.T) {
 	}
 
 	// Generate play data.
-	trainingFiles := GetFiles(trainingDir, "*-level")
+	trainingFiles := GetFiles(fsys, "training-data", "*-level")
 	Shuffle(&DefaultRand, trainingFiles)
-	testFiles := GetFiles(testDir, "*-level")
+	testFiles := GetFiles(fsys, "test-data", "*-level")
 	Shuffle(&DefaultRand, testFiles)
 
 	playDir := workDir + "\\play-data"
@@ -154,9 +154,9 @@ func Test_GenerateInputData(t *testing.T) {
 		files = append(files, testFiles[i])
 	}
 
-	for i, sourceFilename := range files {
-		filenameOnly := filepath.Base(sourceFilename)
-		destFilename := playDir + fmt.Sprintf("/%02d-", i+1) + filenameOnly
+	for i, filename := range files {
+		sourceFilename := workDir + "/" + filename
+		destFilename := playDir + fmt.Sprintf("/%02d-", i+1) + filepath.Base(filename)
 		CopyFile(sourceFilename, destFilename)
 	}
 }

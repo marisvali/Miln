@@ -11,7 +11,6 @@ import (
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
 	_ "image/png"
-	"io/fs"
 	"os"
 	"path/filepath"
 )
@@ -94,7 +93,7 @@ type Gui struct {
 	state                  GameState
 	textHeight             Int
 	guiMargin              Int
-	FSys                   fs.FS
+	FSys                   FS
 	buttonRegionWidth      Int
 	buttonPause            Rectangle
 	buttonNewLevel         Rectangle
@@ -115,6 +114,7 @@ type Gui struct {
 	layout                 Pt
 	playbackPaused         bool
 	instructionalText      string
+	fixedLevels            []string
 }
 
 type uploadData struct {
@@ -156,10 +156,10 @@ func main() {
 		inputFile = os.Args[1]
 	}
 
-	if !FileExists(os.DirFS("."), "data") {
+	if !FileExists(os.DirFS(".").(FS), "data") {
 		g.FSys = &embeddedFiles
 	} else {
-		g.FSys = os.DirFS(".")
+		g.FSys = os.DirFS(".").(FS)
 		g.folderWatcher1.Folder = "data/gui"
 		g.folderWatcher2.Folder = "data/levelgenerator"
 		// Initialize watchers.
@@ -175,12 +175,16 @@ func main() {
 		g.folderWatcher2.FolderContentsChanged()
 	}
 
+	if FileExists(g.FSys, "data/levels") {
+		g.fixedLevels = GetFiles(g.FSys, "data/levels", "*")
+	}
+
 	if inputFile != "" {
 		if IsYamlLevel(inputFile) {
 			// Play level loaded from YAML file.
 			g.playbackExecution = false
 			level, seed := LoadLevelFromYAML(
-				os.DirFS(filepath.Dir(inputFile)),
+				os.DirFS(filepath.Dir(inputFile)).(FS),
 				filepath.Base(inputFile))
 			g.world = NewWorld(seed, level)
 			InitializeIdInDbHttp(g.username, Version, g.world.Id)
@@ -192,17 +196,19 @@ func main() {
 			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 			g.state = Playback
 		}
+	} else if len(g.fixedLevels) > 0 {
+		// Play pre-defined levels in order.
+		g.playbackExecution = false
+		level, seed := LoadLevelFromYAML(g.FSys, g.fixedLevels[0])
+		g.world = NewWorld(seed, level)
+		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+		g.state = GameOngoing
 	} else {
 		// Play random level.
 		g.playbackExecution = false
-		// g.recordingFile = GetNewRecordingFile()
-		// seed, targetDifficulty := GetNextLevel(g.username)
 		seed := RInt(I(0), I(1000000))
 		level := GenerateLevel(g.FSys)
 		g.world = NewWorld(seed, level)
-		// g.world = NewWorld(RInt(I(0), I(1000000)))
-		// InitializeIdInDbSql(g.db, g.world.Id)
-		// UploadDataToDbSql(g.db, g.world.Id, g.world.SerializedPlaythrough())
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 	}

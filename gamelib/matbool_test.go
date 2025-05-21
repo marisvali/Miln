@@ -46,7 +46,7 @@ func Test_Intersect(t *testing.T) {
 }
 
 func RunYamlTest(t *testing.T, m MatBool) {
-	fsys := os.DirFS(".")
+	fsys := os.DirFS(".").(FS)
 	filename := "m.txt"
 	SaveYAML(filename, m)
 

@@ -1,13 +1,47 @@
 package go_basics
 
 import (
+	"embed"
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"io/fs"
 	"math"
+	"os"
 	"reflect"
 	"testing"
 	"unsafe"
 )
+
+//go:embed *
+var embeddedFiles embed.FS
+
+type MyFS interface {
+	fs.FS
+	fs.ReadFileFS
+	fs.ReadDirFS
+}
+
+func TestInterfaceCasting(t *testing.T) {
+	var myFS MyFS
+	myFS = embeddedFiles
+	myFS = os.DirFS(".").(MyFS)
+
+	_, err := myFS.Open("data/file1.txt")
+	if err != nil {
+		fmt.Println("file not found")
+	}
+
+	dirEntries, err := myFS.ReadDir("data")
+	if err != nil {
+		fmt.Println("folder not found")
+	}
+
+	for _, entry := range dirEntries {
+		fmt.Println(entry.Name())
+	}
+
+	assert.True(t, 1 == 1)
+}
 
 type SomeStruct struct {
 	X int

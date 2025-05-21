@@ -3,7 +3,6 @@ package gamelib
 import (
 	"github.com/hajimehoshi/ebiten/v2"
 	_ "image/png"
-	"io/fs"
 	"slices"
 	"strconv"
 )
@@ -21,7 +20,7 @@ type Animation struct {
 	frameIdx Int
 }
 
-func NewAnimation(fsys fs.FS, name string) (a Animation) {
+func NewAnimation(fsys FS, name string) (a Animation) {
 	count := 1
 	for {
 		fullName := name + strconv.Itoa(count) + ".png"
