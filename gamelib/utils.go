@@ -418,85 +418,23 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 	return mask
 }
 
-func sendDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
-	url := "https://playful-patterns.com/submit-playthrough.php"
-
+// makeHttpRequest makes a POST HTTP request to an endpoint and returns the
+// body of the response as a string.
+func makeHttpRequest(url string, fields map[string]string, files map[string][]byte) string {
 	// Create a buffer to write our multipart form data.
 	var requestBody bytes.Buffer
 	writer := multipart.NewWriter(&requestBody)
-	err := writer.WriteField("user", user)
-	Check(err)
-	err = writer.WriteField("version", strconv.FormatInt(version, 10))
-	Check(err)
-	err = writer.WriteField("id", id.String())
-	Check(err)
-	if data != nil {
-		part, err := writer.CreateFormFile("playthrough", "rima")
-		Check(err)
-		_, err = part.Write(data)
+	for k, v := range fields {
+		err := writer.WriteField(k, v)
 		Check(err)
 	}
-	err = writer.Close()
-	Check(err)
-
-	// Create a POST request with the multipart form data.
-	request, err := http.NewRequest("POST", url, &requestBody)
-	Check(err)
-	request.Header.Set("content-type", writer.FormDataContentType())
-
-	// Perform the request.
-	client := &http.Client{}
-	response, err := client.Do(request)
-	Check(err)
-	if response.StatusCode != 200 {
-		Check(fmt.Errorf("http request failed: %d", response.StatusCode))
+	for k, v := range files {
+		part, err := writer.CreateFormFile(k, k)
+		Check(err)
+		_, err = part.Write(v)
+		Check(err)
 	}
-}
-
-func InitializeIdInDbHttp(user string, version int64, id uuid.UUID) {
-	sendDataToDbHttp(user, version, id, nil)
-}
-
-func UploadDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
-	sendDataToDbHttp(user, version, id, data)
-}
-
-func SetUserDataHttp(user string, data string) {
-	url := "https://playful-patterns.com/set-user-data.php"
-
-	// Create a buffer to write our multipart form data.
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-	err := writer.WriteField("user", user)
-	Check(err)
-	err = writer.WriteField("data", data)
-	Check(err)
-	err = writer.Close()
-	Check(err)
-
-	// Create a POST request with the multipart form data.
-	request, err := http.NewRequest("POST", url, &requestBody)
-	Check(err)
-	request.Header.Set("content-type", writer.FormDataContentType())
-
-	// Perform the request.
-	client := &http.Client{}
-	response, err := client.Do(request)
-	Check(err)
-	if response.StatusCode != 200 {
-		Check(fmt.Errorf("http request failed: %d", response.StatusCode))
-	}
-}
-
-func GetUserDataHttp(user string) string {
-	url := "https://playful-patterns.com/get-user-data.php"
-
-	// Create a buffer to write our multipart form data.
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-	err := writer.WriteField("user", user)
-	Check(err)
-	err = writer.Close()
+	err := writer.Close()
 	Check(err)
 
 	// Create a POST request with the multipart form data.
@@ -514,6 +452,40 @@ func GetUserDataHttp(user string) string {
 	data, err := io.ReadAll(response.Body)
 	Check(err)
 	return string(data)
+}
+
+func InitializeIdInDbHttp(user string, version int64, id uuid.UUID) {
+	url := "https://playful-patterns.com/submit-playthrough.php"
+	makeHttpRequest(url,
+		map[string]string{
+			"user":    user,
+			"version": strconv.FormatInt(version, 10),
+			"id":      id.String()},
+		map[string][]byte{})
+}
+
+func UploadDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
+	url := "https://playful-patterns.com/submit-playthrough.php"
+	makeHttpRequest(url,
+		map[string]string{
+			"user":    user,
+			"version": strconv.FormatInt(version, 10),
+			"id":      id.String()},
+		map[string][]byte{"playthrough": data})
+}
+
+func SetUserDataHttp(user string, data string) {
+	url := "https://playful-patterns.com/set-user-data.php"
+	makeHttpRequest(url,
+		map[string]string{"user": user, "data": data},
+		map[string][]byte{})
+}
+
+func GetUserDataHttp(user string) string {
+	url := "https://playful-patterns.com/get-user-data.php"
+	return makeHttpRequest(url,
+		map[string]string{"user": user},
+		map[string][]byte{})
 }
 
 func ConnectToDbSql() *sql.DB {
