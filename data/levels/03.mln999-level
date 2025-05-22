@@ -25,7 +25,7 @@ Level:
     EnemiesAggroWhenVisible: true
     SpawnPortalCooldownMin: 100
     SpawnPortalCooldownMax: 100
-    HoundMaxHealth: 1
+    HoundMaxHealth: 3
     HoundMoveCooldownMultiplier: 1
     HoundPreparingToAttackCooldown: 101
     HoundAttackCooldownMultiplier: 1

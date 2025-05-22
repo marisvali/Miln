@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"github.com/goccy/go-yaml"
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	. "github.com/marisvali/miln/ai"
@@ -13,7 +14,6 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 //go:embed data/*
@@ -55,9 +55,14 @@ type Animations struct {
 	animHoundDead              Animation
 }
 
+type UserData struct {
+	CurrentFixedLevelIdx Int `yaml:"CurrentFixedLevelIdx"`
+}
+
 type Gui struct {
 	// db                 *sql.DB
 	GuiData
+	UserData
 	Animations
 	defaultFont           font.Face
 	imgGround             *ebiten.Image
@@ -110,14 +115,13 @@ type Gui struct {
 	playerHitEffectIdx     Int
 	playthrough            Playthrough
 	uploadDataChannel      chan uploadData
-	username               string
 	ai                     AI
 	visWorld               VisWorld
 	layout                 Pt
 	playbackPaused         bool
 	instructionalText      string
 	fixedLevels            []string
-	currentFixedLevelIdx   Int
+	username               string
 }
 
 type uploadData struct {
@@ -272,6 +276,18 @@ func (g *Gui) updateWindowSize() {
 	ebiten.SetWindowTitle("Miln")
 }
 
+func (g *Gui) LoadUserData() {
+	s := GetUserDataHttp(g.username)
+	err := yaml.Unmarshal([]byte(s), &g.UserData)
+	Check(err)
+}
+
+func (g *Gui) SaveUserData() {
+	data, err := yaml.Marshal(g.UserData)
+	Check(err)
+	SetUserDataHttp(g.username, string(data))
+}
+
 // Functions for working with fixed levels. Apparently these are the abstract
 // functionalities I need:
 // - initialize fixed levels
@@ -282,28 +298,16 @@ func (g *Gui) updateWindowSize() {
 
 func (g *Gui) InitializeFixedLevels() {
 	g.fixedLevels = GetFiles(g.FSys, "data/levels", "*")
-	s := string(ReadFile("current-fixed-level-idx.txt"))
-	currentFixedLevelIdx, err := strconv.Atoi(s)
-	Check(err)
-	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
+	g.LoadUserData()
 }
 
 func (g *Gui) GetCurrentFixedLevel() (seed Int, l Level) {
-	s := string(ReadFile("current-fixed-level-idx.txt"))
-	currentFixedLevelIdx, err := strconv.Atoi(s)
-	Check(err)
-	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
-	return LoadLevelFromYAML(g.FSys, g.fixedLevels[currentFixedLevelIdx])
+	return LoadLevelFromYAML(g.FSys, g.fixedLevels[g.CurrentFixedLevelIdx.ToInt()])
 }
 
 func (g *Gui) AdvanceCurrentFixedLevel() {
-	s := string(ReadFile("current-fixed-level-idx.txt"))
-	currentFixedLevelIdx, err := strconv.Atoi(s)
-	Check(err)
-	currentFixedLevelIdx++
-	s = strconv.Itoa(currentFixedLevelIdx)
-	WriteFile("current-fixed-level-idx.txt", []byte(s))
-	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
+	g.CurrentFixedLevelIdx.Inc()
+	g.SaveUserData()
 }
 
 func (g *Gui) UsingFixedLevels() bool {
@@ -311,5 +315,5 @@ func (g *Gui) UsingFixedLevels() bool {
 }
 
 func (g *Gui) HasMoreFixedLevels() bool {
-	return g.currentFixedLevelIdx.Lt(I(len(g.fixedLevels)))
+	return g.CurrentFixedLevelIdx.Lt(I(len(g.fixedLevels)))
 }
