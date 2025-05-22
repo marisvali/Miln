@@ -13,6 +13,7 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 //go:embed data/*
@@ -97,6 +98,7 @@ type Gui struct {
 	buttonRegionWidth      Int
 	buttonPause            Rectangle
 	buttonNewLevel         Rectangle
+	buttonNextLevel        Rectangle
 	buttonRestartLevel     Rectangle
 	buttonPlaybackPlay     Rectangle
 	buttonPlaybackBar      Rectangle
@@ -115,6 +117,7 @@ type Gui struct {
 	playbackPaused         bool
 	instructionalText      string
 	fixedLevels            []string
+	currentFixedLevelIdx   Int
 }
 
 type uploadData struct {
@@ -176,14 +179,14 @@ func main() {
 	}
 
 	if FileExists(g.FSys, "data/levels") {
-		g.fixedLevels = GetFiles(g.FSys, "data/levels", "*")
+		g.InitializeFixedLevels()
 	}
 
 	if inputFile != "" {
 		if IsYamlLevel(inputFile) {
 			// Play level loaded from YAML file.
 			g.playbackExecution = false
-			level, seed := LoadLevelFromYAML(
+			seed, level := LoadLevelFromYAML(
 				os.DirFS(filepath.Dir(inputFile)).(FS),
 				filepath.Base(inputFile))
 			g.world = NewWorld(seed, level)
@@ -199,10 +202,24 @@ func main() {
 	} else if len(g.fixedLevels) > 0 {
 		// Play pre-defined levels in order.
 		g.playbackExecution = false
-		level, seed := LoadLevelFromYAML(g.FSys, g.fixedLevels[0])
-		g.world = NewWorld(seed, level)
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
-		g.state = GameOngoing
+		if g.HasMoreFixedLevels() {
+			g.world = NewWorld(g.GetCurrentFixedLevel())
+			InitializeIdInDbHttp(g.username, Version, g.world.Id)
+			g.state = GameOngoing
+		} else {
+			// Show a bogus, empty level, just so that the code that draws
+			// the interface can work as usual. The only thing I really need for
+			// the interface to work well is a non-zero size for the Obstacles
+			// matrix. So, generate a level only to get the currently used
+			// size of the Obstacles matrix. I could hardcode the current
+			// favorite for the matrix size (8x8) but it may change in the
+			// future.
+			someLevel := GenerateLevel(g.FSys)
+			var l Level
+			l.Obstacles = NewMatBool(someLevel.Obstacles.Size())
+			g.world = NewWorld(I(0), l)
+			g.state = GameWon
+		}
 	} else {
 		// Play random level.
 		g.playbackExecution = false
@@ -253,4 +270,46 @@ func (g *Gui) updateWindowSize() {
 	// ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
 	ebiten.SetWindowSize(900, 900)
 	ebiten.SetWindowTitle("Miln")
+}
+
+// Functions for working with fixed levels. Apparently these are the abstract
+// functionalities I need:
+// - initialize fixed levels
+// - check if we are currently using fixed levels
+// - check if we have any more fixed levels
+// - get current fixed level
+// - advance current fixed level
+
+func (g *Gui) InitializeFixedLevels() {
+	g.fixedLevels = GetFiles(g.FSys, "data/levels", "*")
+	s := string(ReadFile("current-fixed-level-idx.txt"))
+	currentFixedLevelIdx, err := strconv.Atoi(s)
+	Check(err)
+	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
+}
+
+func (g *Gui) GetCurrentFixedLevel() (seed Int, l Level) {
+	s := string(ReadFile("current-fixed-level-idx.txt"))
+	currentFixedLevelIdx, err := strconv.Atoi(s)
+	Check(err)
+	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
+	return LoadLevelFromYAML(g.FSys, g.fixedLevels[currentFixedLevelIdx])
+}
+
+func (g *Gui) AdvanceCurrentFixedLevel() {
+	s := string(ReadFile("current-fixed-level-idx.txt"))
+	currentFixedLevelIdx, err := strconv.Atoi(s)
+	Check(err)
+	currentFixedLevelIdx++
+	s = strconv.Itoa(currentFixedLevelIdx)
+	WriteFile("current-fixed-level-idx.txt", []byte(s))
+	g.currentFixedLevelIdx = I(currentFixedLevelIdx)
+}
+
+func (g *Gui) UsingFixedLevels() bool {
+	return len(g.fixedLevels) > 0
+}
+
+func (g *Gui) HasMoreFixedLevels() bool {
+	return g.currentFixedLevelIdx.Lt(I(len(g.fixedLevels)))
 }

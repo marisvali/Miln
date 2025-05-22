@@ -151,7 +151,7 @@ func (l *Level) SaveToYAML(seed Int, filename string) {
 	SaveYAML(filename, lYaml)
 }
 
-func LoadLevelFromYAML(fsys FS, filename string) (l Level, seed Int) {
+func LoadLevelFromYAML(fsys FS, filename string) (seed Int, l Level) {
 	var vYaml VersionYaml
 	LoadYAML(fsys, filename, &vYaml)
 	if vYaml.Version.ToInt64() != Version {
@@ -163,7 +163,7 @@ func LoadLevelFromYAML(fsys FS, filename string) (l Level, seed Int) {
 
 	var lYaml LevelYaml
 	LoadYAML(fsys, filename, &lYaml)
-	return lYaml.Level, lYaml.Seed
+	return lYaml.Seed, lYaml.Level
 }
 
 func IsYamlLevel(filename string) bool {

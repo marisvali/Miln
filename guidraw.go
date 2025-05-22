@@ -300,25 +300,47 @@ func (g *Gui) DrawButtons(screen *ebiten.Image) {
 
 	buttonCols := []color.Color{Col(35, 115, 115, 255), Col(65, 215, 115, 255),
 		Col(225, 115, 215, 255)}
-
-	buttons := []*ebiten.Image{}
-	for i := I(0); i.Lt(I(3)); i.Inc() {
-		upperLeft := Pt{buttonWidth.Times(i), ZERO}
-		lowerRight := Pt{buttonWidth.Times(i.Plus(ONE)), height}
-		button := SubImage(screen, Rectangle{upperLeft, lowerRight})
-		button.Fill(buttonCols[i.ToInt()])
-		buttons = append(buttons, button)
-	}
-
 	textCol := Col(0, 0, 0, 255)
-	g.DrawText(buttons[0], "[ESC] Pause", true, textCol)
-	g.DrawText(buttons[1], "[R] Restart level", true, textCol)
-	g.DrawText(buttons[2], "[N] New level", true, textCol)
 
-	// Remember the regions so that Update() can react when they're clicked.
-	g.buttonPause = FromImageRectangle(buttons[0].Bounds())
-	g.buttonRestartLevel = FromImageRectangle(buttons[1].Bounds())
-	g.buttonNewLevel = FromImageRectangle(buttons[2].Bounds())
+	// Pause
+	i := I(0)
+	upperLeft := Pt{buttonWidth.Times(i), ZERO}
+	lowerRight := Pt{buttonWidth.Times(i.Plus(ONE)), height}
+	button := SubImage(screen, Rectangle{upperLeft, lowerRight})
+	button.Fill(buttonCols[i.ToInt()])
+	g.DrawText(button, "[ESC] Pause", true, textCol)
+	g.buttonPause = FromImageRectangle(button.Bounds())
+
+	if g.UsingFixedLevels() {
+		if g.NextLevelRequestable() {
+			// Next level
+			i.Inc()
+			upperLeft = Pt{buttonWidth.Times(i), ZERO}
+			lowerRight = Pt{buttonWidth.Times(i.Plus(ONE)), height}
+			button = SubImage(screen, Rectangle{upperLeft, lowerRight})
+			button.Fill(buttonCols[i.ToInt()])
+			g.DrawText(button, "[N] Next level", true, textCol)
+			g.buttonNextLevel = FromImageRectangle(button.Bounds())
+		}
+	} else {
+		// Restart level
+		i.Inc()
+		upperLeft = Pt{buttonWidth.Times(i), ZERO}
+		lowerRight = Pt{buttonWidth.Times(i.Plus(ONE)), height}
+		button = SubImage(screen, Rectangle{upperLeft, lowerRight})
+		button.Fill(buttonCols[i.ToInt()])
+		g.DrawText(button, "[R] Restart level", true, textCol)
+		g.buttonRestartLevel = FromImageRectangle(button.Bounds())
+
+		// New level
+		i.Inc()
+		upperLeft = Pt{buttonWidth.Times(i), ZERO}
+		lowerRight = Pt{buttonWidth.Times(i.Plus(ONE)), height}
+		button = SubImage(screen, Rectangle{upperLeft, lowerRight})
+		button.Fill(buttonCols[i.ToInt()])
+		g.DrawText(button, "[N] New level", true, textCol)
+		g.buttonNewLevel = FromImageRectangle(button.Bounds())
+	}
 }
 
 func (g *Gui) DrawPlaybackBar(screen *ebiten.Image) {

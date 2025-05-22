@@ -121,8 +121,6 @@ func GetFiles(fsys FS, dir string, pattern string) []string {
 	entries, err := fsys.ReadDir(dir)
 	Check(err)
 	for _, entry := range entries {
-		checking := entry.Name()
-		fmt.Println(checking)
 		matched, err := filepath.Match(pattern, entry.Name())
 		Check(err)
 		if matched {

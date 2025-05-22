@@ -69,11 +69,13 @@ func (g *Gui) UpdateGameOngoing() {
 
 	if g.AllEnemiesDead() {
 		g.uploadCurrentWorld()
+		g.AdvanceCurrentFixedLevel()
 		g.state = GameWon
 		return
 	}
 	if g.world.Player.Health.Leq(ZERO) {
 		g.uploadCurrentWorld()
+		g.AdvanceCurrentFixedLevel()
 		g.state = GameLost
 		return
 	}
@@ -112,11 +114,19 @@ func (g *Gui) UserRequestedPause() bool {
 }
 
 func (g *Gui) UserRequestedNewLevel() bool {
-	return g.JustPressed(ebiten.KeyN) || g.JustClicked(g.buttonNewLevel)
+	return !g.UsingFixedLevels() && (g.JustPressed(ebiten.KeyN) || g.JustClicked(g.buttonNewLevel))
+}
+
+func (g *Gui) UserRequestedNextLevel() bool {
+	return g.NextLevelRequestable() && (g.JustPressed(ebiten.KeyN) || g.JustClicked(g.buttonNextLevel))
+}
+
+func (g *Gui) NextLevelRequestable() bool {
+	return g.UsingFixedLevels() && (g.state == GameWon || g.state == GameLost) && g.HasMoreFixedLevels()
 }
 
 func (g *Gui) UserRequestedRestartLevel() bool {
-	return g.JustPressed(ebiten.KeyR) || g.JustClicked(g.buttonRestartLevel)
+	return !g.NextLevelRequestable() && (g.JustPressed(ebiten.KeyR) || g.JustClicked(g.buttonRestartLevel))
 }
 
 func (g *Gui) UserRequestedPlaybackPause() bool {
@@ -129,6 +139,12 @@ func (g *Gui) StartNewLevel() {
 	g.world = NewWorld(seed, level)
 	// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
 	// InitializeIdInDbSql(g.db, g.world.Id)
+	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	g.state = GameOngoing
+}
+
+func (g *Gui) StartNextLevel() {
+	g.world = NewWorld(g.GetCurrentFixedLevel())
 	InitializeIdInDbHttp(g.username, Version, g.world.Id)
 	g.state = GameOngoing
 }
@@ -168,7 +184,31 @@ func (g *Gui) UpdateGameWon() {
 		g.StartNewLevel()
 		return
 	}
-	g.instructionalText = "You won, congratulations!"
+	if g.UserRequestedNextLevel() {
+		g.StartNextLevel()
+		return
+	}
+
+	if g.UsingFixedLevels() {
+		if g.NextLevelRequestable() {
+			g.instructionalText = "You won, congratulations! Proceed to the next level."
+		} else {
+			// Check if the player actually just won a level, or he just started
+			// the game after finishing all levels. The main() function sets the
+			// game state to GameWon if the game is started with fixed levels
+			// but all levels are already done. It also loads a bogus, empty
+			// world. A way to check if the level is bogus is to check
+			// the HoundMaxHealth parameter. A value of zero makes no sense,
+			// which means a level was not loaded.
+			if g.world.HoundMaxHealth.Gt(ZERO) {
+				g.instructionalText = "You won, congratulations! You also finished all the levels."
+			} else {
+				g.instructionalText = "No more levels to play."
+			}
+		}
+	} else {
+		g.instructionalText = "You won, congratulations!"
+	}
 }
 
 func (g *Gui) UpdateGameLost() {
@@ -180,7 +220,20 @@ func (g *Gui) UpdateGameLost() {
 		g.StartNewLevel()
 		return
 	}
-	g.instructionalText = "You lost."
+	if g.UserRequestedNextLevel() {
+		g.StartNextLevel()
+		return
+	}
+
+	if g.UsingFixedLevels() {
+		if g.NextLevelRequestable() {
+			g.instructionalText = "You lost. Proceed to the next level."
+		} else {
+			g.instructionalText = "You lost. You also finished all the levels."
+		}
+	} else {
+		g.instructionalText = "You lost."
+	}
 }
 
 func (g *Gui) UpdatePlayback() {
