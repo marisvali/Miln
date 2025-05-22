@@ -461,6 +461,61 @@ func UploadDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
 	sendDataToDbHttp(user, version, id, data)
 }
 
+func SetUserDataHttp(user string, data string) {
+	url := "https://playful-patterns.com/set-user-data.php"
+
+	// Create a buffer to write our multipart form data.
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	err := writer.WriteField("user", user)
+	Check(err)
+	err = writer.WriteField("data", data)
+	Check(err)
+	err = writer.Close()
+	Check(err)
+
+	// Create a POST request with the multipart form data.
+	request, err := http.NewRequest("POST", url, &requestBody)
+	Check(err)
+	request.Header.Set("content-type", writer.FormDataContentType())
+
+	// Perform the request.
+	client := &http.Client{}
+	response, err := client.Do(request)
+	Check(err)
+	if response.StatusCode != 200 {
+		Check(fmt.Errorf("http request failed: %d", response.StatusCode))
+	}
+}
+
+func GetUserDataHttp(user string) string {
+	url := "https://playful-patterns.com/get-user-data.php"
+
+	// Create a buffer to write our multipart form data.
+	var requestBody bytes.Buffer
+	writer := multipart.NewWriter(&requestBody)
+	err := writer.WriteField("user", user)
+	Check(err)
+	err = writer.Close()
+	Check(err)
+
+	// Create a POST request with the multipart form data.
+	request, err := http.NewRequest("POST", url, &requestBody)
+	Check(err)
+	request.Header.Set("content-type", writer.FormDataContentType())
+
+	// Perform the request.
+	client := &http.Client{}
+	response, err := client.Do(request)
+	Check(err)
+	if response.StatusCode != 200 {
+		Check(fmt.Errorf("http request failed: %d", response.StatusCode))
+	}
+	data, err := io.ReadAll(response.Body)
+	Check(err)
+	return string(data)
+}
+
 func ConnectToDbSql() *sql.DB {
 	cfg := mysql.Config{
 		User:                 os.Getenv("MILN_DBUSER"),

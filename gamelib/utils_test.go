@@ -87,7 +87,14 @@ func TestDbHttp(t *testing.T) {
 	UploadDataToDbHttp("test-user", 19, id, []byte("mele 1"))
 	UploadDataToDbHttp("test-user", 19, id, []byte("mele 2"))
 	UploadDataToDbHttp("test-user", 19, id, []byte("mele totusi, da -------"))
-	assert.Equal(t, true, true)
+
+	SetUserDataHttp("test-user1", "test-data1")
+	data := GetUserDataHttp("test-user1")
+	assert.Equal(t, "test-data1", data)
+
+	SetUserDataHttp("test-user1", "test-data2")
+	data = GetUserDataHttp("test-user1")
+	assert.Equal(t, "test-data2", data)
 }
 
 func TestSeralizationInt(t *testing.T) {
