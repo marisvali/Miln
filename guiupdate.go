@@ -80,7 +80,11 @@ func (g *Gui) UpdateGameOngoing() {
 		return
 	}
 
-	g.instructionalText = "Kill everyone! left click - move, right click - shoot"
+	if g.world.Player.Health.Lt(g.world.Player.MaxHealth) && !g.world.Player.OnMap {
+		g.instructionalText = "Go back and kill everyone! left click - move, right click - shoot"
+	} else {
+		g.instructionalText = "Kill everyone! left click - move, right click - shoot"
+	}
 
 	var input PlayerInput
 	// Get input from player.

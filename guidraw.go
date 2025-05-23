@@ -30,6 +30,13 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	}
 
 	{
+		upperLeft := Pt{g.guiMargin, I(0)}
+		lowerRight := Pt{g.guiMargin.Plus(playSize.X), yPlayRegion}
+		playerHealthRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		g.DrawPlayerHealth(playerHealthRegion)
+	}
+
+	{
 		upperLeft := Pt{g.guiMargin, yPlayRegion}
 		lowerRight := Pt{g.guiMargin.Plus(playSize.X), yInstructionalText}
 		playRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
@@ -257,6 +264,15 @@ func (g *Gui) DrawTileAlpha(screen *ebiten.Image, img *ebiten.Image, pos Pt, alp
 	y := pos.Y.ToFloat64()
 	tileSize := g.BlockSize.ToFloat64() - 2*margin
 	DrawSpriteAlpha(screen, img, x+margin, y+margin, tileSize, tileSize, alpha)
+}
+
+func (g *Gui) DrawPlayerHealth(screen *ebiten.Image) {
+	for idx := ZERO; idx.Lt(g.world.Player.Health); idx.Inc() {
+		tileSize := float64(screen.Bounds().Dy())
+		x := tileSize * idx.ToFloat64()
+		y := float64(0)
+		DrawSprite(screen, g.imgPlayerHealth, x, y, tileSize, tileSize)
+	}
 }
 
 func (g *Gui) DrawInstructionalText(screen *ebiten.Image) {
