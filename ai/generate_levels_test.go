@@ -53,7 +53,7 @@ func NFlamesToAmmoLimit(nFlames Int) Int {
 	return ammoLimit
 }
 
-func GenerateTrainingLevel(p Param) Level {
+func GenerateLevelFromParams(p Param) Level {
 	var l Level
 	l.Boardgame = false
 	l.UseAmmo = true
@@ -111,7 +111,7 @@ func Test_GenerateInputData(t *testing.T) {
 		for instanceIdx := range input.NumInstancesPerParamSet.ToInt() {
 			levelS := fmt.Sprintf("training-params-set-%02d-instance-%02d", paramIdx+1, instanceIdx+1)
 			SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
-			l := GenerateTrainingLevel(params)
+			l := GenerateLevelFromParams(params)
 			l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
 		}
 	}
@@ -126,7 +126,7 @@ func Test_GenerateInputData(t *testing.T) {
 		levelS := fmt.Sprintf("test-%02d", instanceIdx+1)
 		params := input.GenerateParam()
 		SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
-		l := GenerateTrainingLevel(params)
+		l := GenerateLevelFromParams(params)
 		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
 	}
 
@@ -171,4 +171,34 @@ func Test_Func(t *testing.T) {
 	fmt.Println(I(95), SpeedToCooldown(I(95)))
 	fmt.Println(I(99), SpeedToCooldown(I(99)))
 	fmt.Println(I(100), SpeedToCooldown(I(100)))
+}
+
+func Test_GeneratePracticeLevels(t *testing.T) {
+	workDir := "d:\\Miln\\stored\\experiment2\\ai-input"
+
+	// Generate practice data.
+	praticeDir := workDir + "\\practice-data"
+	DeleteDir(praticeDir)
+	MakeDir(praticeDir)
+	ChDir(praticeDir)
+
+	practiceParams := []Param{
+		{NEnemies: I(3), EnemySpeed: I(70), NObstacles: I(12), NFlames: I(4)},
+		{NEnemies: I(3), EnemySpeed: I(70), NObstacles: I(14), NFlames: I(4)},
+		{NEnemies: I(3), EnemySpeed: I(80), NObstacles: I(10), NFlames: I(4)},
+		{NEnemies: I(4), EnemySpeed: I(80), NObstacles: I(17), NFlames: I(4)},
+		{NEnemies: I(4), EnemySpeed: I(80), NObstacles: I(10), NFlames: I(4)},
+		{NEnemies: I(5), EnemySpeed: I(80), NObstacles: I(15), NFlames: I(4)},
+		{NEnemies: I(5), EnemySpeed: I(90), NObstacles: I(13), NFlames: I(4)},
+		{NEnemies: I(5), EnemySpeed: I(90), NObstacles: I(11), NFlames: I(4)},
+		{NEnemies: I(5), EnemySpeed: I(95), NObstacles: I(17), NFlames: I(4)},
+		{NEnemies: I(5), EnemySpeed: I(95), NObstacles: I(14), NFlames: I(4)},
+	}
+
+	for paramIdx, params := range practiceParams {
+		levelS := fmt.Sprintf("practice-%02d", paramIdx+1)
+		SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
+		l := GenerateLevelFromParams(params)
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
+	}
 }

@@ -1,0 +1,44 @@
+Version: 999
+Seed: 4061516401301953025
+Level:
+  Entities:
+    Obstacles:
+    - [., ., ., ., X, ., ., .]
+    - [X, ., X, ., ., ., ., .]
+    - [., ., X, X, ., ., ., .]
+    - [., ., ., ., ., ., ., X]
+    - [., ., ., ., ., ., ., .]
+    - [., X, X, X, ., ., ., .]
+    - [., ., ., ., ., X, X, .]
+    - [., ., X, ., ., ., ., .]
+    SpawnPortalsParams:
+    - Pos: [7, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [3, 1]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [6, 5]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+  WorldParams:
+    Boardgame: false
+    UseAmmo: true
+    AmmoLimit: 10
+    EnemyMoveCooldownDuration: 107
+    EnemiesAggroWhenVisible: true
+    SpawnPortalCooldownMin: 100
+    SpawnPortalCooldownMax: 100
+    HoundMaxHealth: 3
+    HoundMoveCooldownMultiplier: 1
+    HoundPreparingToAttackCooldown: 107
+    HoundAttackCooldownMultiplier: 1
+    HoundHitCooldownDuration: 107
+    HoundHitsPlayer: true
+    HoundAggroDistance: 0
