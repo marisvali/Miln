@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
 	. "github.com/marisvali/miln/gamelib"
@@ -34,6 +35,13 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 		lowerRight := Pt{g.guiMargin.Plus(playSize.X), yPlayRegion}
 		playerHealthRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
 		g.DrawPlayerHealth(playerHealthRegion)
+	}
+
+	{
+		upperLeft := Pt{g.guiMargin, I(0)}
+		lowerRight := Pt{g.guiMargin.Plus(playSize.X), yPlayRegion}
+		playerHealthRegion := SubImage(screen, Rectangle{upperLeft, lowerRight})
+		g.DrawCurrentLevel(playerHealthRegion)
 	}
 
 	{
@@ -272,6 +280,31 @@ func (g *Gui) DrawPlayerHealth(screen *ebiten.Image) {
 		x := tileSize * idx.ToFloat64()
 		y := float64(0)
 		DrawSprite(screen, g.imgPlayerHealth, x, y, tileSize, tileSize)
+	}
+}
+
+func (g *Gui) DrawCurrentLevel(screen *ebiten.Image) {
+	if g.state == Playback {
+		// Don't show current level during playback as the current level index
+		// is not currently saved in the playthrough.
+		return
+	}
+
+	if len(g.fixedLevels) > 0 {
+		currentLevel := g.CurrentFixedLevelIdx.ToInt() + 1
+		if currentLevel <= len(g.fixedLevels) {
+			if g.state == GameWon || g.state == GameLost {
+				// We just won/lost a level and g.CurrentFixedLevelIdx was
+				// increased by one, in order to save that to the database as
+				// soon as possible. But the UI is still showing the message
+				// for the previous level. So just fix this here with a quick
+				// hack.
+				currentLevel--
+			}
+
+			str := fmt.Sprintf("Level %d of %d.", currentLevel, len(g.fixedLevels))
+			g.DrawText(screen, str, true, g.imgTextColor.At(0, 0))
+		}
 	}
 }
 
