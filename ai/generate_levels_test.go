@@ -183,22 +183,22 @@ func Test_GeneratePracticeLevels(t *testing.T) {
 	ChDir(praticeDir)
 
 	practiceParams := []Param{
-		{NEnemies: I(3), EnemySpeed: I(70), NObstacles: I(12), NFlames: I(4)},
-		{NEnemies: I(3), EnemySpeed: I(70), NObstacles: I(14), NFlames: I(4)},
-		{NEnemies: I(3), EnemySpeed: I(80), NObstacles: I(10), NFlames: I(4)},
-		{NEnemies: I(4), EnemySpeed: I(80), NObstacles: I(17), NFlames: I(4)},
-		{NEnemies: I(4), EnemySpeed: I(80), NObstacles: I(10), NFlames: I(4)},
-		{NEnemies: I(5), EnemySpeed: I(80), NObstacles: I(15), NFlames: I(4)},
-		{NEnemies: I(5), EnemySpeed: I(90), NObstacles: I(13), NFlames: I(4)},
-		{NEnemies: I(5), EnemySpeed: I(90), NObstacles: I(11), NFlames: I(4)},
-		{NEnemies: I(5), EnemySpeed: I(95), NObstacles: I(17), NFlames: I(4)},
-		{NEnemies: I(5), EnemySpeed: I(95), NObstacles: I(14), NFlames: I(4)},
+		{NEnemies: I(7), EnemySpeed: I(92), NObstacles: I(15), NFlames: I(4)},
+		{NEnemies: I(7), EnemySpeed: I(92), NObstacles: I(17), NFlames: I(4)},
+		{NEnemies: I(7), EnemySpeed: I(92), NObstacles: I(20), NFlames: I(4)},
+		{NEnemies: I(8), EnemySpeed: I(92), NObstacles: I(15), NFlames: I(4)},
+		{NEnemies: I(8), EnemySpeed: I(92), NObstacles: I(17), NFlames: I(4)},
+		{NEnemies: I(8), EnemySpeed: I(92), NObstacles: I(20), NFlames: I(4)},
+		{NEnemies: I(9), EnemySpeed: I(92), NObstacles: I(15), NFlames: I(4)},
+		{NEnemies: I(9), EnemySpeed: I(92), NObstacles: I(15), NFlames: I(3)},
+		{NEnemies: I(9), EnemySpeed: I(92), NObstacles: I(17), NFlames: I(3)},
+		{NEnemies: I(9), EnemySpeed: I(92), NObstacles: I(20), NFlames: I(3)},
 	}
 
 	for paramIdx, params := range practiceParams {
 		levelS := fmt.Sprintf("practice-%02d", paramIdx+1)
-		SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
+		SaveYAML(fmt.Sprintf("%s.mln12-params", levelS), params)
 		l := GenerateLevelFromParams(params)
-		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln12-level", levelS))
 	}
 }
