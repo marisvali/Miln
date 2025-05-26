@@ -105,6 +105,22 @@ func DrawSprite(screen *ebiten.Image, img *ebiten.Image,
 	screen.DrawImage(img, op)
 }
 
+func DrawSpriteStretched(screen *ebiten.Image, img *ebiten.Image) {
+	op := &ebiten.DrawImageOptions{}
+
+	// Resize image to fit the target size we want to draw.
+	// This kind of scaling is very useful during development when the final
+	// sizes are not decided, and thus it's impossible to have final sprites.
+	// For an actual release, scaling should be avoided.
+	screenSize := screen.Bounds().Size()
+	imgSize := img.Bounds().Size()
+	newDx := float64(screenSize.X) / float64(imgSize.X)
+	newDy := float64(screenSize.Y) / float64(imgSize.Y)
+	op.GeoM.Scale(newDx, newDy)
+	op.GeoM.Translate(float64(screen.Bounds().Min.X), float64(screen.Bounds().Min.Y))
+	screen.DrawImage(img, op)
+}
+
 func DrawPixel(screen *ebiten.Image, pt Pt, color color.Color) {
 	size := I(2)
 	m := screen.Bounds().Min

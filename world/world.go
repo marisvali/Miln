@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
+	"io/fs"
 	"math"
 	"slices"
 )
@@ -222,8 +223,10 @@ func (w *World) loadWorldData() {
 	return
 }
 
-func NewWorld(seed Int, difficulty Int, efs *embed.FS) (w World) {
-	w.EmbeddedFS = efs
+func NewWorld(seed Int, difficulty Int, efs fs.FS) (w World) {
+	if efs != nil {
+		w.EmbeddedFS = efs.(*embed.FS)
+	}
 	w.loadWorldData()
 	w.Seed = seed
 	RSeed(w.Seed)
