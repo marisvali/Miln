@@ -1,43 +1,18 @@
-Version: 12
-Seed: 6056829917424544799
+Version: 13
+Seed: 662786648095554592
 Level:
   Entities:
     Obstacles:
-    - [., ., ., ., ., X, ., .]
-    - [., ., ., X, X, ., X, .]
-    - [X, ., ., X, ., ., ., .]
+    - [., ., ., ., ., ., X, X]
+    - [., ., ., ., ., ., ., X]
+    - [., ., X, X, X, ., ., X]
+    - [., ., X, ., X, ., X, X]
+    - [., X, X, ., ., ., X, .]
+    - [., ., ., ., X, X, ., X]
     - [., ., ., X, ., ., ., X]
-    - [., X, ., ., ., ., ., .]
     - [X, ., ., ., ., ., ., .]
-    - [., X, X, X, ., ., X, .]
-    - [., ., ., ., ., X, ., .]
     SpawnPortalsParams:
-    - Pos: [7, 0]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [3, 5]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [1, 5]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [4, 6]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [4, 5]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [5, 1]
+    - Pos: [6, 7]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -47,12 +22,17 @@ Level:
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [0, 0]
+    - Pos: [1, 7]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [2, 5]
+    - Pos: [5, 4]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [5, 3]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -60,15 +40,15 @@ Level:
   WorldParams:
     Boardgame: false
     UseAmmo: true
-    AmmoLimit: 10
-    EnemyMoveCooldownDuration: 36
+    AmmoLimit: 7
+    EnemyMoveCooldownDuration: 27
     EnemiesAggroWhenVisible: true
     SpawnPortalCooldownMin: 100
     SpawnPortalCooldownMax: 100
     HoundMaxHealth: 3
     HoundMoveCooldownMultiplier: 1
-    HoundPreparingToAttackCooldown: 36
+    HoundPreparingToAttackCooldown: 27
     HoundAttackCooldownMultiplier: 1
-    HoundHitCooldownDuration: 36
+    HoundHitCooldownDuration: 27
     HoundHitsPlayer: true
     HoundAggroDistance: 0

@@ -1,33 +1,23 @@
-Version: 12
-Seed: 8096532998851686846
+Version: 13
+Seed: 7893810435691117103
 Level:
   Entities:
     Obstacles:
-    - [., ., X, ., ., X, ., X]
-    - [., ., X, ., X, ., ., X]
-    - [., X, ., ., ., ., ., .]
     - [., ., ., ., X, ., ., .]
-    - [., ., ., ., ., ., ., X]
-    - [., ., X, ., X, ., X, .]
-    - [., ., ., ., X, ., X, X]
-    - [., ., ., ., ., X, ., X]
+    - [., ., ., ., ., ., X, X]
+    - [., ., X, ., ., X, ., .]
+    - [., X, ., X, ., ., ., .]
+    - [., X, X, X, ., ., ., .]
+    - [X, ., ., ., ., ., ., .]
+    - [., ., ., ., ., ., ., .]
+    - [., ., ., ., ., ., X, .]
     SpawnPortalsParams:
-    - Pos: [3, 2]
+    - Pos: [3, 7]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [0, 3]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [2, 3]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [1, 1]
+    - Pos: [2, 5]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -37,12 +27,22 @@ Level:
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [6, 2]
+    - Pos: [4, 3]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [6, 1]
+    - Pos: [3, 6]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [0, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [5, 1]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -51,14 +51,14 @@ Level:
     Boardgame: false
     UseAmmo: true
     AmmoLimit: 10
-    EnemyMoveCooldownDuration: 36
+    EnemyMoveCooldownDuration: 62
     EnemiesAggroWhenVisible: true
     SpawnPortalCooldownMin: 100
     SpawnPortalCooldownMax: 100
     HoundMaxHealth: 3
     HoundMoveCooldownMultiplier: 1
-    HoundPreparingToAttackCooldown: 36
+    HoundPreparingToAttackCooldown: 62
     HoundAttackCooldownMultiplier: 1
-    HoundHitCooldownDuration: 36
+    HoundHitCooldownDuration: 62
     HoundHitsPlayer: true
     HoundAggroDistance: 0

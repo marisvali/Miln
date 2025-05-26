@@ -110,9 +110,9 @@ func Test_GenerateInputData(t *testing.T) {
 	for paramIdx, params := range input.Params {
 		for instanceIdx := range input.NumInstancesPerParamSet.ToInt() {
 			levelS := fmt.Sprintf("training-params-set-%02d-instance-%02d", paramIdx+1, instanceIdx+1)
-			SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
+			SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
 			l := GenerateLevelFromParams(params)
-			l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
+			l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
 		}
 	}
 
@@ -125,9 +125,9 @@ func Test_GenerateInputData(t *testing.T) {
 	for instanceIdx := range input.NumTestInstances.ToInt() {
 		levelS := fmt.Sprintf("test-%02d", instanceIdx+1)
 		params := input.GenerateParam()
-		SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
+		SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
 		l := GenerateLevelFromParams(params)
-		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
 	}
 
 	// Generate play data.
@@ -197,8 +197,8 @@ func Test_GeneratePracticeLevels(t *testing.T) {
 
 	for paramIdx, params := range practiceParams {
 		levelS := fmt.Sprintf("practice-%02d", paramIdx+1)
-		SaveYAML(fmt.Sprintf("%s.mln12-params", levelS), params)
+		SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
 		l := GenerateLevelFromParams(params)
-		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln12-level", levelS))
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
 	}
 }

@@ -1,33 +1,18 @@
-Version: 12
-Seed: 8441490210486338611
+Version: 13
+Seed: 3946177694005276029
 Level:
   Entities:
     Obstacles:
-    - [X, ., ., ., ., X, ., X]
-    - [., X, ., X, ., ., ., X]
-    - [X, ., ., ., X, ., ., X]
     - [., ., ., ., ., X, ., .]
+    - [., X, ., ., X, ., ., X]
+    - [., ., ., X, ., ., ., .]
+    - [., ., X, X, ., ., ., .]
+    - [X, ., ., X, ., ., ., .]
+    - [., ., X, ., X, X, X, .]
+    - [., ., ., ., X, ., ., .]
     - [., ., ., ., ., X, ., .]
-    - [., X, ., ., ., X, ., X]
-    - [., X, X, ., ., ., X, .]
-    - [., ., X, ., X, ., ., X]
     SpawnPortalsParams:
-    - Pos: [5, 7]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [4, 4]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [2, 2]
-      SpawnPortalCooldown: 100
-      Waves:
-      - SecondsAfterLastWave: 0
-        NHounds: 1
-    - Pos: [6, 5]
+    - Pos: [2, 1]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -37,22 +22,37 @@ Level:
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [2, 5]
+    - Pos: [6, 6]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [0, 4]
+    - Pos: [7, 7]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [7, 4]
+    - Pos: [1, 0]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
         NHounds: 1
-    - Pos: [6, 7]
+    - Pos: [7, 6]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [4, 4]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [6, 0]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [2, 0]
       SpawnPortalCooldown: 100
       Waves:
       - SecondsAfterLastWave: 0
@@ -60,15 +60,15 @@ Level:
   WorldParams:
     Boardgame: false
     UseAmmo: true
-    AmmoLimit: 7
-    EnemyMoveCooldownDuration: 36
+    AmmoLimit: 10
+    EnemyMoveCooldownDuration: 75
     EnemiesAggroWhenVisible: true
     SpawnPortalCooldownMin: 100
     SpawnPortalCooldownMax: 100
     HoundMaxHealth: 3
     HoundMoveCooldownMultiplier: 1
-    HoundPreparingToAttackCooldown: 36
+    HoundPreparingToAttackCooldown: 75
     HoundAttackCooldownMultiplier: 1
-    HoundHitCooldownDuration: 36
+    HoundHitCooldownDuration: 75
     HoundHitsPlayer: true
     HoundAggroDistance: 0
