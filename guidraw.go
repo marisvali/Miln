@@ -207,6 +207,10 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 	if g.DrawEnemyHealth {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}
+
+	if g.DrawEnemyTargetPos {
+		g.DrawTile(screen, g.imgPlayerHitEffect, e.TargetPos())
+	}
 }
 
 func (g *Gui) DrawPlayer(screen *ebiten.Image, p Player) {

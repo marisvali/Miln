@@ -40,6 +40,7 @@ type GuiData struct {
 	FrameSkipArrow                 Int  `yaml:"FrameSkipArrow"`
 	FrameSkipShiftArrow            Int  `yaml:"FrameSkipShiftArrow"`
 	FrameSkipAltArrow              Int  `yaml:"FrameSkipAltArrow"`
+	DrawEnemyTargetPos             bool `yaml:"DrawEnemyTargetPos"`
 }
 
 type Animations struct {

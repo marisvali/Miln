@@ -347,6 +347,14 @@ func (w *World) EnemyPositions() (m MatBool) {
 	return
 }
 
+func (w *World) EnemyTargetPositions() (m MatBool) {
+	m = NewMatBool(w.Obstacles.Size())
+	for i := range w.Enemies {
+		m.Set(w.Enemies[i].TargetPos())
+	}
+	return
+}
+
 func (w *World) VulnerableEnemyPositions() (m MatBool) {
 	m = NewMatBool(w.Obstacles.Size())
 	for i := range w.Enemies {

@@ -13,6 +13,7 @@ type Enemy interface {
 	Clone() Enemy
 	Vulnerable(w *World) bool
 	State() string
+	TargetPos() Pt
 }
 
 type EnemyState int
@@ -37,6 +38,7 @@ type EnemyBase struct {
 	pos       Pt
 	health    Int
 	maxHealth Int
+	targetPos Pt
 }
 
 func (e *EnemyBase) Pos() Pt {
@@ -55,9 +57,12 @@ func (e *EnemyBase) Alive() bool {
 	return e.health.IsPositive()
 }
 
+func (e *EnemyBase) TargetPos() Pt { return e.targetPos }
+
 func getObstaclesAndEnemies(w *World) (m MatBool) {
 	m = w.Obstacles.Clone()
 	m.Add(w.EnemyPositions())
+	m.Add(w.EnemyTargetPositions())
 	return
 }
 

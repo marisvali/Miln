@@ -18,3 +18,4 @@ DrawSpawnPortal: false
 FrameSkipArrow: 1
 FrameSkipShiftArrow: 10
 FrameSkipAltArrow: 1
+DrawEnemyTargetPos: true

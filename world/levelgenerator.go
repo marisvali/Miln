@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
+	"os"
 )
 
 type WaveData struct {
@@ -76,7 +77,7 @@ func LoadLevelGeneratorParams(fsys FS) LevelGeneratorParams {
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
 	var p LevelGeneratorParams
-	if fsys == nil {
+	if fsys == os.DirFS(".") {
 		CheckCrashes = false
 	}
 	for {

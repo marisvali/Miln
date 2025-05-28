@@ -3,6 +3,7 @@ package main
 import (
 	. "github.com/marisvali/miln/gamelib"
 	_ "image/png"
+	"os"
 )
 
 func (g *Gui) loadGuiData() {
@@ -15,7 +16,7 @@ func (g *Gui) loadGuiData() {
 	// want to crash as soon as possible. We might be in the browser, in which
 	// case we want to see an error in the developer console instead of a page
 	// that keeps trying to load and reports nothing.
-	if g.FSys == nil {
+	if g.FSys == os.DirFS(".") {
 		CheckCrashes = false
 	}
 	for {
