@@ -213,7 +213,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		i := g.world.EnemyMoveCooldown.Idx.ToFloat64()
 		alpha := uint8((d - i) / d * 255)
 
-		g.DrawTileAlpha(screen, g.imgPlayerHitEffect, e.TargetPos(), alpha)
+		g.DrawTileAlpha(screen, g.imgEnemyTargetPos, e.TargetPos(), alpha)
 		// pos := g.TileToPlayRegion(e.TargetPos())
 		// r := Rectangle{pos, pos.Plus(Pt{g.BlockSize, g.BlockSize})}
 		//

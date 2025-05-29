@@ -90,6 +90,7 @@ type Gui struct {
 	imgPlaybackPlay       *ebiten.Image
 	imgPlaybackPause      *ebiten.Image
 	imgPlaybackCursor     *ebiten.Image
+	imgEnemyTargetPos     *ebiten.Image
 
 	world                  World
 	frameIdx               Int

@@ -45,6 +45,8 @@ func (g *Gui) loadGuiData() {
 		g.imgPlaybackPause = LoadImage(g.FSys, "data/gui/playback-pause.png")
 		g.imgPlayBar = LoadImage(g.FSys, "data/gui/playbar.png")
 		g.imgPlaybackCursor = LoadImage(g.FSys, "data/gui/playback-cursor.png")
+		g.imgEnemyTargetPos = LoadImage(g.FSys, "data/gui/enemy-target-pos.png")
+
 		g.animMoveFailed = NewAnimation(g.FSys, "data/gui/move-failed")
 		g.animAttackFailed = NewAnimation(g.FSys, "data/gui/attack-failed")
 		g.animPlayer1 = NewAnimation(g.FSys, "data/gui/player1")
