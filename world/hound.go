@@ -99,12 +99,6 @@ func (h *Hound) searching(justEnteredState bool, w *World) {
 		}
 	}
 
-	// If player is visible, prepare to attack.
-	if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
-		h.state = Attacking
-		return
-	}
-
 	// Only move or reduce move tick down every w.EnemyMoveCooldown frames.
 	if w.EnemyMoveCooldown.Ready() {
 		h.moveCooldownIdx.Dec()
@@ -112,6 +106,12 @@ func (h *Hound) searching(justEnteredState bool, w *World) {
 		if h.moveCooldownIdx.IsZero() {
 			h.moveTo(h.targetPos, w)
 			h.targetPos = h.getNextPositionTowardsRandomTarget(w)
+
+			// If player is visible, prepare to attack.
+			if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
+				h.state = Attacking
+				return
+			}
 
 			// Reset the counter to when we move.
 			h.moveCooldownIdx = h.moveCooldownMultiplier
@@ -181,12 +181,6 @@ func (h *Hound) attacking(justEnteredState bool, w *World) {
 		}
 	}
 
-	// If player is no longer visible, go back to searching.
-	if !w.Player.OnMap || !w.VisibleTiles.At(h.pos) {
-		h.state = Searching
-		return
-	}
-
 	// Only go to player or reduce attack tick down every w.EnemyMoveCooldown
 	// frames.
 	if w.EnemyMoveCooldown.Ready() {
@@ -197,6 +191,12 @@ func (h *Hound) attacking(justEnteredState bool, w *World) {
 			// Go to player.
 			h.moveTo(h.targetPos, w)
 			h.targetPos = h.getNextPositionTowardsPlayer(w, getObstaclesAndEnemies(w))
+
+			// If player is no longer visible, go back to searching.
+			if !w.Player.OnMap || !w.VisibleTiles.At(h.pos) {
+				h.state = Searching
+				return
+			}
 
 			// Reset the counter to when we attack.
 			h.attackCooldownIdx = h.attackCooldownMultiplier
@@ -212,15 +212,17 @@ func (h *Hound) hit(justEnteredState bool, w *World) {
 
 	// Tick down counter to when we move.
 	h.hitCooldownIdx.Dec()
-	if h.hitCooldownIdx.IsZero() {
-		// If player is visible, prepare to attack.
-		if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
-			h.state = Attacking
-			return
-		} else {
-			// If not, search.
-			h.state = Searching
-			return
+	if h.hitCooldownIdx.Leq(ZERO) {
+		if w.EnemyMoveCooldown.Ready() {
+			// If player is visible, prepare to attack.
+			if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
+				h.state = Attacking
+				return
+			} else {
+				// If not, search.
+				h.state = Searching
+				return
+			}
 		}
 	}
 }

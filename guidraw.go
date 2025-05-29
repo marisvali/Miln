@@ -208,8 +208,25 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}
 
-	if g.DrawEnemyTargetPos {
-		g.DrawTile(screen, g.imgPlayerHitEffect, e.TargetPos())
+	if g.DrawEnemyTargetPos && (e.State() == "Attacking" || e.State() == "Searching") {
+		d := g.world.EnemyMoveCooldown.Duration.ToFloat64()
+		i := g.world.EnemyMoveCooldown.Idx.ToFloat64()
+		alpha := uint8((d - i) / d * 255)
+
+		// g.DrawTileAlpha(screen, g.imgPlayerHitEffect, e.TargetPos(), 10)
+		pos := g.TileToPlayRegion(e.TargetPos())
+		r := Rectangle{pos, pos.Plus(Pt{g.BlockSize, g.BlockSize})}
+
+		col := Col(255, 0, 0, alpha)
+		DrawFilledRect(screen, r, col)
+
+		// Draw beam.
+		beamScreen := ebiten.NewImage(screen.Bounds().Dx(), screen.Bounds().Dy())
+
+		beam := Line{g.TileToPlayRegion(e.Pos()), g.TileToPlayRegion(e.TargetPos())}
+		DrawLine(beamScreen, beam, col)
+
+		DrawSpriteXY(screen, beamScreen, 0, 0)
 	}
 }
 
