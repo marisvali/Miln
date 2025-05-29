@@ -85,7 +85,7 @@ func DrawSpriteAlpha(screen *ebiten.Image, img *ebiten.Image,
 	newDy := targetHeight / float64(imgSize.Y)
 	op.GeoM.Scale(newDx, newDy)
 	op.GeoM.Translate(float64(screen.Bounds().Min.X)+x, float64(screen.Bounds().Min.Y)+y)
-	op.ColorScale.SetA(float32(alpha) / 255)
+	op.ColorScale.ScaleAlpha(float32(alpha) / 255)
 	screen.DrawImage(img, op)
 }
 
