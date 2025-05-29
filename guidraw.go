@@ -208,7 +208,7 @@ func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}
 
-	if g.DrawEnemyTargetPos && (e.State() == "Attacking" || e.State() == "Searching") {
+	if g.DrawEnemyTargetPos && (e.State() == "Attacking" || e.State() == "Searching") && !g.world.VisibleTiles.At(e.Pos()) {
 		d := g.world.EnemyMoveCooldown.Duration.ToFloat64()
 		i := g.world.EnemyMoveCooldown.Idx.ToFloat64()
 		alpha := uint8((d - i) / d * 255)
