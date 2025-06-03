@@ -612,7 +612,7 @@ func TestAIPlayer(t *testing.T) {
 		fmt.Println("ai player LOST")
 	}
 
-	WriteFile("ai-play.mln013", world.SerializedPlaythrough())
+	WriteFile("outputs/ai-play.mln013", world.SerializedPlaythrough())
 
 	// rankedActions := CurrentRankedActions(world, 100)
 	//
