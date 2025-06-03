@@ -621,3 +621,94 @@ func TestAIPlayer(t *testing.T) {
 	// 	fmt.Printf("modelFitness: %d\n", modelFitness)
 	// }
 }
+
+func GetHistogram(s []int) map[int]int {
+	h := map[int]int{}
+	for _, v := range s {
+		h[v]++
+	}
+	return h
+}
+
+func OutputHistogram(histogram map[int]int, outputFile string, header string) {
+	// Collect all the keys.
+	keys := make([]int, 0)
+	for k := range histogram {
+		keys = append(keys, k)
+	}
+
+	// Sort the keys.
+	slices.Sort(keys)
+
+	// Print out the map, sorted by keys.
+	f, err := os.Create(outputFile)
+	Check(err)
+	_, err = f.WriteString(fmt.Sprintf("%s\n", header))
+	Check(err)
+	for _, k := range keys {
+		_, err = f.WriteString(fmt.Sprintf("%d,%d\n", k, histogram[k]))
+		Check(err)
+	}
+	Check(f.Close())
+}
+
+// Gets a median of 21 frames between actions.
+func TestGetReactionSpeed(t *testing.T) {
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
+	for idx := range inputFiles {
+		inputFiles[idx] = dir + inputFiles[idx][1:]
+	}
+
+	diffs := []int{}
+	for _, inputFile := range inputFiles {
+		playthrough := DeserializePlaythrough(ReadFile(inputFile))
+		framesWithActions := GetFramesWithActions(playthrough)
+		for i := 1; i < len(framesWithActions); i++ {
+			diff := framesWithActions[i] - framesWithActions[i-1]
+			diffs = append(diffs, diff)
+		}
+	}
+
+	histogram := GetHistogram(diffs)
+	fmt.Println(histogram)
+	OutputHistogram(histogram, "outputs/reaction-speed.csv", "n_frames_between_actions,n_occurrences")
+
+	slices.Sort(diffs)
+	median := diffs[len(diffs)/2]
+	fmt.Println(median)
+}
+
+// Output:
+// rank_of_action,n_occurrences
+// 1,777
+// 2,432
+// 3,328
+// 4,206
+// 5,98
+// 6,29
+// 7,10
+// 8,2
+// 9,1
+// 11,1
+func TestGetHumanPlayerActionRanks(t *testing.T) {
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
+	for idx := range inputFiles {
+		inputFiles[idx] = dir + inputFiles[idx][1:]
+	}
+
+	allRanks := []int{}
+	for _, inputFile := range inputFiles {
+		fmt.Println(inputFile)
+		playthrough := DeserializePlaythrough(ReadFile(inputFile))
+		framesWithActions := GetFramesWithActions(playthrough)
+		decisionFrames := GetDecisionFrames(framesWithActions)
+		ranksOfPlayerActions := GetRanksOfPlayerActions(playthrough, framesWithActions, decisionFrames)
+		allRanks = append(allRanks, ranksOfPlayerActions...)
+	}
+
+	OutputHistogram(GetHistogram(allRanks), "outputs/action-ranks.csv", "rank_of_action,n_occurrences")
+
+	assert.True(t, true)
+}

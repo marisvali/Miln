@@ -8,7 +8,6 @@ import (
 	_ "image/png"
 	"os"
 	"path/filepath"
-	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -177,53 +176,4 @@ func TestExtract(t *testing.T) {
 		}
 		Check(outputFile.Close())
 	}
-}
-
-// Gets a median of 21 frames between actions.
-func TestGetReactionSpeed(t *testing.T) {
-	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
-	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
-	for idx := range inputFiles {
-		inputFiles[idx] = dir + inputFiles[idx][1:]
-	}
-
-	diffs := []int{}
-	for _, inputFile := range inputFiles {
-		playthrough := DeserializePlaythrough(ReadFile(inputFile))
-		framesWithActions := GetFramesWithActions(playthrough)
-		for i := 1; i < len(framesWithActions); i++ {
-			diff := framesWithActions[i] - framesWithActions[i-1]
-			diffs = append(diffs, diff)
-		}
-	}
-
-	histogram := map[int]int{}
-	for _, diff := range diffs {
-		histogram[diff]++
-	}
-	fmt.Println(histogram)
-
-	// Collect all the keys.
-	keys := make([]int, 0)
-	for k := range histogram {
-		keys = append(keys, k)
-	}
-
-	// Sort the keys.
-	slices.Sort(keys)
-
-	// Print out the map, sorted by keys.
-	outputFile, err := os.Create("outputs/reaction-speed.csv")
-	Check(err)
-	_, err = outputFile.WriteString(fmt.Sprintf("n_frames_between_actions,n_occurrences\n"))
-	Check(err)
-	for _, k := range keys {
-		_, err = outputFile.WriteString(fmt.Sprintf("%d,%d\n", k, histogram[k]))
-		Check(err)
-	}
-	Check(outputFile.Close())
-
-	slices.Sort(diffs)
-	median := diffs[len(diffs)/2]
-	fmt.Println(median)
 }
