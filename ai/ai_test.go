@@ -7,6 +7,7 @@ import (
 	. "github.com/marisvali/miln/world"
 	"github.com/stretchr/testify/assert"
 	_ "image/png"
+	"os"
 	"slices"
 	"testing"
 )
@@ -330,9 +331,7 @@ func (a Action) String() string {
 	}
 }
 
-func RankedActionsPerFrame(playthrough Playthrough, frameIdx int) (actions []Action) {
-	world := GoToFrame(playthrough, frameIdx)
-
+func CurrentRankedActions(world World) (actions []Action) {
 	// Compute the fitness of every move action.
 	worldSize := world.Obstacles.Size()
 	for y := 0; y < worldSize.Y.ToInt(); y++ {
@@ -377,6 +376,11 @@ func RankedActionsPerFrame(playthrough Playthrough, frameIdx int) (actions []Act
 	return actions
 }
 
+func RankedActionsPerFrame(playthrough Playthrough, frameIdx int) (actions []Action) {
+	world := GoToFrame(playthrough, frameIdx)
+	return CurrentRankedActions(world)
+}
+
 // func GetPlayerActions(playthrough Playthrough, frameIdx int) (actions []Action) {
 //
 // }
@@ -392,6 +396,19 @@ func InputToAction(input PlayerInput) (action Action) {
 		panic(fmt.Errorf("bad"))
 	}
 	return action
+}
+
+func ActionToInput(action Action) (input PlayerInput) {
+	if action.Move {
+		input.Move = true
+		input.MovePt = action.Pos
+	} else if !action.Move {
+		input.Shoot = true
+		input.ShootPt = action.Pos
+	} else {
+		panic(fmt.Errorf("bad"))
+	}
+	return
 }
 
 func FindActionRank(action Action, actions []Action) int {
@@ -495,28 +512,11 @@ func ModelFitnessForPlaythrough(inputFile string) int {
 }
 
 func TestAI(t *testing.T) {
-	inputFiles := []string{
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171419.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171357.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171333.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171313.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171250.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171229.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171159.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171136.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171111.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171054.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171030.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-171010.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170947.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170924.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170900.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170838.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170817.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170755.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170735.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170716.mln010",
-		"d:\\Miln\\analysis\\tools\\playthroughs\\denis\\20250319-170648.mln010"}
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
+	for idx := range inputFiles {
+		inputFiles[idx] = dir + inputFiles[idx][1:]
+	}
 
 	for _, inputFile := range inputFiles {
 		modelFitness := ModelFitnessForPlaythrough(inputFile)
@@ -536,4 +536,88 @@ func TestAI(t *testing.T) {
 	// DebugRank(framesWithActions, decisionFrames, ranksOfPlayerActions, playthrough,
 	// 	16)
 	assert.True(t, true)
+}
+
+func AllEnemiesDead(w World) bool {
+	for _, enemy := range w.Enemies {
+		if enemy.Alive() {
+			return false
+		}
+	}
+	for _, portal := range w.SpawnPortals {
+		if portal.Active() {
+			return false
+		}
+	}
+	return true
+}
+
+type GameResult int
+
+const (
+	GameOngoing GameResult = iota
+	GameWon
+	GameLost
+)
+
+func Result(w World) GameResult {
+	if AllEnemiesDead(w) {
+		return GameWon
+	} else if w.Player.Health.Leq(ZERO) {
+		return GameLost
+	} else {
+		return GameOngoing
+	}
+}
+
+func TestAIPlayer(t *testing.T) {
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
+	for idx := range inputFiles {
+		inputFiles[idx] = dir + inputFiles[idx][1:]
+	}
+
+	inputFile := inputFiles[0]
+
+	playthrough := DeserializePlaythrough(ReadFile(inputFile))
+
+	world := NewWorld(playthrough.Seed, playthrough.Level)
+
+	// Wait some period in the beginning.
+	frameIdx := 0
+	for ; frameIdx < 100; frameIdx++ {
+		input := PlayerInput{}
+		world.Step(input)
+	}
+
+	// Start moving every 30 frames (0.5 sec).
+	for {
+		input := PlayerInput{}
+		if frameIdx%30 == 0 {
+			rankedActions := CurrentRankedActions(world)
+			action := rankedActions[0]
+			input = ActionToInput(action)
+		}
+
+		world.Step(input)
+		if Result(world) != GameOngoing {
+			break
+		}
+		frameIdx++
+	}
+
+	if Result(world) == GameWon {
+		fmt.Println("ai player WON")
+	} else {
+		fmt.Println("ai player LOST")
+	}
+
+	WriteFile("ai-play.mln013", world.SerializedPlaythrough())
+
+	// rankedActions := CurrentRankedActions(world, 100)
+	//
+	// for _, inputFile := range inputFiles {
+	// 	modelFitness := ModelFitnessForPlaythrough(inputFile)
+	// 	fmt.Printf("modelFitness: %d\n", modelFitness)
+	// }
 }
