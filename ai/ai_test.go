@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"bufio"
 	"cmp"
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
@@ -711,4 +712,101 @@ func TestGetHumanPlayerActionRanks(t *testing.T) {
 	OutputHistogram(GetHistogram(allRanks), "outputs/action-ranks.csv", "rank_of_action,n_occurrences")
 
 	assert.True(t, true)
+}
+
+func PlayLevel(playthrough Playthrough, r RandomnessInPlay) World {
+	world := NewWorld(playthrough.Seed, playthrough.Level)
+
+	// Wait some period in the beginning.
+	frameIdx := 0
+	for ; frameIdx < 100; frameIdx++ {
+		input := PlayerInput{}
+		world.Step(input)
+	}
+
+	// Start moving every 30 frames (0.5 sec).
+	getFrameIdxOfNextMove := func(frameIdx int) int {
+		return frameIdx + RInt(I(r.minNFramesBetweenActions), I(r.maxNFramesBetweenActions)).ToInt()
+	}
+
+	frameIdxOfNextMove := getFrameIdxOfNextMove(frameIdx)
+	for {
+		input := PlayerInput{}
+
+		if frameIdx == frameIdxOfNextMove {
+			rankedActions := CurrentRankedActions(world)
+
+			action := rankedActions[0]
+			// There is a random chance to degrade the quality of the
+			// action based on weights.
+			totalWeight := r.weightOfRank1Action + r.weightOfRank2Action
+			randomNumber := RInt(I(1), I(totalWeight)).ToInt()
+			if randomNumber > r.weightOfRank1Action {
+				action = rankedActions[1]
+			}
+
+			input = ActionToInput(action)
+			frameIdxOfNextMove = getFrameIdxOfNextMove(frameIdx)
+		}
+
+		world.Step(input)
+		if Result(world) != GameOngoing {
+			return world
+		}
+		frameIdx++
+	}
+}
+
+type RandomnessInPlay struct {
+	minNFramesBetweenActions int
+	maxNFramesBetweenActions int
+	weightOfRank1Action      int
+	weightOfRank2Action      int
+}
+
+// As of 2025-06-04 it takes 2515.15s to run for 30 levels with
+// nPlaysPerLevel := 10. That's 42 min and is a problem.
+func TestAIPlayerMultiple(t *testing.T) {
+	// randomness := RandomnessInPlay{20, 40, 3, 1}
+	// nPlaysPerLevel := 10
+	randomness := RandomnessInPlay{30, 30, 1, 0}
+	nPlaysPerLevel := 1
+
+	// dir := "d:\\Miln\\stored\\experiment2\\ai-output\\test-data"
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
+	for idx := range inputFiles {
+		inputFiles[idx] = dir + inputFiles[idx][1:]
+	}
+
+	f, err := os.Create("outputs/ai-plays.csv")
+	Check(err)
+	_, err = f.WriteString(fmt.Sprintf("winrate\n"))
+	Check(err)
+
+	consoleWriter := bufio.NewWriter(os.Stdout)
+	for idx, inputFile := range inputFiles {
+		fmt.Printf("%02d ", idx)
+		Check(consoleWriter.Flush())
+		playthrough := DeserializePlaythrough(ReadFile(inputFile))
+
+		nWins := 0
+		for i := 0; i < nPlaysPerLevel; i++ {
+			world := PlayLevel(playthrough, randomness)
+			WriteFile(fmt.Sprintf("outputs/ai-play-%02d.mln013", idx), world.SerializedPlaythrough())
+			if Result(world) == GameWon {
+				nWins++
+				fmt.Printf("win ")
+			} else {
+				fmt.Printf("loss ")
+			}
+			Check(consoleWriter.Flush())
+		}
+		winrate := float64(nWins) / float64(nPlaysPerLevel)
+		fmt.Printf("winrate: %f\n", winrate)
+		_, err = f.WriteString(fmt.Sprintf("%f\n", winrate))
+		Check(err)
+	}
+
+	Check(f.Close())
 }

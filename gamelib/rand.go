@@ -79,10 +79,14 @@ func RSeed(seed Int) {
 	DefaultRand.rng.Seed(seed.ToInt64())
 }
 
+// RInt returns a random number in the interval [min, max].
+// min must be smaller than max.
+// The difference between min and max must be at most max.MaxInt64 - 1.
 func RInt(min Int, max Int) Int {
 	return DefaultRand.RInt(min, max)
 }
 
+// RInt63 returns a non-negative pseudo-random 63-bit integer as an Int.
 func RInt63() Int {
 	return DefaultRand.RInt63()
 }
