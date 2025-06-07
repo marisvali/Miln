@@ -9,8 +9,8 @@ import (
 )
 
 func TestWorld_Regression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
-	expected := string(ReadFile("playthroughs/20250511-091615.mln999-hash"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
+	expected := string(ReadFile("playthroughs/large-playthrough.mln013-hash"))
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
@@ -31,7 +31,7 @@ func RunPlaythrough(p Playthrough) {
 }
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
 	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
@@ -42,20 +42,20 @@ func BenchmarkPlaythroughSpeed(b *testing.B) {
 // performed every frame without impacting the FPS?
 
 // Typical output:
-// BenchmarkSerializedPlaythrough_WithoutCompression-12    	 139	   8.553581 ms/op
-// BenchmarkSerializedPlaythrough_Compression-12    	     249	   4.754636 ms/op
-// BenchmarkWorldClone-12    	    						5881	   0.207990 ms/op
+// BenchmarkSerializedPlaythrough_WithoutCompression-12    	 124       9.553545 ms/op
+// BenchmarkSerializedPlaythrough_Compression-12    	      48	  22.284935 ms/op
+// BenchmarkWorldClone-12    	    						6948	   0.170807 ms/op
 // Conclusion: serializing is too expensive to perform every frame, better to
 // just clone the world and send it to a go routine once every K frames, where
 // it can then be serialized and saved to a file or uploaded to a database.
 
-// Get large world (17522 frames, 292 sec).
+// Get large world (18520 frames, 308 sec).
 // Note: I don't really care about the final state of the world, I just need a
 // world that ran for a relatively long time.
 
 func GetLargeWorld() World {
 	// Load the playthrough.
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
@@ -106,7 +106,7 @@ func BenchmarkWorldClone(b *testing.B) {
 }
 
 func TestWorld_PredictableRandomness(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/20250511-091615.mln999"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
 
 	// Run the playthrough halfway through.
 	w1 := NewWorld(playthrough.Seed, playthrough.Level)
@@ -177,7 +177,7 @@ func Test_LevelYaml(t *testing.T) {
 	assert.NotEqual(t, l, l2)
 
 	l2.SaveToYAML(I(10), filename)
-	l3, seed := LoadLevelFromYAML(fsys, filename)
+	seed, l3 := LoadLevelFromYAML(fsys, filename)
 	DeleteFile(filename)
 	assert.Equal(t, I(10), seed)
 	assert.Equal(t, l2, l3)
