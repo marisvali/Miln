@@ -287,6 +287,11 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 	w := world.Clone()
 	w.Step(input)
 
+	// The player might have just been attacked and hit.
+	if w.Player.JustHit {
+		return 0
+	}
+
 	if len(w.Enemies) == 0 {
 		// Just won the game.
 		return 1000
@@ -777,13 +782,11 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 // As of 2025-06-04 it takes 2515.15s to run for 30 levels with
 // nPlaysPerLevel := 10. That's 42 min and is a problem.
 func TestAIPlayerMultiple(t *testing.T) {
-	// randomness := RandomnessInPlay{20, 40, 3, 1}
-	// nPlaysPerLevel := 10
-	randomness := RandomnessInPlay{30, 30, 1, 0}
-	nPlaysPerLevel := 1
+	randomness := RandomnessInPlay{20, 40, 3, 1}
+	nPlaysPerLevel := 10
 
 	// dir := "d:\\Miln\\stored\\experiment2\\ai-output\\test-data"
-	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
+	dir := "d:\\Miln\\stored\\experiment3\\ai-output\\test-data"
 	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
 	for idx := range inputFiles {
 		inputFiles[idx] = dir + inputFiles[idx][1:]
@@ -791,30 +794,30 @@ func TestAIPlayerMultiple(t *testing.T) {
 
 	f, err := os.Create("outputs/ai-plays.csv")
 	Check(err)
-	_, err = f.WriteString(fmt.Sprintf("winrate\n"))
+	_, err = f.WriteString(fmt.Sprintf("health\n"))
 	Check(err)
 
 	consoleWriter := bufio.NewWriter(os.Stdout)
-	for idx, inputFile := range inputFiles[0:2] {
+	for idx, inputFile := range inputFiles {
 		fmt.Printf("%02d ", idx)
 		Check(consoleWriter.Flush())
 		playthrough := DeserializePlaythrough(ReadFile(inputFile))
 
-		nWins := 0
+		totalHealth := 0
 		for i := 0; i < nPlaysPerLevel; i++ {
 			world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
 			WriteFile(fmt.Sprintf("outputs/ai-play-%02d.mln013", idx), world.SerializedPlaythrough())
 			if Result(world) == GameWon {
-				nWins++
+				totalHealth += world.Player.Health.ToInt()
 				fmt.Printf("win ")
 			} else {
 				fmt.Printf("loss ")
 			}
 			Check(consoleWriter.Flush())
 		}
-		winrate := float64(nWins) / float64(nPlaysPerLevel)
-		fmt.Printf("winrate: %f\n", winrate)
-		_, err = f.WriteString(fmt.Sprintf("%f\n", winrate))
+		health := float64(totalHealth) / float64(nPlaysPerLevel)
+		fmt.Printf("health: %f\n", health)
+		_, err = f.WriteString(fmt.Sprintf("%f\n", health))
 		Check(err)
 	}
 
