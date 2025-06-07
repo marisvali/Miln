@@ -28,7 +28,7 @@ func ValidMove(world *World, pos Pt) bool {
 }
 
 func ValidAttack(world *World, pos Pt) bool {
-	if world.Player.AmmoCount == ZERO {
+	if !world.Player.OnMap || world.Player.AmmoCount == ZERO {
 		return false
 	}
 	attackablePositions := world.VulnerableEnemyPositions()
@@ -141,7 +141,11 @@ func NumMovesToEnemy(world *World, pos Pt) int {
 // ..
 // -1 - the position will never be attacked (e.g. there are no more enemies)
 func NumFramesUntilAttacked(world *World, pos Pt) int {
+	// So far the algorithms calling this function all have reasons to assume
+	// that the player will get hit. If it's not the case
+	// I should be warned.
 	if len(world.Enemies) == 0 {
+		Check(fmt.Errorf("something went wrong"))
 		return -1
 	}
 
@@ -161,6 +165,12 @@ func NumFramesUntilAttacked(world *World, pos Pt) int {
 			return frameIdx
 		}
 	}
+
+	// No algorithm I want to run will want to take the hit of running 100k
+	// frames for nothing. So far the algorithms calling this function all
+	// have reasons to assume that the player will get hit. If it's not the case
+	// I should be warned.
+	Check(fmt.Errorf("something went wrong"))
 	return -1
 }
 
@@ -714,8 +724,15 @@ func TestGetHumanPlayerActionRanks(t *testing.T) {
 	assert.True(t, true)
 }
 
-func PlayLevel(playthrough Playthrough, r RandomnessInPlay) World {
-	world := NewWorld(playthrough.Seed, playthrough.Level)
+type RandomnessInPlay struct {
+	minNFramesBetweenActions int
+	maxNFramesBetweenActions int
+	weightOfRank1Action      int
+	weightOfRank2Action      int
+}
+
+func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
+	world := NewWorld(seed, l)
 
 	// Wait some period in the beginning.
 	frameIdx := 0
@@ -757,13 +774,6 @@ func PlayLevel(playthrough Playthrough, r RandomnessInPlay) World {
 	}
 }
 
-type RandomnessInPlay struct {
-	minNFramesBetweenActions int
-	maxNFramesBetweenActions int
-	weightOfRank1Action      int
-	weightOfRank2Action      int
-}
-
 // As of 2025-06-04 it takes 2515.15s to run for 30 levels with
 // nPlaysPerLevel := 10. That's 42 min and is a problem.
 func TestAIPlayerMultiple(t *testing.T) {
@@ -785,14 +795,14 @@ func TestAIPlayerMultiple(t *testing.T) {
 	Check(err)
 
 	consoleWriter := bufio.NewWriter(os.Stdout)
-	for idx, inputFile := range inputFiles {
+	for idx, inputFile := range inputFiles[0:2] {
 		fmt.Printf("%02d ", idx)
 		Check(consoleWriter.Flush())
 		playthrough := DeserializePlaythrough(ReadFile(inputFile))
 
 		nWins := 0
 		for i := 0; i < nPlaysPerLevel; i++ {
-			world := PlayLevel(playthrough, randomness)
+			world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
 			WriteFile(fmt.Sprintf("outputs/ai-play-%02d.mln013", idx), world.SerializedPlaythrough())
 			if Result(world) == GameWon {
 				nWins++
@@ -809,4 +819,166 @@ func TestAIPlayerMultiple(t *testing.T) {
 	}
 
 	Check(f.Close())
+}
+
+// NeutralInput generates an input that doesn't do anything but has some values
+// for the positions of the mouse. A simple PlayerInput{} would also be neutral
+// but a list containing mostly PlayerInput{} values would zip and unzip very
+// quickly and efficiently, and this is not representative of realistic
+// conditions.
+func NeutralInput() PlayerInput {
+	return PlayerInput{
+		MousePt:            Pt{RInt(I(0), I(1919)), RInt(I(0), I(1079))},
+		LeftButtonPressed:  false,
+		RightButtonPressed: false,
+		Move:               false,
+		MovePt:             Pt{RInt(I(0), I(7)), RInt(I(0), I(7))},
+		Shoot:              false,
+		ShootPt:            Pt{RInt(I(0), I(7)), RInt(I(0), I(7))},
+	}
+}
+
+// PlayLevelForAtLeastNFrames will play a level for at least nFrames. It will
+// attempt to generate a playthrough as close to nFrames as it can.
+// It is useful to generate large playthroughs automatically in order to
+// benchmark the performance of the simulation or to use in regression tests.
+// However, the playthrough must be "interesting". It's easy to just not do the
+// first move for n frames, but that isn't a good representation of the
+// simulation, it doesn't trigger enough of the simulation code.
+// The player should move around the map, not lose, but not win either.
+// The way PlayLevelForAtLeastNFrames does it is that the player:
+// - waits a little
+// - appears on the map and waits until it gets hit
+// - moves and kills enemies until there are only 3 left
+// - moves around the map without attacking enemies, until all n frames are done
+// - waits until it gets hit
+// - moves and kills the rest of the enemies
+// This works because the player moves each 20 frames which is quite fast.
+// The enemies must move at a reasonable speed and it helps if there are some
+// obstacles but not too many.
+func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
+	w := NewWorld(seed, l)
+
+	// Wait some period in the beginning.
+	frameIdx := 0
+	for ; frameIdx < 100; frameIdx++ {
+		input := PlayerInput{}
+		w.Step(input)
+	}
+
+	// Move on the map.
+	{
+		rankedActions := CurrentRankedActions(w)
+		w.Step(ActionToInput(rankedActions[0]))
+	}
+
+	// Wait until getting hit once.
+	for {
+		w.Step(NeutralInput())
+		// After each world step, check if the game is over.
+		if Result(w) != GameOngoing {
+			return w
+		}
+		if w.Player.JustHit {
+			break
+		}
+	}
+
+	// Fight until only 3 enemy is left.
+	for {
+		if frameIdx%20 == 0 {
+			rankedActions := CurrentRankedActions(w)
+			w.Step(ActionToInput(rankedActions[0]))
+			// After each world step, check if the game is over.
+			if Result(w) != GameOngoing {
+				return w
+			}
+			if len(w.Enemies) == 3 {
+				break
+			}
+		} else {
+			w.Step(PlayerInput{})
+			// After each world step, check if the game is over.
+			if Result(w) != GameOngoing {
+				return w
+			}
+		}
+		frameIdx++
+	}
+
+	// Wait until getting hit once.
+	for {
+		w.Step(NeutralInput())
+		// After each world step, check if the game is over.
+		if Result(w) != GameOngoing {
+			return w
+		}
+		if w.Player.JustHit {
+			// This is here just because World doesn't reset it, as it should.
+			// Fix this in a future version of the World.
+			w.Player.JustHit = false
+			break
+		}
+	}
+
+	// Move around without attacking.
+	for ; frameIdx < nFrames; frameIdx++ {
+		if frameIdx%20 == 0 {
+			rankedActions := CurrentRankedActions(w)
+			for _, r := range rankedActions {
+				if r.Move {
+					w.Step(ActionToInput(r))
+					// After each world step, check if the game is over.
+					if Result(w) != GameOngoing {
+						return w
+					}
+					break
+				}
+			}
+		} else {
+			w.Step(NeutralInput())
+			// After each world step, check if the game is over.
+			if Result(w) != GameOngoing {
+				return w
+			}
+		}
+	}
+
+	// Wait until getting hit once.
+	for {
+		w.Step(NeutralInput())
+		// After each world step, check if the game is over.
+		if Result(w) != GameOngoing {
+			return w
+		}
+		if w.Player.JustHit {
+			break
+		}
+	}
+
+	// Fight until all enemies are killed.
+	for {
+		if frameIdx%20 == 0 {
+			rankedActions := CurrentRankedActions(w)
+			w.Step(ActionToInput(rankedActions[0]))
+			// After each world step, check if the game is over.
+			if Result(w) != GameOngoing {
+				return w
+			}
+		} else {
+			w.Step(NeutralInput())
+			// After each world step, check if the game is over.
+			if Result(w) != GameOngoing {
+				return w
+			}
+		}
+		frameIdx++
+	}
+}
+
+func TestGenerateLargePlaythrough(t *testing.T) {
+	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
+	world := PlayLevelForAtLeastNFrames(level, I(0), 18000)
+	fmt.Println(len(world.History))
+	WriteFile("outputs/large-playthrough.mln013", world.SerializedPlaythrough())
 }
