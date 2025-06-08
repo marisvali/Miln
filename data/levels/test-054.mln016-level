@@ -1,0 +1,74 @@
+Version: 16
+Seed: 3856286993548121474
+Level:
+  Entities:
+    Obstacles:
+    - [., ., ., X, ., X, ., .]
+    - [X, ., ., ., ., ., ., .]
+    - [X, ., X, ., ., X, ., X]
+    - [., ., X, ., ., ., ., X]
+    - [., ., ., ., ., ., ., .]
+    - [., ., ., ., ., ., ., .]
+    - [., ., X, ., ., ., ., .]
+    - [., ., ., ., ., ., ., .]
+    SpawnPortalsParams:
+    - Pos: [4, 0]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [0, 5]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [6, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [6, 0]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [3, 4]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [7, 4]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [4, 6]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [7, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [3, 3]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+  WorldParams:
+    Boardgame: false
+    UseAmmo: true
+    AmmoLimit: 4
+    EnemyMoveCooldownDuration: 27
+    EnemiesAggroWhenVisible: true
+    SpawnPortalCooldownMin: 100
+    SpawnPortalCooldownMax: 100
+    HoundMaxHealth: 3
+    HoundMoveCooldownMultiplier: 1
+    HoundPreparingToAttackCooldown: 27
+    HoundAttackCooldownMultiplier: 1
+    HoundHitCooldownDuration: 27
+    HoundHitsPlayer: true
+    HoundAggroDistance: 0

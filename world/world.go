@@ -14,7 +14,7 @@ type Beam struct {
 	End Pt  // this is the point to where the beam ends
 }
 
-const Version = 13
+const Version = 16
 
 type WorldParams struct {
 	Boardgame                      bool `yaml:"Boardgame"`

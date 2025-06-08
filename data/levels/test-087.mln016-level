@@ -1,0 +1,54 @@
+Version: 16
+Seed: 5392381792743757716
+Level:
+  Entities:
+    Obstacles:
+    - [., ., X, ., ., ., X, X]
+    - [., ., ., ., ., X, ., X]
+    - [X, ., ., ., ., X, ., .]
+    - [., ., X, ., ., X, X, .]
+    - [., ., X, X, X, ., ., X]
+    - [., X, ., ., ., X, X, .]
+    - [., X, ., ., ., ., ., X]
+    - [., X, X, X, ., ., ., .]
+    SpawnPortalsParams:
+    - Pos: [7, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [0, 7]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [3, 1]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [0, 1]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+    - Pos: [1, 3]
+      SpawnPortalCooldown: 100
+      Waves:
+      - SecondsAfterLastWave: 0
+        NHounds: 1
+  WorldParams:
+    Boardgame: false
+    UseAmmo: true
+    AmmoLimit: 13
+    EnemyMoveCooldownDuration: 46
+    EnemiesAggroWhenVisible: true
+    SpawnPortalCooldownMin: 100
+    SpawnPortalCooldownMax: 100
+    HoundMaxHealth: 3
+    HoundMoveCooldownMultiplier: 1
+    HoundPreparingToAttackCooldown: 46
+    HoundAttackCooldownMultiplier: 1
+    HoundHitCooldownDuration: 46
+    HoundHitsPlayer: true
+    HoundAggroDistance: 0

@@ -99,9 +99,9 @@ func Test_GenerateInputData(t *testing.T) {
 	for instanceIdx := range input.NumTestInstances.ToInt() {
 		levelS := fmt.Sprintf("test-%03d", instanceIdx+1)
 		params := input.GenerateParam()
-		SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
+		SaveYAML(fmt.Sprintf("%s.mln016-params", levelS), params)
 		l := GenerateLevelFromParams(params)
-		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln016-level", levelS))
 	}
 }
 
