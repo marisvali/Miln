@@ -290,7 +290,7 @@ func (g *Gui) DrawCurrentLevel(screen *ebiten.Image) {
 		return
 	}
 
-	if len(g.fixedLevels) > 0 {
+	if g.UsingFixedLevels() {
 		currentLevel := g.CurrentFixedLevelIdx.ToInt() + 1
 		if currentLevel <= len(g.fixedLevels) {
 			if g.state == GameWon || g.state == GameLost {

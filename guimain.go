@@ -203,7 +203,7 @@ func main() {
 			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 			g.state = Playback
 		}
-	} else if len(g.fixedLevels) > 0 {
+	} else if g.UsingFixedLevels() {
 		// Play pre-defined levels in order.
 		g.playbackExecution = false
 		if g.HasMoreFixedLevels() {
@@ -286,34 +286,4 @@ func (g *Gui) SaveUserData() {
 	data, err := yaml.Marshal(g.UserData)
 	Check(err)
 	SetUserDataHttp(g.username, string(data))
-}
-
-// Functions for working with fixed levels. Apparently these are the abstract
-// functionalities I need:
-// - initialize fixed levels
-// - check if we are currently using fixed levels
-// - check if we have any more fixed levels
-// - get current fixed level
-// - advance current fixed level
-
-func (g *Gui) InitializeFixedLevels() {
-	g.fixedLevels = GetFiles(g.FSys, "data/levels", "*")
-	g.LoadUserData()
-}
-
-func (g *Gui) GetCurrentFixedLevel() (seed Int, l Level) {
-	return LoadLevelFromYAML(g.FSys, g.fixedLevels[g.CurrentFixedLevelIdx.ToInt()])
-}
-
-func (g *Gui) AdvanceCurrentFixedLevel() {
-	g.CurrentFixedLevelIdx.Inc()
-	g.SaveUserData()
-}
-
-func (g *Gui) UsingFixedLevels() bool {
-	return len(g.fixedLevels) > 0
-}
-
-func (g *Gui) HasMoreFixedLevels() bool {
-	return g.CurrentFixedLevelIdx.Lt(I(len(g.fixedLevels)))
 }
