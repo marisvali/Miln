@@ -12,7 +12,14 @@ import (
 )
 
 func (g *Gui) uploadCurrentWorld() {
-	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, g.world.SerializedPlaythrough()}
+	// Pass a World clone to the channel and not a serialized playthrough.
+	// Serialization takes much longer than cloning.
+	// Also, it is important for the channel to have some buffer, otherwise this
+	// call will block until the previous world instance was uploaded.
+	// If the connection to the server drops for a few seconds, either due to
+	// the player's connection or the server not being available, it will
+	// interrupt the gameplay.
+	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, g.world.Clone()}
 }
 
 func UploadPlaythroughs(ch chan uploadData) {
@@ -22,7 +29,7 @@ func UploadPlaythroughs(ch chan uploadData) {
 		data := <-ch
 
 		// Upload the data.
-		UploadDataToDbHttp(data.user, data.version, data.id, data.playthrough)
+		UploadDataToDbHttp(data.user, data.version, data.id, data.world.SerializedPlaythrough())
 	}
 }
 

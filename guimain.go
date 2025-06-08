@@ -125,10 +125,10 @@ type Gui struct {
 }
 
 type uploadData struct {
-	user        string
-	version     int64
-	id          uuid.UUID
-	playthrough []byte
+	user    string
+	version int64
+	id      uuid.UUID
+	world   World
 }
 
 type GameState int64
@@ -146,7 +146,10 @@ func main() {
 
 	var g Gui
 	g.username = getUsername()
-	g.uploadDataChannel = make(chan uploadData)
+	// A channel size of 10 means the channel will buffer 10 inputs before it is
+	// full and it blocks. Hopefully, when uploading data, a size of 10 is
+	// sufficient.
+	g.uploadDataChannel = make(chan uploadData, 10)
 	go UploadPlaythroughs(g.uploadDataChannel)
 	// g.db = ConnectToDbSql()
 	// g.world = NewWorld(RInt(I(0), I(10000000)))
