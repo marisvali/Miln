@@ -1,6 +1,6 @@
 $Env:GOOS = 'js'
 $Env:GOARCH = 'wasm'
-go build -o miln13.wasm github.com/marisvali/miln
+go build -tags online,fixedlevels -o miln13.wasm github.com/marisvali/miln
 Remove-Item Env:GOOS
 Remove-Item Env:GOARCH
 

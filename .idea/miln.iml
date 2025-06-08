@@ -5,6 +5,7 @@
       <option name="customFlags">
         <array>
           <option value="online" />
+          <option value="nofixedlevels" />
         </array>
       </option>
     </buildTags>
