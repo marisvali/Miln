@@ -272,7 +272,10 @@ func (g *Gui) getWindowSize() Pt {
 func (g *Gui) updateWindowSize() {
 	// windowSize := g.getWindowSize()
 	// ebiten.SetWindowSize(windowSize.X.ToInt(), windowSize.Y.ToInt())
-	ebiten.SetWindowSize(900, 900)
+	width, height := ebiten.ScreenSizeInFullscreen()
+	size := min(width, height) * 8 / 10
+	ebiten.SetWindowSize(size, size)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
 	ebiten.SetWindowTitle("Miln")
 }
 
