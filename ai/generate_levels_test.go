@@ -6,7 +6,6 @@ import (
 	. "github.com/marisvali/miln/world"
 	_ "image/png"
 	"os"
-	"path/filepath"
 	"testing"
 )
 
@@ -17,12 +16,7 @@ type Param struct {
 	NFlames    Int `yaml:"NFlames"`
 }
 
-type TrainingData struct {
-	Params                  []Param `yaml:"Params"`
-	NumInstancesPerParamSet Int     `yaml:"NumInstancesPerParamSet"`
-}
-
-type TestData struct {
+type AiInput struct {
 	NumTestInstances Int `yaml:"NumTestInstances"`
 	NObstaclesMin    Int `yaml:"NObstaclesMin"`
 	NObstaclesMax    Int `yaml:"NObstaclesMax"`
@@ -32,11 +26,6 @@ type TestData struct {
 	EnemySpeedMax    Int `yaml:"EnemySpeedMax"`
 	NFlamesMin       Int `yaml:"NFlamesMin"`
 	NFlamesMax       Int `yaml:"NFlamesMax"`
-}
-
-type AiInput struct {
-	TrainingData `yaml:"TrainingData"`
-	TestData     `yaml:"TestData"`
 }
 
 func SpeedToCooldown(speed Int) Int {
@@ -96,25 +85,10 @@ func (a *AiInput) GenerateParam() Param {
 }
 
 func Test_GenerateInputData(t *testing.T) {
-	workDir := "d:\\Miln\\stored\\experiment2\\ai-input"
+	workDir := "d:\\Miln\\stored\\experiment4\\ai-input"
 	fsys := os.DirFS(workDir).(FS)
 	var input AiInput
 	LoadYAML(fsys, "ai-input.yaml", &input)
-
-	// Generate training data.
-	trainingDir := workDir + "\\training-data"
-	DeleteDir(trainingDir)
-	MakeDir(trainingDir)
-	ChDir(trainingDir)
-
-	for paramIdx, params := range input.Params {
-		for instanceIdx := range input.NumInstancesPerParamSet.ToInt() {
-			levelS := fmt.Sprintf("training-params-set-%02d-instance-%02d", paramIdx+1, instanceIdx+1)
-			SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
-			l := GenerateLevelFromParams(params)
-			l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
-		}
-	}
 
 	// Generate test data.
 	testDir := workDir + "\\test-data"
@@ -123,41 +97,11 @@ func Test_GenerateInputData(t *testing.T) {
 	ChDir(testDir)
 
 	for instanceIdx := range input.NumTestInstances.ToInt() {
-		levelS := fmt.Sprintf("test-%02d", instanceIdx+1)
+		levelS := fmt.Sprintf("test-%03d", instanceIdx+1)
 		params := input.GenerateParam()
 		SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
 		l := GenerateLevelFromParams(params)
 		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
-	}
-
-	// Generate play data.
-	trainingFiles := GetFiles(fsys, "training-data", "*-level")
-	Shuffle(&DefaultRand, trainingFiles)
-	testFiles := GetFiles(fsys, "test-data", "*-level")
-	Shuffle(&DefaultRand, testFiles)
-
-	playDir := workDir + "\\play-data"
-	DeleteDir(playDir)
-	MakeDir(playDir)
-	ChDir(playDir)
-
-	files := []string{}
-	minLen := min(len(trainingFiles), len(testFiles))
-	for i := range minLen {
-		files = append(files, trainingFiles[i])
-		files = append(files, testFiles[i])
-	}
-	for i := minLen; i < len(trainingFiles); i++ {
-		files = append(files, trainingFiles[i])
-	}
-	for i := minLen; i < len(testFiles); i++ {
-		files = append(files, testFiles[i])
-	}
-
-	for i, filename := range files {
-		sourceFilename := workDir + "/" + filename
-		destFilename := playDir + fmt.Sprintf("/%02d-", i+1) + filepath.Base(filename)
-		CopyFile(sourceFilename, destFilename)
 	}
 }
 
