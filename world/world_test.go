@@ -9,18 +9,13 @@ import (
 )
 
 func TestWorld_Regression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
-	expected := string(ReadFile("playthroughs/large-playthrough.mln013-hash"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
+	expected := string(ReadFile("playthroughs/large-playthrough.mln016-hash"))
 
-	// Run the playthrough.
-	w := NewWorld(playthrough.Seed, playthrough.Level)
-	for _, input := range playthrough.History {
-		w.Step(input)
-	}
+	actual := RegressionId(&playthrough)
+	println(actual)
 
-	println(w.RegressionId())
-
-	assert.Equal(t, expected, w.RegressionId())
+	assert.Equal(t, expected, actual)
 }
 
 func RunPlaythrough(p Playthrough) {
@@ -31,7 +26,7 @@ func RunPlaythrough(p Playthrough) {
 }
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
@@ -55,7 +50,7 @@ func BenchmarkPlaythroughSpeed(b *testing.B) {
 
 func GetLargeWorld() World {
 	// Load the playthrough.
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
@@ -106,7 +101,7 @@ func BenchmarkWorldClone(b *testing.B) {
 }
 
 func TestWorld_PredictableRandomness(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln013"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run the playthrough halfway through.
 	w1 := NewWorld(playthrough.Seed, playthrough.Level)
@@ -128,10 +123,10 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 	}
 
 	println(noise.ToInt64())
-	println(w1.RegressionId())
-	println(w2.RegressionId())
+	println(w1.State())
+	println(w2.State())
 
-	assert.Equal(t, w1.RegressionId(), w2.RegressionId())
+	assert.Equal(t, w1.State(), w2.State())
 }
 
 func Test_LevelYaml(t *testing.T) {

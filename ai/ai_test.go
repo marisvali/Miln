@@ -865,26 +865,13 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	// Wait some period in the beginning.
 	frameIdx := 0
 	for ; frameIdx < 100; frameIdx++ {
-		input := PlayerInput{}
-		w.Step(input)
+		w.Step(NeutralInput())
 	}
 
 	// Move on the map.
 	{
 		rankedActions := CurrentRankedActions(w)
 		w.Step(ActionToInput(rankedActions[0]))
-	}
-
-	// Wait until getting hit once.
-	for {
-		w.Step(NeutralInput())
-		// After each world step, check if the game is over.
-		if Result(w) != GameOngoing {
-			return w
-		}
-		if w.Player.JustHit {
-			break
-		}
 	}
 
 	// Fight until only 3 enemy is left.
@@ -900,7 +887,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 				break
 			}
 		} else {
-			w.Step(PlayerInput{})
+			w.Step(NeutralInput())
 			// After each world step, check if the game is over.
 			if Result(w) != GameOngoing {
 				return w
@@ -917,9 +904,6 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			return w
 		}
 		if w.Player.JustHit {
-			// This is here just because World doesn't reset it, as it should.
-			// Fix this in a future version of the World.
-			w.Player.JustHit = false
 			break
 		}
 	}
@@ -983,5 +967,5 @@ func TestGenerateLargePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	world := PlayLevelForAtLeastNFrames(level, I(0), 18000)
 	fmt.Println(len(world.History))
-	WriteFile("outputs/large-playthrough.mln013", world.SerializedPlaythrough())
+	WriteFile("outputs/large-playthrough.mln016", world.SerializedPlaythrough())
 }
