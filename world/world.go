@@ -369,3 +369,35 @@ func (w *World) SpawnAmmos() {
 		w.Ammos = append(w.Ammos, ammo)
 	}
 }
+
+func (w *World) AllEnemiesDead() bool {
+	for _, enemy := range w.Enemies {
+		if enemy.Alive() {
+			return false
+		}
+	}
+	for _, portal := range w.SpawnPortals {
+		if portal.Active() {
+			return false
+		}
+	}
+	return true
+}
+
+type WorldStatus int
+
+const (
+	Ongoing WorldStatus = iota
+	Won
+	Lost
+)
+
+func (w *World) Status() WorldStatus {
+	if w.AllEnemiesDead() {
+		return Won
+	} else if w.Player.Health.Leq(ZERO) {
+		return Lost
+	} else {
+		return Ongoing
+	}
+}

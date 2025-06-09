@@ -554,38 +554,6 @@ func TestAI(t *testing.T) {
 	assert.True(t, true)
 }
 
-func AllEnemiesDead(w World) bool {
-	for _, enemy := range w.Enemies {
-		if enemy.Alive() {
-			return false
-		}
-	}
-	for _, portal := range w.SpawnPortals {
-		if portal.Active() {
-			return false
-		}
-	}
-	return true
-}
-
-type GameResult int
-
-const (
-	GameOngoing GameResult = iota
-	GameWon
-	GameLost
-)
-
-func Result(w World) GameResult {
-	if AllEnemiesDead(w) {
-		return GameWon
-	} else if w.Player.Health.Leq(ZERO) {
-		return GameLost
-	} else {
-		return GameOngoing
-	}
-}
-
 func TestAIPlayer(t *testing.T) {
 	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\training-data"
 	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
@@ -616,13 +584,13 @@ func TestAIPlayer(t *testing.T) {
 		}
 
 		world.Step(input)
-		if Result(world) != GameOngoing {
+		if world.Status() != Ongoing {
 			break
 		}
 		frameIdx++
 	}
 
-	if Result(world) == GameWon {
+	if world.Status() == Won {
 		fmt.Println("ai player WON")
 	} else {
 		fmt.Println("ai player LOST")
@@ -772,7 +740,7 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 		}
 
 		world.Step(input)
-		if Result(world) != GameOngoing {
+		if world.Status() != Ongoing {
 			return world
 		}
 		frameIdx++
@@ -807,7 +775,7 @@ func TestAIPlayerMultiple(t *testing.T) {
 		for i := 0; i < nPlaysPerLevel; i++ {
 			world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
 			WriteFile(fmt.Sprintf("outputs/ai-play-%02d.mln013", idx), world.SerializedPlaythrough())
-			if Result(world) == GameWon {
+			if world.Status() == Won {
 				totalHealth += world.Player.Health.ToInt()
 				fmt.Printf("win ")
 			} else {
@@ -880,7 +848,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			rankedActions := CurrentRankedActions(w)
 			w.Step(ActionToInput(rankedActions[0]))
 			// After each world step, check if the game is over.
-			if Result(w) != GameOngoing {
+			if w.Status() != Ongoing {
 				return w
 			}
 			if len(w.Enemies) == 3 {
@@ -889,7 +857,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 		} else {
 			w.Step(NeutralInput())
 			// After each world step, check if the game is over.
-			if Result(w) != GameOngoing {
+			if w.Status() != Ongoing {
 				return w
 			}
 		}
@@ -900,7 +868,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	for {
 		w.Step(NeutralInput())
 		// After each world step, check if the game is over.
-		if Result(w) != GameOngoing {
+		if w.Status() != Ongoing {
 			return w
 		}
 		if w.Player.JustHit {
@@ -916,7 +884,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 				if r.Move {
 					w.Step(ActionToInput(r))
 					// After each world step, check if the game is over.
-					if Result(w) != GameOngoing {
+					if w.Status() != Ongoing {
 						return w
 					}
 					break
@@ -925,7 +893,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 		} else {
 			w.Step(NeutralInput())
 			// After each world step, check if the game is over.
-			if Result(w) != GameOngoing {
+			if w.Status() != Ongoing {
 				return w
 			}
 		}
@@ -935,7 +903,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	for {
 		w.Step(NeutralInput())
 		// After each world step, check if the game is over.
-		if Result(w) != GameOngoing {
+		if w.Status() != Ongoing {
 			return w
 		}
 		if w.Player.JustHit {
@@ -949,13 +917,13 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			rankedActions := CurrentRankedActions(w)
 			w.Step(ActionToInput(rankedActions[0]))
 			// After each world step, check if the game is over.
-			if Result(w) != GameOngoing {
+			if w.Status() != Ongoing {
 				return w
 			}
 		} else {
 			w.Step(NeutralInput())
 			// After each world step, check if the game is over.
-			if Result(w) != GameOngoing {
+			if w.Status() != Ongoing {
 				return w
 			}
 		}

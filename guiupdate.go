@@ -67,13 +67,13 @@ func (g *Gui) UpdateGameOngoing() {
 		return
 	}
 
-	if g.AllEnemiesDead() {
+	if g.world.Status() == Won {
 		g.uploadCurrentWorld()
 		g.AdvanceCurrentFixedLevel()
 		g.state = GameWon
 		return
 	}
-	if g.world.Player.Health.Leq(ZERO) {
+	if g.world.Status() == Lost {
 		g.uploadCurrentWorld()
 		g.AdvanceCurrentFixedLevel()
 		g.state = GameLost
@@ -339,24 +339,10 @@ func (g *Gui) UpdatePlayback() {
 	if input.RightButtonPressed {
 		g.instructionalText += " Right button pressed."
 	}
-	if g.AllEnemiesDead() {
+	if g.world.Status() == Won {
 		g.instructionalText += " Won."
 	}
-	if g.world.Player.Health.Leq(ZERO) {
+	if g.world.Status() == Lost {
 		g.instructionalText += " Lost."
 	}
-}
-
-func (g *Gui) AllEnemiesDead() bool {
-	for _, enemy := range g.world.Enemies {
-		if enemy.Alive() {
-			return false
-		}
-	}
-	for _, portal := range g.world.SpawnPortals {
-		if portal.Active() {
-			return false
-		}
-	}
-	return true
 }
