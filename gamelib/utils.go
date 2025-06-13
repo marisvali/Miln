@@ -616,3 +616,12 @@ func (m *Cooldown) Reset() {
 func (m *Cooldown) Ready() bool {
 	return m.Idx == ZERO
 }
+
+// Delete removes an element from a slice.
+// It does so in O(1) and without re-allocating memory, but the order of the
+// elements is not preserved. I think by default I do not care about preserving
+// the order of elements after a delete.
+func Delete[T any](s []T, i int) []T {
+	s[i] = s[len(s)-1]
+	return s[:len(s)-1]
+}

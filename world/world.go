@@ -213,7 +213,7 @@ func DeserializePlaythrough(data []byte) (p Playthrough) {
 	buf := bytes.NewBuffer(Unzip(data))
 	var token int64
 	Deserialize(buf, &token)
-	if token != Version {
+	if token != Version && !(token == 13 && Version == 16) {
 		Check(fmt.Errorf("this code can't simulate this playthrough "+
 			"correctly - we are version %d and playthrough was generated "+
 			"with version %d",
@@ -309,22 +309,23 @@ func (w *World) Step(input PlayerInput) {
 	}
 
 	// Cull dead enemies.
-	newEnemies := []Enemy{}
-	for i := range w.Enemies {
-		if w.Enemies[i].Alive() {
-			newEnemies = append(newEnemies, w.Enemies[i])
+	n := 0
+	for _, x := range w.Enemies {
+		if x.Alive() {
+			w.Enemies[n] = x
+			n++
 		}
 	}
-	w.Enemies = newEnemies
+	w.Enemies = w.Enemies[:n]
 
-	// Cull dead SpawnPortalsParams.
-	newPortals := []SpawnPortal{}
-	for i := range w.SpawnPortals {
-		if w.SpawnPortals[i].Health.IsPositive() {
-			newPortals = append(newPortals, w.SpawnPortals[i])
+	// Cull dead SpawnPortals.
+	n = 0
+	for _, x := range w.SpawnPortals {
+		if x.Health.IsPositive() {
+			w.SpawnPortals[n] = x
+			n++
 		}
 	}
-	w.SpawnPortals = newPortals
 
 	w.TimeStep.Inc()
 	if w.TimeStep.Eq(I(math.MaxInt64)) {

@@ -65,18 +65,17 @@ func (p *Player) Step(w *World, input PlayerInput) {
 			p.OnMap = true
 
 			// Collect ammos.
-			newAmmos := make([]Ammo, 0)
-			for i := range w.Ammos {
+			for i := 0; i < len(w.Ammos); {
 				if w.Ammos[i].Pos == w.Player.pos {
 					w.Player.AmmoCount.Add(w.Ammos[i].Count)
 					if w.Player.AmmoCount.Gt(w.Player.AmmoLimit) {
 						w.Player.AmmoCount = w.Player.AmmoLimit
 					}
+					w.Ammos = Delete(w.Ammos, i)
 				} else {
-					newAmmos = append(newAmmos, w.Ammos[i])
+					i++
 				}
 			}
-			w.Ammos = newAmmos
 		}
 	}
 
@@ -84,14 +83,14 @@ func (p *Player) Step(w *World, input PlayerInput) {
 		w.VisibleTiles.At(input.ShootPt) &&
 		(!w.UseAmmo || w.UseAmmo && w.Player.AmmoCount.IsPositive()) {
 
-		shotEnemies := []*Enemy{}
+		nShotEnemies := 0
 		for i := range w.Enemies {
 			if w.Enemies[i].Pos().Eq(input.ShootPt) {
-				shotEnemies = append(shotEnemies, &w.Enemies[i])
+				nShotEnemies++
 			}
 		}
 
-		if len(shotEnemies) > 0 {
+		if nShotEnemies > 0 {
 			w.Beam.Idx = w.BeamMax // show beam
 			w.Beam.End = w.TileToWorldPos(input.ShootPt)
 			if w.UseAmmo {
