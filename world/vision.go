@@ -2,49 +2,114 @@ package world
 
 import (
 	. "github.com/marisvali/miln/gamelib"
-	"slices"
 )
 
 type Vision struct {
-	blockSize                 Int
-	cachedRelativeRelevantPts Matrix[[]Pt]
-	previousStart             Pt
-	previousObstacles         MatBool
-	previousVisibleTiles      MatBool
+	previousStart        Pt
+	previousObstacles    MatBool
+	previousVisibleTiles MatBool
+}
+
+var relativeRelevantPtsQ1 Matrix[[]Pt]
+var relativeRelevantPtsQ2 Matrix[[]Pt]
+var relativeRelevantPtsQ3 Matrix[[]Pt]
+var relativeRelevantPtsQ4 Matrix[[]Pt]
+var blockSize Int = I(1000)
+
+func init() {
+
+	const matSizeX = 8
+	const matSizeY = 8
+	p := Pt{}
+
+	relativeRelevantPtsQ1 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			relativeRelevantPtsQ1.Set(p, computeRelativeRelevantPts(p))
+		}
+	}
+
+	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
+	relativeRelevantPtsQ2 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			relativeRelevantPtsQ2.Set(p, computeRelativeRelevantPts(p))
+		}
+	}
+
+	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
+	relativeRelevantPtsQ3 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			relativeRelevantPtsQ3.Set(p, computeRelativeRelevantPts(p))
+		}
+	}
+
+	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
+	relativeRelevantPtsQ4 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			relativeRelevantPtsQ4.Set(p, computeRelativeRelevantPts(p))
+		}
+	}
+
+	// If the end is actually to the left of start, just flip all the X for all
+	// relative relevant points.
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			pts2 := relativeRelevantPtsQ2.Get(p)
+			for i := range pts2 {
+				pts2[i].X = pts2[i].X.Negative()
+			}
+		}
+	}
+
+	// If the end is actually below start, just flip all the X for all relative
+	// relevant points.
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			pts2 := relativeRelevantPtsQ3.Get(p)
+			for i := range pts2 {
+				pts2[i].Y = pts2[i].Y.Negative()
+			}
+		}
+	}
+
+	// If the end is both to the left and below start, flip both X and Y.
+	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
+		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
+			pts2 := relativeRelevantPtsQ4.Get(p)
+			for i := range pts2 {
+				pts2[i].X = pts2[i].X.Negative()
+				pts2[i].Y = pts2[i].Y.Negative()
+			}
+		}
+	}
 }
 
 func NewVision(size Pt) (v Vision) {
-	v.blockSize = I(1000)
-	v.cachedRelativeRelevantPts = NewMatrix[[]Pt](size)
-	return
+	return Vision{}
 }
 
-func (v *Vision) tileToWorldPos(pt Pt) Pt {
-	half := v.blockSize.DivBy(TWO)
+func tileToWorldPos(pt Pt) Pt {
+	half := blockSize.DivBy(TWO)
 	offset := Pt{half, half}
-	return pt.Times(v.blockSize).Plus(offset)
+	return pt.Times(blockSize).Plus(offset)
 }
 
-func (v *Vision) worldPosToTile(pt Pt) Pt {
-	return pt.DivBy(v.blockSize)
+func worldPosToTile(pt Pt) Pt {
+	return pt.DivBy(blockSize)
 }
 
-func (v *Vision) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
-	pts = v.cachedRelativeRelevantPts.Get(dif)
-	if pts != nil {
-		// We have previously computed this.
-		// fmt.Printf("cached: %d %d\n", dif.X.ToInt(), dif.Y.ToInt())
-		return
-	}
-
+func computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	// Dif is the difference between v start and an end.
 	start := Pt{ZERO, ZERO}
 	end := dif
 
 	// Put v square in each position between start and end and check if it
 	// blocks the line going from start to end.
-	lineStart := v.tileToWorldPos(Pt{ZERO, ZERO})
-	lineEnd := v.tileToWorldPos(end)
+	lineStart := tileToWorldPos(Pt{ZERO, ZERO})
+	lineEnd := tileToWorldPos(end)
 	l := Line{lineStart, lineEnd}
 
 	for y := start.X; y.Leq(end.Y); y.Inc() {
@@ -58,8 +123,8 @@ func (v *Vision) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 				continue
 			}
 
-			center := v.tileToWorldPos(pt)
-			size := v.blockSize.Times(I(98)).DivBy(I(100))
+			center := tileToWorldPos(pt)
+			size := blockSize.Times(I(98)).DivBy(I(100))
 			square := Square{center, size}
 
 			if intersects, _ := LineSquareIntersection(l, square); intersects {
@@ -67,10 +132,6 @@ func (v *Vision) computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 			}
 		}
 	}
-
-	// Cache this computation for later.
-	// fmt.Printf("computed for: %d %d\n", dif.X.ToInt(), dif.Y.ToInt())
-	v.cachedRelativeRelevantPts.Set(dif, pts)
 	return
 }
 
@@ -80,7 +141,7 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 	}
 
 	// For every two points, there are only some points in-between which can
-	// block v line going from the center of start to the center of end.
+	// block a line going from the center of start to the center of end.
 	// I call those points the 'relevant points'. If any relevant point is an
 	// obstacle, then we have no clear path between start and end.
 
@@ -99,41 +160,36 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 	// This tells me I only need to compute the relevant points for all
 	// differences which are distinct, not all combinations of (start, end).
 	// But, I have to be careful about cases where end.X < start.X for example,
-	// or end.Y < start.Y. But I can see v symmetry there as well.
+	// or end.Y < start.Y. But I can see a symmetry there as well.
 	// If end.X < start.X, I can compute the relevant points as if
 	// end.X > start.X, then negate the X of each relevant point. The same with
 	// Y.
 
 	// I will describe things as if the (0, 0) point is at lower-left, not
 	// upper-left like some other coordinate systems.
-	// First, compute the relevant points as if end is upper-right compared to
-	// start.
+
+	// The relative relevant points only need to be computed once for each
+	// difference. I pre-compute all of the relative relevant points in init()
+	// and use them here.
+
+	m := &relativeRelevantPtsQ1
+
+	if end.X.Lt(start.X) && end.Y.Geq(start.Y) {
+		m = &relativeRelevantPtsQ2
+	}
+
+	if end.X.Geq(start.X) && end.Y.Lt(start.Y) {
+		m = &relativeRelevantPtsQ3
+	}
+
+	if end.X.Lt(start.X) && end.Y.Lt(start.Y) {
+		m = &relativeRelevantPtsQ4
+	}
+
 	dif := end.Minus(start)
 	dif.X = dif.X.Abs()
 	dif.Y = dif.Y.Abs()
-
-	// This is the expensive function call that does the main job.
-	relativeRelevantPts := v.computeRelativeRelevantPts(dif)
-
-	// If the end is actually to the left of start, just flip all the X for all
-	// relative relevant points.
-	if end.X.Lt(start.X) {
-		// Clone as otherwise we would modify cached values.
-		relativeRelevantPts = slices.Clone(relativeRelevantPts)
-		for i := range relativeRelevantPts {
-			relativeRelevantPts[i].X = relativeRelevantPts[i].X.Negative()
-		}
-	}
-
-	// If the end is actually below start, just flip all the X for all relative
-	// relevant points.
-	if end.Y.Lt(start.Y) {
-		// Clone as otherwise we would modify cached values.
-		relativeRelevantPts = slices.Clone(relativeRelevantPts)
-		for i := range relativeRelevantPts {
-			relativeRelevantPts[i].Y = relativeRelevantPts[i].Y.Negative()
-		}
-	}
+	relativeRelevantPts := m.Get(dif)
 
 	// Check if any of the relevant points have an obstacle.
 	for i := range relativeRelevantPts {
@@ -143,6 +199,7 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 			return false
 		}
 	}
+
 	return true
 }
 

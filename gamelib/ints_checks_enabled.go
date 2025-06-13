@@ -1,3 +1,5 @@
+//go:build int_overflow_checks_enabled
+
 package gamelib
 
 /*
