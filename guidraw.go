@@ -17,7 +17,7 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 	// Draw background.
 	screen.Fill(Col(0, 0, 0, 255))
 
-	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
+	playSize := IPt(NCols, NRows).Times(g.BlockSize)
 	yPlayRegion := g.guiMargin
 	var yInstructionalText, yButtons, yPlayback Int
 	if !g.playbackExecution {
@@ -92,8 +92,8 @@ func (g *Gui) Draw(screen *ebiten.Image) {
 
 func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Draw ground and trees.
-	rows := g.world.Obstacles.Size().Y
-	cols := g.world.Obstacles.Size().X
+	rows := I(NRows)
+	cols := I(NCols)
 	var pt Pt
 	for pt.Y = ZERO; pt.Y.Lt(rows); pt.Y.Inc() {
 		for pt.X = ZERO; pt.X.Lt(cols); pt.X.Inc() {
@@ -106,20 +106,20 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 
 	// Draw portals.
 	if g.DrawSpawnPortal {
-		for i := range g.world.SpawnPortals {
+		for i := range g.world.SpawnPortalsLen {
 			p := &g.world.SpawnPortals[i]
 			g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
 		}
 	}
 
 	// Draw ammo.
-	for _, ammo := range g.world.Ammos {
-		g.DrawTile(screen, g.imgAmmo, ammo.Pos)
+	for i := range g.world.AmmosLen {
+		g.DrawTile(screen, g.imgAmmo, g.world.Ammos[i].Pos)
 	}
 
 	// Draw enemy.
-	for _, enemy := range g.world.Enemies {
-		g.DrawEnemy(screen, enemy)
+	for i := range g.world.EnemiesLen {
+		g.DrawEnemy(screen, &g.world.Enemies[i])
 	}
 
 	// Draw all animations for world objects.
@@ -203,7 +203,7 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	}
 }
 
-func (g *Gui) DrawEnemy(screen *ebiten.Image, e Enemy) {
+func (g *Gui) DrawEnemy(screen *ebiten.Image, e *Hound) {
 	if g.DrawEnemyHealth {
 		g.DrawHealth(screen, g.imgEnemyHealth, e.Health(), e.Pos())
 	}

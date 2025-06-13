@@ -12,7 +12,7 @@ type AI struct {
 	lastRandomMoveIdx Int
 }
 
-func ClosestEnemy(pt Pt, w *World) Enemy {
+func ClosestEnemy(pt Pt, w *World) Hound {
 	minDist := I(math.MaxInt64)
 	minI := -1
 	for i, e := range w.Enemies {
@@ -54,11 +54,11 @@ func OnlyUltrahoundsLeft(w *World) bool {
 func (a *AI) MoveRandomly(w *World) (input PlayerInput) {
 	// Move and shoot randomly.
 	input.Move = a.frameIdx.Mod(TWO).Eq(ZERO)
-	input.MovePt = Pt{RInt(I(0), w.Obstacles.Size().X.Minus(ONE)),
-		RInt(I(0), w.Obstacles.Size().Y.Minus(ONE))}
+	input.MovePt = Pt{RInt(I(0), I(NCols).Minus(ONE)),
+		RInt(I(0), I(NRows).Minus(ONE))}
 	input.Shoot = !input.Move
-	input.ShootPt = Pt{RInt(I(0), w.Obstacles.Size().X.Minus(ONE)),
-		RInt(I(0), w.Obstacles.Size().Y.Minus(ONE))}
+	input.ShootPt = Pt{RInt(I(0), I(NCols).Minus(ONE)),
+		RInt(I(0), I(NRows).Minus(ONE))}
 	return
 }
 
@@ -93,7 +93,7 @@ func GetPointsFromWhichPlayerCanAttack(w *World, freePts []Pt) (attackPts []Pt) 
 	for _, pt := range freePts {
 		// Move to this point and see if anything is attackable after moving
 		// there.
-		cloneW := w.Clone()
+		cloneW := w
 		var moveInput PlayerInput
 		moveInput.Move = true
 		moveInput.MovePt = pt

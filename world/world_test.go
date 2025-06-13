@@ -9,24 +9,22 @@ import (
 )
 
 func TestWorld_Regression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
+	playthrough := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
 	expected := string(ReadFile("playthroughs/large-playthrough.mln016-hash"))
-
 	actual := RegressionId(&playthrough)
 	println(actual)
-
 	assert.Equal(t, expected, actual)
 }
 
 func RunPlaythrough(p Playthrough) {
 	w := NewWorld(p.Seed, p.Level)
-	for _, input := range p.History {
-		w.Step(input)
+	for i := range p.HistoryLen {
+		w.Step(p.History[i])
 	}
 }
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/average-playthrough.mln016"))
+	playthrough := DeserializePlaythroughFromOld(ReadFile("playthroughs/average-playthrough.mln016"))
 	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
@@ -95,8 +93,10 @@ func BenchmarkWorldClone(b *testing.B) {
 	w := GetLargeWorld()
 
 	// Run benchmark loop.
+	res := 0
 	for b.Loop() {
-		w.Clone()
+		w2 := w
+		res += len(w2.History)
 	}
 }
 
@@ -109,7 +109,7 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 		w1.Step(playthrough.History[i])
 	}
 
-	w2 := w1.Clone()
+	w2 := w1
 
 	// Finish running the playthrough.
 	// Intersperse global randoms to show that each world behaves predictably:
@@ -147,9 +147,9 @@ func Test_LevelYaml(t *testing.T) {
 	l.HoundHitCooldownDuration = I(107)
 	l.HoundHitsPlayer = true
 	l.HoundAggroDistance = ZERO
-	l.Obstacles = ValidRandomLevel(I(15), I(8), I(8))
-	occ := l.Obstacles.Clone()
-	var sps []SpawnPortalParams
+	l.Obstacles = ValidRandomLevel(I(15))
+	occ := l.Obstacles
+	var sps [30]SpawnPortalParams
 	for i := 0; i < 3; i++ {
 		var sp SpawnPortalParams
 		sp.Pos = occ.OccupyRandomPos(&DefaultRand)
@@ -157,10 +157,12 @@ func Test_LevelYaml(t *testing.T) {
 		wave := Wave{}
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
-		sp.Waves = []Wave{wave}
-		sps = append(sps, sp)
+		sp.Waves[0] = wave
+		sp.WavesLen++
+		sps[i] = sp
 	}
 	l.SpawnPortalsParams = sps
+	l.SpawnPortalsParamsLen = 3
 
 	filename := "level.txt"
 	SaveYAML(filename, l)

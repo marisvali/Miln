@@ -56,7 +56,7 @@ func (e *EnemyBase) Alive() bool {
 }
 
 func getObstaclesAndEnemies(w *World) (m MatBool) {
-	m = w.Obstacles.Clone()
+	m = w.Obstacles
 	m.Add(w.EnemyPositions())
 	return
 }

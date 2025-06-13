@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
-	"slices"
 )
 
 type Wave struct {
@@ -17,7 +16,8 @@ type SpawnPortal struct {
 	Health        Int
 	MaxHealth     Int
 	SpawnCooldown Cooldown
-	Waves         []Wave
+	Waves         [10]Wave
+	WavesLen      int
 	frameIdx      Int
 	worldParams   WorldParams
 }
@@ -28,27 +28,23 @@ func NewSpawnPortal(seed Int, p SpawnPortalParams, w WorldParams) (sp SpawnPorta
 	sp.MaxHealth = I(1)
 	sp.Health = sp.MaxHealth
 	sp.SpawnCooldown = NewCooldown(p.SpawnPortalCooldown)
-	sp.Waves = slices.Clone(p.Waves)
+	sp.Waves = p.Waves
+	sp.WavesLen = p.WavesLen
 	sp.worldParams = w
 	return
 }
 
-func (p *SpawnPortal) Clone() SpawnPortal {
-	clone := *p
-	clone.Waves = slices.Clone(p.Waves)
-	return clone
-}
-
 func (p *SpawnPortal) CurrentWave() *Wave {
 	// Compute the frame at which each wave starts.
-	waveStarts := []Int{}
+	waveStarts := [100]Int{}
 	startOfLastWave := ZERO
-	for i := range p.Waves {
+	for i := range p.WavesLen {
 		framesAfterLastWave := p.Waves[i].SecondsAfterLastWave.Times(I(60))
 		startOfThisWave := startOfLastWave.Plus(framesAfterLastWave)
-		waveStarts = append(waveStarts, startOfThisWave)
+		waveStarts[i] = startOfThisWave
 		startOfLastWave = startOfThisWave
 	}
+	waveStartsLen := p.WavesLen
 
 	// Find the i so that:
 	// waveStarts[i] <= p.frameIdx < waveStarts[i+1]
@@ -61,12 +57,12 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 		return nil
 	}
 
-	if p.frameIdx.Geq(waveStarts[len(waveStarts)-1]) {
+	if p.frameIdx.Geq(waveStarts[waveStartsLen-1]) {
 		// The last wave is active.
-		return &p.Waves[len(waveStarts)-1]
+		return &p.Waves[waveStartsLen-1]
 	}
 
-	for i := range waveStarts {
+	for i := range waveStartsLen {
 		if p.frameIdx.Lt(waveStarts[i]) {
 			return &p.Waves[i-1]
 		}
@@ -94,7 +90,8 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if wave.NHounds.IsPositive() {
-		w.Enemies = append(w.Enemies, NewHound(p.RInt63(), p.worldParams, p.pos))
+		w.Enemies[w.EnemiesLen] = NewHound(p.RInt63(), p.worldParams, p.pos)
+		w.EnemiesLen++
 		wave.NHounds.Dec()
 	}
 
@@ -103,7 +100,7 @@ func (p *SpawnPortal) Step(w *World) {
 
 func (p *SpawnPortal) Active() bool {
 	wave := p.CurrentWave()
-	if wave != &p.Waves[len(p.Waves)-1] {
+	if wave != &p.Waves[p.WavesLen-1] {
 		// We are not at the last wave yet.
 		return true
 	}

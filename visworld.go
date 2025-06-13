@@ -86,8 +86,8 @@ func (v *VisWorld) UpdateWhichObjectsExist(w *World) {
 	if w.Player.OnMap {
 		objs = append(objs, &w.Player)
 	}
-	for _, e := range w.Enemies {
-		objs = append(objs, e)
+	for i := range w.EnemiesLen {
+		objs = append(objs, &w.Enemies[i])
 	}
 	for i := range w.SpawnPortals {
 		objs = append(objs, &w.SpawnPortals[i])

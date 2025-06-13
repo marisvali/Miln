@@ -37,8 +37,8 @@ func ValidAttack(world *World, pos Pt) bool {
 }
 
 func AmmoAtPos(world *World, pos Pt) bool {
-	for _, ammo := range world.Ammos {
-		if ammo.Pos == pos {
+	for i := range world.AmmosLen {
+		if world.Ammos[i].Pos == pos {
 			return true
 		}
 	}
@@ -53,10 +53,10 @@ type TargetSeeker struct {
 
 func NewTargetSeeker(world *World) (h TargetSeeker) {
 	h.world = world
-	h.vision = NewVision(world.Obstacles.Size())
+	h.vision = NewVision()
 	// For the purposes of this calculator, both terrain obstacles and enemies
 	// constitute obstacles for vision.
-	h.obstacles = world.Obstacles.Clone()
+	h.obstacles = world.Obstacles
 	h.obstacles.Add(h.world.EnemyPositions())
 	return h
 }
@@ -65,7 +65,7 @@ func NewTargetSeeker(world *World) (h TargetSeeker) {
 // "startPositions" matrix.
 func (h *TargetSeeker) computeVisiblePositions(startPositions MatBool) MatBool {
 	positions := startPositions.ToSlice()
-	allVisible := NewMatBool(h.obstacles.Size())
+	allVisible := MatBool{}
 	for _, pos := range positions {
 		visible := h.vision.Compute(pos, h.obstacles)
 		allVisible.Add(visible)
@@ -87,7 +87,7 @@ func (h *TargetSeeker) computeVisiblePositions(startPositions MatBool) MatBool {
 func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) int {
 	// lookoutPositions - the positions from which we will look out and check
 	// if we see a target.
-	lookoutPositions := NewMatBool(h.obstacles.Size())
+	lookoutPositions := MatBool{}
 	lookoutPositions.Set(startPos)
 
 	// Try a maximum of 10 moves for now, even though normally there should be
@@ -95,7 +95,7 @@ func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) 
 	for iMove := 0; iMove < 10; iMove++ {
 		visiblePositions := h.computeVisiblePositions(lookoutPositions)
 		// Check if any targets are visible from the current start positions.
-		visibleTargets := visiblePositions.Clone()
+		visibleTargets := visiblePositions
 		visibleTargets.IntersectWith(targets)
 		if len(visibleTargets.ToSlice()) > 0 {
 			// A target is visible.
@@ -116,9 +116,9 @@ func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) 
 // NumMovesToAmmo returns the minimum number of move actions required to end up
 // on a tile with ammo on it.
 func NumMovesToAmmo(world *World, pos Pt) int {
-	ammos := NewMatBool(world.Obstacles.Size())
-	for _, ammo := range world.Ammos {
-		ammos.Set(ammo.Pos)
+	ammos := MatBool{}
+	for i := range world.AmmosLen {
+		ammos.Set(world.Ammos[i].Pos)
 	}
 	if ammos.Get(pos) {
 		return 0
@@ -144,13 +144,13 @@ func NumFramesUntilAttacked(world *World, pos Pt) int {
 	// So far the algorithms calling this function all have reasons to assume
 	// that the player will get hit. If it's not the case
 	// I should be warned.
-	if len(world.Enemies) == 0 {
+	if world.EnemiesLen == 0 {
 		Check(fmt.Errorf("something went wrong"))
 		return -1
 	}
 
 	// Clone the world as we're going to modify it.
-	w := world.Clone()
+	w := *world
 
 	// Put the player at pos so that enemies will come to it.
 	w.Player.SetPos(pos)
@@ -284,7 +284,7 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 	input := PlayerInput{}
 	input.Shoot = true
 	input.ShootPt = pos
-	w := world.Clone()
+	w := *world
 	w.Step(input)
 
 	// The player might have just been attacked and hit.
@@ -292,7 +292,7 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 		return 0
 	}
 
-	if len(w.Enemies) == 0 {
+	if w.EnemiesLen == 0 {
 		// Just won the game.
 		return 1000
 	}
@@ -349,9 +349,8 @@ func (a Action) String() string {
 
 func CurrentRankedActions(world World) (actions []Action) {
 	// Compute the fitness of every move action.
-	worldSize := world.Obstacles.Size()
-	for y := 0; y < worldSize.Y.ToInt(); y++ {
-		for x := 0; x < worldSize.X.ToInt(); x++ {
+	for y := 0; y < NRows; y++ {
+		for x := 0; x < NCols; x++ {
 			fitness := FitnessOfMoveAction(&world, IPt(x, y))
 			action := Action{}
 			action.Move = true
@@ -362,8 +361,8 @@ func CurrentRankedActions(world World) (actions []Action) {
 	}
 
 	// Compute the fitness of every attack action.
-	for y := 0; y < worldSize.Y.ToInt(); y++ {
-		for x := 0; x < worldSize.X.ToInt(); x++ {
+	for y := 0; y < NRows; y++ {
+		for x := 0; x < NCols; x++ {
 			fitness := FitnessOfAttackAction(&world, IPt(x, y))
 			action := Action{}
 			action.Move = false
@@ -374,10 +373,12 @@ func CurrentRankedActions(world World) (actions []Action) {
 	}
 
 	// Sort.
+	// It's important to use a stable sort in order to get repeatable results,
+	// especially for regression purposes.
 	cmpActions := func(a, b Action) int {
 		return cmp.Compare(b.Fitness, a.Fitness)
 	}
-	slices.SortFunc(actions, cmpActions)
+	slices.SortStableFunc(actions, cmpActions)
 
 	// Rank.
 	actions[0].Rank = 1
@@ -437,7 +438,7 @@ func FindActionRank(action Action, actions []Action) int {
 }
 
 func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int) {
-	for i := 0; i < len(playthrough.History); i++ {
+	for i := 0; i < playthrough.HistoryLen; i++ {
 		input := playthrough.History[i]
 		if input.Move || input.Shoot {
 			framesWithActions = append(framesWithActions, i)
@@ -498,9 +499,8 @@ func DebugRank(framesWithActions []int, decisionFrames []int,
 	println(FitnessOfAttackAction(&world, IPt(7, 4)))
 
 	// Compute the fitness of every move action.
-	worldSize := world.Obstacles.Size()
-	for y := 0; y < worldSize.Y.ToInt(); y++ {
-		for x := 0; x < worldSize.X.ToInt(); x++ {
+	for y := 0; y < NRows; y++ {
+		for x := 0; x < NCols; x++ {
 			fitness := FitnessOfMoveAction(&world, IPt(x, y))
 			fmt.Printf("%3d ", fitness)
 		}
@@ -509,8 +509,8 @@ func DebugRank(framesWithActions []int, decisionFrames []int,
 
 	// Compute the fitness of every attack action.
 	fmt.Printf("\n")
-	for y := 0; y < worldSize.Y.ToInt(); y++ {
-		for x := 0; x < worldSize.X.ToInt(); x++ {
+	for y := 0; y < NRows; y++ {
+		for x := 0; x < NCols; x++ {
 			fitness := FitnessOfAttackAction(&world, IPt(x, y))
 			fmt.Printf("%3d ", fitness)
 		}
@@ -747,14 +747,29 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 	}
 }
 
+func WorldState(frameIdx int, w *World) {
+	pts := []Pt{}
+	pts = append(pts, w.Player.Pos())
+
+	for i := range w.EnemiesLen {
+		pts = append(pts, w.Enemies[i].Pos())
+	}
+
+	fmt.Printf("%04d  ", frameIdx)
+	for i := range pts {
+		fmt.Printf("%02d %02d  ", pts[i].X.ToInt(), pts[i].Y.ToInt())
+	}
+	fmt.Println()
+}
+
 // As of 2025-06-04 it takes 2515.15s to run for 30 levels with
 // nPlaysPerLevel := 10. That's 42 min and is a problem.
 func TestAIPlayerMultiple(t *testing.T) {
+	RSeed(I(0))
 	randomness := RandomnessInPlay{20, 40, 3, 1}
 	nPlaysPerLevel := 10
 
-	// dir := "d:\\Miln\\stored\\experiment2\\ai-output\\test-data"
-	dir := "d:\\Miln\\stored\\experiment3\\ai-output\\test-data"
+	dir := "d:\\Miln\\stored\\experiment2\\ai-output\\test-data"
 	inputFiles := GetFiles(os.DirFS(dir).(FS), ".", "*.mln013")
 	for idx := range inputFiles {
 		inputFiles[idx] = dir + inputFiles[idx][1:]
@@ -767,14 +782,13 @@ func TestAIPlayerMultiple(t *testing.T) {
 
 	consoleWriter := bufio.NewWriter(os.Stdout)
 	for idx, inputFile := range inputFiles {
-		fmt.Printf("%02d ", idx)
 		Check(consoleWriter.Flush())
-		playthrough := DeserializePlaythrough(ReadFile(inputFile))
+		playthrough := DeserializePlaythroughFromOld(ReadFile(inputFile))
 
 		totalHealth := 0
 		for i := 0; i < nPlaysPerLevel; i++ {
 			world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
-			WriteFile(fmt.Sprintf("outputs/ai-play-%02d.mln013", idx), world.SerializedPlaythrough())
+			WriteFile(fmt.Sprintf("outputs/ai-play-opt-%02d-%02d.mln016-opt", idx, i), world.SerializedPlaythrough())
 			if world.Status() == Won {
 				totalHealth += world.Player.Health.ToInt()
 				fmt.Printf("win ")
@@ -851,7 +865,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			if w.Status() != Ongoing {
 				return w
 			}
-			if len(w.Enemies) == 3 {
+			if w.EnemiesLen == 3 {
 				break
 			}
 		} else {
@@ -934,13 +948,13 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 func TestGenerateLargePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	world := PlayLevelForAtLeastNFrames(level, I(0), 18000)
-	fmt.Println(len(world.History))
+	fmt.Println(world.HistoryLen)
 	WriteFile("outputs/large-playthrough.mln016", world.SerializedPlaythrough())
 }
 
 func TestGenerateAveragePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	world := PlayLevelForAtLeastNFrames(level, I(0), 2000)
-	fmt.Println(len(world.History))
+	fmt.Println(world.HistoryLen)
 	WriteFile("outputs/average-playthrough.mln016", world.SerializedPlaythrough())
 }

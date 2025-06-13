@@ -20,7 +20,7 @@ func NewPathfinding[T comparable](m Matrix[T], emptyVal T) (p Pathfinding[T]) {
 
 	// Turn matrix into an array of ints.
 	// This order is probably faster for accessing memory.
-	//dirs := []Pt{
+	// dirs := []Pt{
 	//	// left/right
 	//	{I(1).Negative(), I(0)},
 	//	{I(1), I(0)},
@@ -32,16 +32,16 @@ func NewPathfinding[T comparable](m Matrix[T], emptyVal T) (p Pathfinding[T]) {
 	//	{I(1).Negative(), I(1)},
 	//	{I(0), I(1)},
 	//	{I(1), I(1)},
-	//}
+	// }
 	dirs := Directions8()
 	p.nDirs = len(dirs)
 
 	// At neighbors[i] we will find the 8 neighbors of node with index i.
 	// Each neighbor is another index. If the index is -1, the neighbor is
 	// invalid.
-	p.neighbors = make([]int, m.Size().X.Times(m.Size().Y).ToInt()*len(dirs))
-	for y := I(0); y.Lt(m.Size().Y); y.Inc() {
-		for x := I(0); x.Lt(m.Size().X); x.Inc() {
+	p.neighbors = make([]int, NCols*NRows*len(dirs))
+	for y := I(0); y.Lt(I(NRows)); y.Inc() {
+		for x := I(0); x.Lt(I(NCols)); x.Inc() {
 			pt := Pt{x, y}
 			index := m.PtToIndex(pt).ToInt() * p.nDirs
 			ns := p.neighbors[index : index+p.nDirs]
@@ -57,7 +57,7 @@ func NewPathfinding[T comparable](m Matrix[T], emptyVal T) (p Pathfinding[T]) {
 	}
 
 	// This slice should never be re-allocated.
-	p.queue = make([]int, 0, m.Size().X.Times(m.Size().Y).ToInt())
+	p.queue = make([]int, 0, NCols*NRows)
 	// These slices will never be resized.
 	p.visited = make([]bool, len(p.neighbors)/p.nDirs)
 	p.parents = make([]int, len(p.neighbors)/p.nDirs)

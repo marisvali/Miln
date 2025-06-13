@@ -128,7 +128,7 @@ type uploadData struct {
 	user    string
 	version int64
 	id      uuid.UUID
-	world   World
+	world   *World
 }
 
 type GameState int64
@@ -197,6 +197,8 @@ func main() {
 				os.DirFS(filepath.Dir(inputFile)).(FS),
 				filepath.Base(inputFile))
 			g.world = NewWorld(seed, level)
+			var historyBuf [20000]PlayerInput
+			g.world.History = &historyBuf
 			InitializeIdInDbHttp(g.username, Version, g.world.Id)
 			g.state = GameOngoing
 		} else {
@@ -211,20 +213,17 @@ func main() {
 		g.playbackExecution = false
 		if g.HasMoreFixedLevels() {
 			g.world = NewWorld(g.GetCurrentFixedLevel())
+			var historyBuf [20000]PlayerInput
+			g.world.History = &historyBuf
 			InitializeIdInDbHttp(g.username, Version, g.world.Id)
 			g.state = GameOngoing
 		} else {
 			// Show a bogus, empty level, just so that the code that draws
-			// the interface can work as usual. The only thing I really need for
-			// the interface to work well is a non-zero size for the Obstacles
-			// matrix. So, generate a level only to get the currently used
-			// size of the Obstacles matrix. I could hardcode the current
-			// favorite for the matrix size (8x8) but it may change in the
-			// future.
-			someLevel := GenerateLevel(g.FSys)
+			// the interface can work as usual.
 			var l Level
-			l.Obstacles = NewMatBool(someLevel.Obstacles.Size())
 			g.world = NewWorld(I(0), l)
+			var historyBuf [20000]PlayerInput
+			g.world.History = &historyBuf
 			g.state = GameWon
 		}
 	} else {
@@ -233,6 +232,8 @@ func main() {
 		seed := RInt(I(0), I(1000000))
 		level := GenerateLevel(g.FSys)
 		g.world = NewWorld(seed, level)
+		var historyBuf [20000]PlayerInput
+		g.world.History = &historyBuf
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing
 	}
@@ -263,7 +264,7 @@ func (g *Gui) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight
 }
 
 func (g *Gui) getWindowSize() Pt {
-	playSize := g.world.Obstacles.Size().Times(g.BlockSize)
+	playSize := IPt(NRows, NCols).Times(g.BlockSize)
 	windowSize := playSize
 	windowSize.X.Add(g.guiMargin.Times(TWO))
 	windowSize.Y.Add(g.guiMargin)

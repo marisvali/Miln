@@ -1,15 +1,13 @@
-package gamelib
+package oldworld
 
 import (
 	"bytes"
 	"encoding/gob"
 )
 
-const NRows = 8
-const NCols = 8
-
 type Matrix[T any] struct {
-	cells [64]T
+	cells []T
+	size  Pt
 }
 
 func (m Matrix[T]) GobEncode() ([]byte, error) {
@@ -23,6 +21,9 @@ func (m Matrix[T]) GobEncode() ([]byte, error) {
 	// should use these fields.
 	var buf bytes.Buffer
 	encoder := gob.NewEncoder(&buf)
+	if err := encoder.Encode(m.size); err != nil {
+		return nil, err
+	}
 	if err := encoder.Encode(m.cells); err != nil {
 		return nil, err
 	}
@@ -33,40 +34,52 @@ func (m *Matrix[T]) GobDecode(b []byte) error {
 	// See GobEncode for tips on efficiency.
 	buf := bytes.NewBuffer(b)
 	decoder := gob.NewDecoder(buf)
+	if err := decoder.Decode(&m.size); err != nil {
+		return err
+	}
 	if err := decoder.Decode(&m.cells); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (m *Matrix[T]) Clone() (c Matrix[T]) {
+	c.size = m.size
+	c.cells = append(c.cells, m.cells...)
+	return
+}
+
+func NewMatrix[T any](size Pt) (m Matrix[T]) {
+	m.size = size
+	m.cells = make([]T, size.Y.Times(size.X).ToInt64())
+	return m
+}
+
 func (m *Matrix[T]) Set(pos Pt, val T) {
-	m.cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()] = val
+	m.cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()] = val
 }
 
 func (m *Matrix[T]) Get(pos Pt) T {
-	return m.cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()]
+	return m.cells[pos.Y.Times(m.size.X).Plus(pos.X).ToInt64()]
 }
 
 func (m *Matrix[T]) InBounds(pt Pt) bool {
 	return pt.X.IsNonNegative() &&
 		pt.Y.IsNonNegative() &&
-		pt.Y.Lt(I(NRows)) &&
-		pt.X.Lt(I(NCols))
+		pt.Y.Lt(m.size.Y) &&
+		pt.X.Lt(m.size.X)
+}
+
+func (m *Matrix[T]) Size() Pt {
+	return m.size
 }
 
 func (m *Matrix[T]) PtToIndex(p Pt) Int {
-	return p.Y.Times(I(NCols)).Plus(p.X)
+	return p.Y.Times(m.size.X).Plus(p.X)
 }
 
 func (m *Matrix[T]) IndexToPt(i Int) (p Pt) {
-	p.X = i.Mod(I(NCols))
-	p.Y = i.DivBy(I(NCols))
+	p.X = i.Mod(m.size.X)
+	p.Y = i.DivBy(m.size.X)
 	return
-}
-
-func (m *Matrix[T]) RandomPos(r *Rand) Pt {
-	var pt Pt
-	pt.X = r.RInt(ZERO, I(NCols).Minus(ONE))
-	pt.Y = r.RInt(ZERO, I(NCols).Minus(ONE))
-	return pt
 }

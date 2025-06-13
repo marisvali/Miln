@@ -58,9 +58,8 @@ func GenerateLevelFromParams(p Param) Level {
 	l.HoundHitCooldownDuration = SpeedToCooldown(p.EnemySpeed)
 	l.HoundHitsPlayer = true
 	l.HoundAggroDistance = ZERO
-	l.Obstacles = ValidRandomLevel(p.NObstacles, I(8), I(8))
-	occ := l.Obstacles.Clone()
-	var sps []SpawnPortalParams
+	l.Obstacles = ValidRandomLevel(p.NObstacles)
+	occ := l.Obstacles
 	for i := 0; i < p.NEnemies.ToInt(); i++ {
 		var sp SpawnPortalParams
 		sp.Pos = occ.OccupyRandomPos(&DefaultRand)
@@ -68,10 +67,11 @@ func GenerateLevelFromParams(p Param) Level {
 		wave := Wave{}
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
-		sp.Waves = []Wave{wave}
-		sps = append(sps, sp)
+		sp.Waves[0] = wave
+		sp.WavesLen = 1
+		l.SpawnPortalsParams[i] = sp
 	}
-	l.SpawnPortalsParams = sps
+	l.SpawnPortalsParamsLen = p.NEnemies.ToInt()
 	return l
 }
 

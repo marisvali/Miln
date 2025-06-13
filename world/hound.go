@@ -23,7 +23,7 @@ type Hound struct {
 	randomTarget                 Pt
 }
 
-func NewHound(seed Int, w WorldParams, pos Pt) *Hound {
+func NewHound(seed Int, w WorldParams, pos Pt) Hound {
 	var g Hound
 	g.RSeed(seed)
 	g.pos = pos
@@ -35,7 +35,7 @@ func NewHound(seed Int, w WorldParams, pos Pt) *Hound {
 	g.hitCooldown = w.HoundHitCooldownDuration
 	g.hitsPlayer = w.HoundHitsPlayer
 	g.aggroDistance = w.HoundAggroDistance
-	return &g
+	return g
 }
 
 func (g *Hound) Clone() Enemy {

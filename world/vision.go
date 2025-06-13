@@ -10,10 +10,10 @@ type Vision struct {
 	previousVisibleTiles MatBool
 }
 
-var relativeRelevantPtsQ1 Matrix[[]Pt]
-var relativeRelevantPtsQ2 Matrix[[]Pt]
-var relativeRelevantPtsQ3 Matrix[[]Pt]
-var relativeRelevantPtsQ4 Matrix[[]Pt]
+var relativeRelevantPtsQ1 Matrix[[12]Pt]
+var relativeRelevantPtsQ2 Matrix[[12]Pt]
+var relativeRelevantPtsQ3 Matrix[[12]Pt]
+var relativeRelevantPtsQ4 Matrix[[12]Pt]
 var blockSize Int = I(1000)
 
 func init() {
@@ -22,7 +22,6 @@ func init() {
 	const matSizeY = 8
 	p := Pt{}
 
-	relativeRelevantPtsQ1 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
 	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
 		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
 			relativeRelevantPtsQ1.Set(p, computeRelativeRelevantPts(p))
@@ -30,7 +29,6 @@ func init() {
 	}
 
 	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
-	relativeRelevantPtsQ2 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
 	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
 		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
 			relativeRelevantPtsQ2.Set(p, computeRelativeRelevantPts(p))
@@ -38,7 +36,6 @@ func init() {
 	}
 
 	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
-	relativeRelevantPtsQ3 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
 	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
 		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
 			relativeRelevantPtsQ3.Set(p, computeRelativeRelevantPts(p))
@@ -46,7 +43,6 @@ func init() {
 	}
 
 	// Quick and dirty way to get a clone of relativeRelevantPtsQ1.
-	relativeRelevantPtsQ4 = NewMatrix[[]Pt](IPt(matSizeX, matSizeY))
 	for p.Y = ZERO; p.Y.Lt(I(matSizeX)); p.Y.Inc() {
 		for p.X = ZERO; p.X.Lt(I(matSizeY)); p.X.Inc() {
 			relativeRelevantPtsQ4.Set(p, computeRelativeRelevantPts(p))
@@ -61,6 +57,7 @@ func init() {
 			for i := range pts2 {
 				pts2[i].X = pts2[i].X.Negative()
 			}
+			relativeRelevantPtsQ2.Set(p, pts2)
 		}
 	}
 
@@ -72,6 +69,7 @@ func init() {
 			for i := range pts2 {
 				pts2[i].Y = pts2[i].Y.Negative()
 			}
+			relativeRelevantPtsQ3.Set(p, pts2)
 		}
 	}
 
@@ -83,11 +81,12 @@ func init() {
 				pts2[i].X = pts2[i].X.Negative()
 				pts2[i].Y = pts2[i].Y.Negative()
 			}
+			relativeRelevantPtsQ4.Set(p, pts2)
 		}
 	}
 }
 
-func NewVision(size Pt) (v Vision) {
+func NewVision() (v Vision) {
 	return Vision{}
 }
 
@@ -101,7 +100,7 @@ func worldPosToTile(pt Pt) Pt {
 	return pt.DivBy(blockSize)
 }
 
-func computeRelativeRelevantPts(dif Pt) (pts []Pt) {
+func computeRelativeRelevantPts(dif Pt) (pts [12]Pt) {
 	// Dif is the difference between v start and an end.
 	start := Pt{ZERO, ZERO}
 	end := dif
@@ -112,6 +111,7 @@ func computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 	lineEnd := tileToWorldPos(end)
 	l := Line{lineStart, lineEnd}
 
+	ptsLen := 0
 	for y := start.X; y.Leq(end.Y); y.Inc() {
 		for x := start.Y; x.Leq(end.X); x.Inc() {
 			pt := Pt{x, y}
@@ -128,7 +128,8 @@ func computeRelativeRelevantPts(dif Pt) (pts []Pt) {
 			square := Square{center, size}
 
 			if intersects, _ := LineSquareIntersection(l, square); intersects {
-				pts = append(pts, pt)
+				pts[ptsLen] = pt
+				ptsLen++
 			}
 		}
 	}
@@ -204,17 +205,14 @@ func (v *Vision) isPathClear(start, end Pt, obstacles MatBool) bool {
 }
 
 func (v *Vision) Compute(start Pt, obstacles MatBool) (visibleTiles MatBool) {
-	if start == v.previousStart && obstacles.Equal(v.previousObstacles) {
+	if start == v.previousStart && obstacles == v.previousObstacles {
 		visibleTiles = v.previousVisibleTiles
 		return
 	}
 
-	visibleTiles = NewMatBool(obstacles.Size())
-
-	sz := obstacles.Size()
-	for y := ZERO; y.Lt(sz.Y); y.Inc() {
-		for x := ZERO; x.Lt(sz.X); x.Inc() {
-			end := Pt{x, y}
+	for y := 0; y < NRows; y++ {
+		for x := 0; x < NCols; x++ {
+			end := IPt(x, y)
 			if v.isPathClear(start, end, obstacles) {
 				visibleTiles.Set(end)
 			}
@@ -232,7 +230,7 @@ func (v *Vision) Compute(start Pt, obstacles MatBool) (visibleTiles MatBool) {
 	visibleTiles.IntersectWith(connectedTiles)
 
 	v.previousStart = start
-	v.previousObstacles = obstacles.Clone()
+	v.previousObstacles = obstacles
 	v.previousVisibleTiles = visibleTiles
 	return
 }

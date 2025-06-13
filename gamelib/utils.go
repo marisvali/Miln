@@ -429,42 +429,6 @@ func Directions8() []Pt {
 	}
 }
 
-func MatrixFromString[T comparable](str string, vals map[byte]T) (m Matrix[T]) {
-	row := -1
-	col := 0
-	maxCol := 0
-	for i := 0; i < len(str); i++ {
-		c := str[i]
-		if c == '\n' {
-			maxCol = col
-			col = 0
-			row++
-			continue
-		}
-		col++
-	}
-	// If the string does not end with an empty line, count the last row.
-	if col > 0 {
-		row++
-	}
-	m = NewMatrix[T](IPt(maxCol, row))
-
-	row = -1
-	col = 0
-	for i := 0; i < len(str); i++ {
-		c := str[i]
-		if c == '\n' {
-			col = 0
-			row++
-			continue
-		} else if val, ok := vals[c]; ok {
-			m.Set(IPt(col, row), val)
-		}
-		col++
-	}
-	return
-}
-
 // HashBytes receives a byte array and returns its SHA-256 hash as a hex string.
 func HashBytes(input []byte) string {
 	// Create a new SHA-256 hash

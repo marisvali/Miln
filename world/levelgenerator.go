@@ -39,26 +39,25 @@ func IsLevelValid(m MatBool) bool {
 	// Unoccupied positions in m2 are true, while in m they are false. So negate
 	// m2 and compare m2 and m.
 	m2.Negate()
-	return m.Equal(m2)
+	return m == m2
 }
 
-func RandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
+func RandomLevel(nObstacles Int) (m MatBool) {
 	// Create matrix with obstacles.
-	m = NewMatBool(Pt{nRows, nCols})
 	for i := ZERO; i.Lt(nObstacles); i.Inc() {
 		m.OccupyRandomPos(&DefaultRand)
 	}
 	return
 }
 
-func ValidRandomLevel(nObstacles Int, nRows Int, nCols Int) (m MatBool) {
+func ValidRandomLevel(nObstacles Int) (m MatBool) {
 	nTries := 0
 	for {
 		nTries++
 		if nTries > 1000 {
-			panic(fmt.Errorf("failed to generate valid level for nObstacles: %d nRows: %d nCols: %d", nObstacles, nRows, nCols))
+			panic(fmt.Errorf("failed to generate valid level for nObstacles: %d", nObstacles))
 		}
-		m = RandomLevel(nObstacles, nRows, nCols)
+		m = RandomLevel(nObstacles)
 		if IsLevelValid(m) {
 			return
 		}
@@ -102,32 +101,31 @@ func GenerateLevel(fsys FS) (l Level) {
 	l.EnemiesAggroWhenVisible = p.EnemiesAggroWhenVisible
 	l.WorldParams = p.WorldParams
 
-	l.Obstacles = ValidRandomLevel(RInt(p.NObstaclesMin, p.NObstaclesMax), p.NumRows, p.NumCols)
+	l.Obstacles = ValidRandomLevel(RInt(p.NObstaclesMin, p.NObstaclesMax))
 
-	occ := l.Obstacles.Clone()
-	for _, portal := range p.SpawnPortalDatas {
+	occ := l.Obstacles
+	for idx, portal := range p.SpawnPortalDatas {
 		// Build Waves from WaveDatas.
-		var waves []Wave
-		for _, wd := range portal.Waves {
+		var waves [10]Wave
+		for i, wd := range portal.Waves {
 			var wave Wave
 			wave.SecondsAfterLastWave = wd.SecondsAfterLastWave
 			wave.NHounds = RInt(wd.NHoundMin, wd.NHoundMax)
-			waves = append(waves, wave)
+			waves[i] = wave
 		}
 
 		// Build spawn portal using waves.
-		l.SpawnPortalsParams = append(l.SpawnPortalsParams,
-			SpawnPortalParams{occ.OccupyRandomPos(&DefaultRand),
-				RInt(p.SpawnPortalCooldownMin, p.SpawnPortalCooldownMax),
-				waves})
+		l.SpawnPortalsParams[idx] = SpawnPortalParams{occ.OccupyRandomPos(&DefaultRand),
+			RInt(p.SpawnPortalCooldownMin, p.SpawnPortalCooldownMax), waves, len(portal.Waves)}
 	}
+	l.SpawnPortalsParamsLen = len(p.SpawnPortalDatas)
 	return
 }
 
 func FirstUnoccupiedPos(m MatBool) (unoccupiedPos Pt) {
 	unoccupiedPos = IPt(0, 0)
-	for ; unoccupiedPos.Y.Lt(m.Size().Y); unoccupiedPos.Y.Inc() {
-		for ; unoccupiedPos.X.Lt(m.Size().X); unoccupiedPos.X.Inc() {
+	for unoccupiedPos.Y = ZERO; unoccupiedPos.Y.Lt(I(NRows)); unoccupiedPos.Y.Inc() {
+		for unoccupiedPos.X = ZERO; unoccupiedPos.X.Lt(I(NCols)); unoccupiedPos.X.Inc() {
 			if !m.At(unoccupiedPos) {
 				return
 			}

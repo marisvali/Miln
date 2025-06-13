@@ -19,7 +19,8 @@ func (g *Gui) uploadCurrentWorld() {
 	// If the connection to the server drops for a few seconds, either due to
 	// the player's connection or the server not being available, it will
 	// interrupt the gameplay.
-	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, g.world.Clone()}
+	clone := g.world
+	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, &clone}
 }
 
 func UploadPlaythroughs(ch chan uploadData) {
