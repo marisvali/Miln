@@ -937,3 +937,10 @@ func TestGenerateLargePlaythrough(t *testing.T) {
 	fmt.Println(len(world.History))
 	WriteFile("outputs/large-playthrough.mln016", world.SerializedPlaythrough())
 }
+
+func TestGenerateAveragePlaythrough(t *testing.T) {
+	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
+	world := PlayLevelForAtLeastNFrames(level, I(0), 2000)
+	fmt.Println(len(world.History))
+	WriteFile("outputs/average-playthrough.mln016", world.SerializedPlaythrough())
+}

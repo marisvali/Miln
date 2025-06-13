@@ -26,7 +26,7 @@ func RunPlaythrough(p Playthrough) {
 }
 
 func BenchmarkPlaythroughSpeed(b *testing.B) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/average-playthrough.mln016"))
 	for b.Loop() {
 		RunPlaythrough(playthrough)
 	}
