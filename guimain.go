@@ -5,7 +5,6 @@ import (
 	"github.com/goccy/go-yaml"
 	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
-	. "github.com/marisvali/miln/ai"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	"golang.org/x/image/font"
@@ -115,7 +114,6 @@ type Gui struct {
 	playerHitEffectIdx     Int
 	playthrough            Playthrough
 	uploadDataChannel      chan uploadData
-	ai                     AI
 	visWorld               VisWorld
 	layout                 Pt
 	playbackPaused         bool
@@ -197,7 +195,7 @@ func main() {
 				os.DirFS(filepath.Dir(inputFile)).(FS),
 				filepath.Base(inputFile))
 			g.world = NewWorld(seed, level)
-			var historyBuf [20000]PlayerInput
+			var historyBuf PlayerInputArray
 			g.world.History = &historyBuf
 			InitializeIdInDbHttp(g.username, Version, g.world.Id)
 			g.state = GameOngoing
@@ -213,7 +211,7 @@ func main() {
 		g.playbackExecution = false
 		if g.HasMoreFixedLevels() {
 			g.world = NewWorld(g.GetCurrentFixedLevel())
-			var historyBuf [20000]PlayerInput
+			var historyBuf PlayerInputArray
 			g.world.History = &historyBuf
 			InitializeIdInDbHttp(g.username, Version, g.world.Id)
 			g.state = GameOngoing
@@ -222,7 +220,7 @@ func main() {
 			// the interface can work as usual.
 			var l Level
 			g.world = NewWorld(I(0), l)
-			var historyBuf [20000]PlayerInput
+			var historyBuf PlayerInputArray
 			g.world.History = &historyBuf
 			g.state = GameWon
 		}
@@ -232,7 +230,7 @@ func main() {
 		seed := RInt(I(0), I(1000000))
 		level := GenerateLevel(g.FSys)
 		g.world = NewWorld(seed, level)
-		var historyBuf [20000]PlayerInput
+		var historyBuf PlayerInputArray
 		g.world.History = &historyBuf
 		InitializeIdInDbHttp(g.username, Version, g.world.Id)
 		g.state = GameOngoing

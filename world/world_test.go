@@ -18,8 +18,8 @@ func TestWorld_Regression1(t *testing.T) {
 
 func RunPlaythrough(p Playthrough) {
 	w := NewWorld(p.Seed, p.Level)
-	for i := range p.HistoryLen {
-		w.Step(p.History[i])
+	for i := range p.History.N {
+		w.Step(p.History.Data[i])
 	}
 }
 
@@ -52,8 +52,8 @@ func GetLargeWorld() World {
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
-	for _, input := range playthrough.History {
-		w.Step(input)
+	for i := range playthrough.History.N {
+		w.Step(playthrough.History.Data[i])
 	}
 	return w
 }
@@ -93,10 +93,10 @@ func BenchmarkWorldClone(b *testing.B) {
 	w := GetLargeWorld()
 
 	// Run benchmark loop.
-	res := 0
+	res := int64(0)
 	for b.Loop() {
 		w2 := w
-		res += len(w2.History)
+		res += w2.History.N
 	}
 }
 
@@ -105,8 +105,8 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 
 	// Run the playthrough halfway through.
 	w1 := NewWorld(playthrough.Seed, playthrough.Level)
-	for i := 0; i < len(playthrough.History)/2; i++ {
-		w1.Step(playthrough.History[i])
+	for i := int64(0); i < playthrough.History.N/2; i++ {
+		w1.Step(playthrough.History.Data[i])
 	}
 
 	w2 := w1
@@ -116,10 +116,10 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 	// - its randomness is independent of global randomness
 	// - clones have the same randomness
 	noise := ZERO
-	for i := len(playthrough.History) / 2; i < len(playthrough.History); i++ {
-		w1.Step(playthrough.History[i])
+	for i := playthrough.History.N / 2; i < playthrough.History.N; i++ {
+		w1.Step(playthrough.History.Data[i])
 		noise.Add(RInt(I(0), I(10)))
-		w2.Step(playthrough.History[i])
+		w2.Step(playthrough.History.Data[i])
 	}
 
 	println(noise.ToInt64())
@@ -149,7 +149,7 @@ func Test_LevelYaml(t *testing.T) {
 	l.HoundAggroDistance = ZERO
 	l.Obstacles = ValidRandomLevel(I(15))
 	occ := l.Obstacles
-	var sps [30]SpawnPortalParams
+	var sps SpawnPortalParamsArray
 	for i := 0; i < 3; i++ {
 		var sp SpawnPortalParams
 		sp.Pos = occ.OccupyRandomPos(&DefaultRand)
@@ -157,12 +157,12 @@ func Test_LevelYaml(t *testing.T) {
 		wave := Wave{}
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
-		sp.Waves[0] = wave
+		sp.Waves.Data[0] = wave
 		sp.WavesLen++
-		sps[i] = sp
+		sps.Data[i] = sp
 	}
 	l.SpawnPortalsParams = sps
-	l.SpawnPortalsParamsLen = 3
+	l.SpawnPortalsParams.N = 3
 
 	filename := "level.txt"
 	SaveYAML(filename, l)
@@ -170,7 +170,7 @@ func Test_LevelYaml(t *testing.T) {
 	LoadYAML(fsys, filename, &l2)
 	DeleteFile(filename)
 	assert.Equal(t, l, l2)
-	l2.SpawnPortalsParams[1].Waves[0].SecondsAfterLastWave = I(99)
+	l2.SpawnPortalsParams.Data[1].Waves.Data[0].SecondsAfterLastWave = I(99)
 	assert.NotEqual(t, l, l2)
 
 	l2.SaveToYAML(I(10), filename)

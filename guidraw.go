@@ -106,20 +106,20 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 
 	// Draw portals.
 	if g.DrawSpawnPortal {
-		for i := range g.world.SpawnPortalsLen {
-			p := &g.world.SpawnPortals[i]
+		for i := range g.world.SpawnPortals.N {
+			p := &g.world.SpawnPortals.Data[i]
 			g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
 		}
 	}
 
 	// Draw ammo.
-	for i := range g.world.AmmosLen {
-		g.DrawTile(screen, g.imgAmmo, g.world.Ammos[i].Pos)
+	for i := range g.world.Ammos.N {
+		g.DrawTile(screen, g.imgAmmo, g.world.Ammos.Data[i].Pos)
 	}
 
 	// Draw enemy.
-	for i := range g.world.EnemiesLen {
-		g.DrawEnemy(screen, &g.world.Enemies[i])
+	for i := range g.world.Enemies.N {
+		g.DrawEnemy(screen, &g.world.Enemies.Data[i])
 	}
 
 	// Draw all animations for world objects.
@@ -423,7 +423,7 @@ func (g *Gui) DrawPlaybackBar(screen *ebiten.Image) {
 	// Playback bar cursor.
 	cursorWidth := float64(playbarHeight)
 	cursorHeight := float64(playbarHeight)
-	factor := g.frameIdx.ToFloat64() / float64(len(g.playthrough.History))
+	factor := g.frameIdx.ToFloat64() / float64(g.playthrough.History.N)
 	cursorX := factor*g.buttonPlaybackBar.Width().ToFloat64() - cursorWidth/2
 	DrawSprite(bar, g.imgPlaybackCursor, cursorX, 0, cursorWidth, cursorHeight)
 }

@@ -14,15 +14,15 @@ type AI struct {
 
 func ClosestEnemy(pt Pt, w *World) Hound {
 	minDist := I(math.MaxInt64)
-	minI := -1
-	for i, e := range w.Enemies {
-		dist := e.Pos().Minus(pt).SquaredLen()
+	minI := int64(-1)
+	for i := range w.Enemies.N {
+		dist := w.Enemies.Data[i].Pos().Minus(pt).SquaredLen()
 		if dist.Lt(minDist) {
 			minDist = dist
 			minI = i
 		}
 	}
-	return w.Enemies[minI]
+	return w.Enemies.Data[minI]
 }
 
 // func CanAttackEnemy(w *World, e Enemy) bool {
@@ -33,8 +33,8 @@ func ClosestEnemy(pt Pt, w *World) Hound {
 // }
 
 func InDangerZone(w *World, pos Pt) bool {
-	for _, e := range w.Enemies {
-		if e.Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
+	for i := range w.Enemies.N {
+		if w.Enemies.Data[i].Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
 			return true
 		}
 	}
@@ -74,7 +74,7 @@ func (a *AI) MoveToRandomVisibleTile(freePts []Pt) (input PlayerInput) {
 func PointFurthestFromEnemies(w *World, pts []Pt, defaultPt Pt) (maxPt Pt) {
 	maxPt = defaultPt
 	maxDist := I(0)
-	if len(w.Enemies) == 0 {
+	if w.Enemies.N == 0 {
 		return
 	}
 

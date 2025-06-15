@@ -74,11 +74,11 @@ func (w *World) State() []byte {
 	Serialize(buf, w.Seed.ToInt64())
 	Serialize(buf, w.Player.Health)
 	Serialize(buf, w.Player.Pos())
-	Serialize(buf, int64(w.EnemiesLen))
-	for i := range w.EnemiesLen {
+	Serialize(buf, w.Enemies.N)
+	for i := range w.Enemies.N {
 		Serialize(buf, int64(0)) // leftover from previous serializing scheme
-		Serialize(buf, w.Enemies[i].Health())
-		Serialize(buf, w.Enemies[i].Pos())
+		Serialize(buf, w.Enemies.Data[i].Health())
+		Serialize(buf, w.Enemies.Data[i].Pos())
 	}
 	Serialize(buf, w.Obstacles.ToSlice())
 	return buf.Bytes()
@@ -120,8 +120,8 @@ func RegressionId(p *Playthrough) string {
 	// Write the current state of the World to the hash.
 	hash.Write(w.State())
 
-	for i := range p.HistoryLen {
-		w.Step(p.History[i])
+	for i := range p.History.N {
+		w.Step(p.History.Data[i])
 
 		// Write the current state of the World to the hash.
 		hash.Write(w.State())

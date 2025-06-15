@@ -16,8 +16,7 @@ type SpawnPortal struct {
 	Health        Int
 	MaxHealth     Int
 	SpawnCooldown Cooldown
-	Waves         [10]Wave
-	WavesLen      int
+	Waves         WavesArray
 	frameIdx      Int
 	worldParams   WorldParams
 }
@@ -29,7 +28,6 @@ func NewSpawnPortal(seed Int, p SpawnPortalParams, w WorldParams) (sp SpawnPorta
 	sp.Health = sp.MaxHealth
 	sp.SpawnCooldown = NewCooldown(p.SpawnPortalCooldown)
 	sp.Waves = p.Waves
-	sp.WavesLen = p.WavesLen
 	sp.worldParams = w
 	return
 }
@@ -38,13 +36,13 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 	// Compute the frame at which each wave starts.
 	waveStarts := [100]Int{}
 	startOfLastWave := ZERO
-	for i := range p.WavesLen {
-		framesAfterLastWave := p.Waves[i].SecondsAfterLastWave.Times(I(60))
+	for i := range p.Waves.N {
+		framesAfterLastWave := p.Waves.Data[i].SecondsAfterLastWave.Times(I(60))
 		startOfThisWave := startOfLastWave.Plus(framesAfterLastWave)
 		waveStarts[i] = startOfThisWave
 		startOfLastWave = startOfThisWave
 	}
-	waveStartsLen := p.WavesLen
+	waveStartsLen := p.Waves.N
 
 	// Find the i so that:
 	// waveStarts[i] <= p.frameIdx < waveStarts[i+1]
@@ -59,12 +57,12 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 
 	if p.frameIdx.Geq(waveStarts[waveStartsLen-1]) {
 		// The last wave is active.
-		return &p.Waves[waveStartsLen-1]
+		return &p.Waves.Data[waveStartsLen-1]
 	}
 
 	for i := range waveStartsLen {
 		if p.frameIdx.Lt(waveStarts[i]) {
-			return &p.Waves[i-1]
+			return &p.Waves.Data[i-1]
 		}
 	}
 
@@ -90,8 +88,8 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if wave.NHounds.IsPositive() {
-		w.Enemies[w.EnemiesLen] = NewHound(p.RInt63(), p.worldParams, p.pos)
-		w.EnemiesLen++
+		w.Enemies.Data[w.Enemies.N] = NewHound(p.RInt63(), p.worldParams, p.pos)
+		w.Enemies.N++
 		wave.NHounds.Dec()
 	}
 
@@ -100,7 +98,7 @@ func (p *SpawnPortal) Step(w *World) {
 
 func (p *SpawnPortal) Active() bool {
 	wave := p.CurrentWave()
-	if wave != &p.Waves[p.WavesLen-1] {
+	if wave != &p.Waves.Data[p.Waves.N-1] {
 		// We are not at the last wave yet.
 		return true
 	}

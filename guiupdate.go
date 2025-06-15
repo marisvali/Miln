@@ -241,7 +241,7 @@ func (g *Gui) UpdateGameLost() {
 }
 
 func (g *Gui) UpdatePlayback() {
-	nFrames := I(len(g.playthrough.History))
+	nFrames := I64(g.playthrough.History.N)
 
 	if g.UserRequestedPlaybackPause() {
 		g.playbackPaused = !g.playbackPaused
@@ -300,8 +300,8 @@ func (g *Gui) UpdatePlayback() {
 		g.visWorld = NewVisWorld(g.Animations)
 
 		// Replay the world.
-		for i := I(0); i.Lt(targetFrameIdx); i.Inc() {
-			input := g.playthrough.History[i.ToInt()]
+		for i := 0; i < targetFrameIdx.ToInt(); i++ {
+			input := g.playthrough.History.Data[i]
 			g.world.Step(input)
 			g.visWorld.Step(&g.world, input, g.GuiData)
 		}
@@ -311,7 +311,7 @@ func (g *Gui) UpdatePlayback() {
 	}
 
 	// Get input from recording.
-	input := g.playthrough.History[g.frameIdx.ToInt()]
+	input := g.playthrough.History.Data[g.frameIdx.ToInt()]
 	// Remember cursor position in order to draw the virtual cursor during
 	// Draw().
 	g.mousePt = input.MousePt

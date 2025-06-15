@@ -13,10 +13,10 @@ import (
 	"testing"
 )
 
-func GoToFrame(playthrough Playthrough, frameIdx int) World {
+func GoToFrame(playthrough Playthrough, frameIdx int64) World {
 	world := NewWorld(playthrough.Seed, playthrough.Level)
-	for i := 0; i < frameIdx; i++ {
-		input := playthrough.History[i]
+	for i := int64(0); i < frameIdx; i++ {
+		input := playthrough.History.Data[i]
 		world.Step(input)
 	}
 	return world
@@ -37,8 +37,8 @@ func ValidAttack(world *World, pos Pt) bool {
 }
 
 func AmmoAtPos(world *World, pos Pt) bool {
-	for i := range world.AmmosLen {
-		if world.Ammos[i].Pos == pos {
+	for i := range world.Ammos.N {
+		if world.Ammos.Data[i].Pos == pos {
 			return true
 		}
 	}
@@ -117,8 +117,8 @@ func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) 
 // on a tile with ammo on it.
 func NumMovesToAmmo(world *World, pos Pt) int {
 	ammos := MatBool{}
-	for i := range world.AmmosLen {
-		ammos.Set(world.Ammos[i].Pos)
+	for i := range world.Ammos.N {
+		ammos.Set(world.Ammos.Data[i].Pos)
 	}
 	if ammos.Get(pos) {
 		return 0
@@ -140,11 +140,11 @@ func NumMovesToEnemy(world *World, pos Pt) int {
 // 1 - after 1 frame, the player will be attacked
 // ..
 // -1 - the position will never be attacked (e.g. there are no more enemies)
-func NumFramesUntilAttacked(world *World, pos Pt) int {
+func NumFramesUntilAttacked(world *World, pos Pt) int64 {
 	// So far the algorithms calling this function all have reasons to assume
 	// that the player will get hit. If it's not the case
 	// I should be warned.
-	if world.EnemiesLen == 0 {
+	if world.Enemies.N == 0 {
 		Check(fmt.Errorf("something went wrong"))
 		return -1
 	}
@@ -159,7 +159,7 @@ func NumFramesUntilAttacked(world *World, pos Pt) int {
 
 	// If an enemy doesn't hit within 100k frames, it's not happening.
 	input := PlayerInput{} // Don't move, don't attack.
-	for frameIdx := 0; frameIdx < 100000; frameIdx++ {
+	for frameIdx := int64(0); frameIdx < 100000; frameIdx++ {
 		w.Step(input)
 		if w.Player.JustHit {
 			return frameIdx
@@ -176,7 +176,7 @@ func NumFramesUntilAttacked(world *World, pos Pt) int {
 
 // FitnessOfMoveAction returns the fitness of a specific move action at a
 // certain moment. The action is "the player moves to pos".
-func FitnessOfMoveAction(world *World, pos Pt) int {
+func FitnessOfMoveAction(world *World, pos Pt) int64 {
 	if !ValidMove(world, pos) {
 		// If the action isn't even valid, the fitness of the action is zero.
 		return 0
@@ -184,7 +184,7 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 	// The action is valid so other factors come into play.
 
 	// Compute how safe the position is.
-	safetyFitness := 0
+	safetyFitness := int64(0)
 	framesUntilAttacked := NumFramesUntilAttacked(world, pos)
 	// Use time instead of frames because I have an easier time understanding
 	// how dangerous a position feels based on how much time it takes for it
@@ -215,7 +215,7 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 		return 0
 	}
 
-	ammoFitness := 0
+	ammoFitness := int64(0)
 	currentAmmo := world.Player.AmmoCount.ToInt()
 	numMovesToAmmo := NumMovesToAmmo(world, pos)
 	if currentAmmo == 0 {
@@ -251,7 +251,7 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 		}
 	}
 
-	enemyFitness := 0
+	enemyFitness := int64(0)
 	movesToVisibleEnemy := NumMovesToEnemy(world, pos)
 	if currentAmmo > 0 {
 		if movesToVisibleEnemy == 0 {
@@ -271,7 +271,7 @@ func FitnessOfMoveAction(world *World, pos Pt) int {
 
 // FitnessOfAttackAction returns the fitness of a specific attack action at a
 // certain moment. The action is "the player attacks pos".
-func FitnessOfAttackAction(world *World, pos Pt) int {
+func FitnessOfAttackAction(world *World, pos Pt) int64 {
 	if !ValidAttack(world, pos) {
 		// If the action isn't even valid, the fitness of the action is zero.
 		return 0
@@ -292,13 +292,13 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 		return 0
 	}
 
-	if w.EnemiesLen == 0 {
+	if w.Enemies.N == 0 {
 		// Just won the game.
 		return 1000
 	}
 
 	// Compute how safe the current position is.
-	safetyFitness := 0
+	safetyFitness := int64(0)
 	framesUntilAttacked := NumFramesUntilAttacked(&w, w.Player.Pos())
 	// Use time instead of frames because I have an easier time understanding
 	// how dangerous a position feels based on how much time it takes for it
@@ -318,7 +318,7 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 		safetyFitness = 15
 	}
 	if timeUntilAttacked > 2 {
-		safetyFitness = 20 + int(timeUntilAttacked*3)
+		safetyFitness = 20 + int64(timeUntilAttacked*3)
 	}
 
 	if safetyFitness < 10 {
@@ -327,7 +327,7 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 	}
 
 	// Prefer attacking to moving, if it's safe and possible.
-	biasForAttacking := 20
+	biasForAttacking := int64(20)
 
 	return safetyFitness + biasForAttacking
 }
@@ -335,8 +335,8 @@ func FitnessOfAttackAction(world *World, pos Pt) int {
 type Action struct {
 	Move    bool
 	Pos     Pt
-	Fitness int
-	Rank    int
+	Fitness int64
+	Rank    int64
 }
 
 func (a Action) String() string {
@@ -393,7 +393,7 @@ func CurrentRankedActions(world World) (actions []Action) {
 	return actions
 }
 
-func RankedActionsPerFrame(playthrough Playthrough, frameIdx int) (actions []Action) {
+func RankedActionsPerFrame(playthrough Playthrough, frameIdx int64) (actions []Action) {
 	world := GoToFrame(playthrough, frameIdx)
 	return CurrentRankedActions(world)
 }
@@ -428,7 +428,7 @@ func ActionToInput(action Action) (input PlayerInput) {
 	return
 }
 
-func FindActionRank(action Action, actions []Action) int {
+func FindActionRank(action Action, actions []Action) int64 {
 	for _, a := range actions {
 		if action.Pos == a.Pos && action.Move == a.Move {
 			return a.Rank
@@ -437,9 +437,9 @@ func FindActionRank(action Action, actions []Action) int {
 	panic(fmt.Errorf("bad"))
 }
 
-func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int) {
-	for i := 0; i < playthrough.HistoryLen; i++ {
-		input := playthrough.History[i]
+func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int64) {
+	for i := range playthrough.History.N {
+		input := playthrough.History.Data[i]
 		if input.Move || input.Shoot {
 			framesWithActions = append(framesWithActions, i)
 		}
@@ -447,7 +447,7 @@ func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int) {
 	return
 }
 
-func GetDecisionFrames(framesWithActions []int) (decisionFrames []int) {
+func GetDecisionFrames(framesWithActions []int64) (decisionFrames []int64) {
 	// Assume player decides about 5 frames after the last action.
 	// decisionFrames = append(decisionFrames, framesWithActions[0]-15)
 	// for i := 0; i < len(framesWithActions)-1; i++ {
@@ -469,17 +469,17 @@ func GetDecisionFrames(framesWithActions []int) (decisionFrames []int) {
 	return
 }
 
-func GetRanksOfPlayerActions(playthrough Playthrough, framesWithActions []int, decisionFrames []int) (ranksOfPlayerActions []int) {
-	for actionIdx := 0; actionIdx < len(framesWithActions); actionIdx++ {
+func GetRanksOfPlayerActions(playthrough Playthrough, framesWithActions []int64, decisionFrames []int64) (ranksOfPlayerActions []int64) {
+	for actionIdx := range framesWithActions {
 		rankedActions := RankedActionsPerFrame(playthrough, decisionFrames[actionIdx])
-		playerAction := InputToAction(playthrough.History[framesWithActions[actionIdx]])
+		playerAction := InputToAction(playthrough.History.Data[framesWithActions[actionIdx]])
 		rank := FindActionRank(playerAction, rankedActions)
 		ranksOfPlayerActions = append(ranksOfPlayerActions, rank)
 	}
 	return
 }
 
-func ModelFitness(ranksOfPlayerActions []int) (modelFitness int) {
+func ModelFitness(ranksOfPlayerActions []int64) (modelFitness int64) {
 	for i := 0; i < len(ranksOfPlayerActions); i++ {
 		diff := ranksOfPlayerActions[i] - 1
 		modelFitness += diff * diff
@@ -487,13 +487,13 @@ func ModelFitness(ranksOfPlayerActions []int) (modelFitness int) {
 	return modelFitness
 }
 
-func DebugRank(framesWithActions []int, decisionFrames []int,
-	ranksOfPlayerActions []int, playthrough Playthrough, actionIdx int) {
+func DebugRank(framesWithActions []int64, decisionFrames []int64,
+	ranksOfPlayerActions []int64, playthrough Playthrough, actionIdx int64) {
 	fmt.Printf("frame with player action: %d\n", framesWithActions[actionIdx])
 	fmt.Printf("decision frame: %d\n", decisionFrames[actionIdx])
 	println(ranksOfPlayerActions[actionIdx])
 	world := GoToFrame(playthrough, decisionFrames[actionIdx])
-	fmt.Printf("%+v\n", InputToAction(playthrough.History[framesWithActions[actionIdx]]))
+	fmt.Printf("%+v\n", InputToAction(playthrough.History.Data[framesWithActions[actionIdx]]))
 
 	println("debugging now")
 	println(FitnessOfAttackAction(&world, IPt(7, 4)))
@@ -518,7 +518,7 @@ func DebugRank(framesWithActions []int, decisionFrames []int,
 	}
 }
 
-func ModelFitnessForPlaythrough(inputFile string) int {
+func ModelFitnessForPlaythrough(inputFile string) int64 {
 	playthrough := DeserializePlaythrough(ReadFile(inputFile))
 	framesWithActions := GetFramesWithActions(playthrough)
 	decisionFrames := GetDecisionFrames(framesWithActions)
@@ -606,17 +606,17 @@ func TestAIPlayer(t *testing.T) {
 	// }
 }
 
-func GetHistogram(s []int) map[int]int {
-	h := map[int]int{}
+func GetHistogram(s []int64) map[int64]int64 {
+	h := map[int64]int64{}
 	for _, v := range s {
 		h[v]++
 	}
 	return h
 }
 
-func OutputHistogram(histogram map[int]int, outputFile string, header string) {
+func OutputHistogram(histogram map[int64]int64, outputFile string, header string) {
 	// Collect all the keys.
-	keys := make([]int, 0)
+	keys := make([]int64, 0)
 	for k := range histogram {
 		keys = append(keys, k)
 	}
@@ -644,7 +644,7 @@ func TestGetReactionSpeed(t *testing.T) {
 		inputFiles[idx] = dir + inputFiles[idx][1:]
 	}
 
-	diffs := []int{}
+	diffs := []int64{}
 	for _, inputFile := range inputFiles {
 		playthrough := DeserializePlaythrough(ReadFile(inputFile))
 		framesWithActions := GetFramesWithActions(playthrough)
@@ -682,7 +682,7 @@ func TestGetHumanPlayerActionRanks(t *testing.T) {
 		inputFiles[idx] = dir + inputFiles[idx][1:]
 	}
 
-	allRanks := []int{}
+	allRanks := []int64{}
 	for _, inputFile := range inputFiles {
 		fmt.Println(inputFile)
 		playthrough := DeserializePlaythrough(ReadFile(inputFile))
@@ -751,8 +751,8 @@ func WorldState(frameIdx int, w *World) {
 	pts := []Pt{}
 	pts = append(pts, w.Player.Pos())
 
-	for i := range w.EnemiesLen {
-		pts = append(pts, w.Enemies[i].Pos())
+	for i := range w.Enemies.N {
+		pts = append(pts, w.Enemies.Data[i].Pos())
 	}
 
 	fmt.Printf("%04d  ", frameIdx)
@@ -865,7 +865,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			if w.Status() != Ongoing {
 				return w
 			}
-			if w.EnemiesLen == 3 {
+			if w.Enemies.N == 3 {
 				break
 			}
 		} else {
@@ -948,13 +948,13 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 func TestGenerateLargePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	world := PlayLevelForAtLeastNFrames(level, I(0), 18000)
-	fmt.Println(world.HistoryLen)
+	fmt.Println(world.History.N)
 	WriteFile("outputs/large-playthrough.mln016", world.SerializedPlaythrough())
 }
 
 func TestGenerateAveragePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	world := PlayLevelForAtLeastNFrames(level, I(0), 2000)
-	fmt.Println(world.HistoryLen)
+	fmt.Println(world.History.N)
 	WriteFile("outputs/average-playthrough.mln016", world.SerializedPlaythrough())
 }

@@ -42,27 +42,23 @@ type World struct {
 	Playthrough
 	Rand
 	Player            Player
-	Enemies           [30]Hound
-	EnemiesLen        int
+	Enemies           EnemiesArray
 	Beam              Beam
 	VisibleTiles      MatBool
 	TimeStep          Int
 	BeamMax           Int
 	BlockSize         Int
 	EnemyMoveCooldown Cooldown
-	Ammos             [30]Ammo
-	AmmosLen          int
-	SpawnPortals      [30]SpawnPortal
-	SpawnPortalsLen   int
+	Ammos             AmmosArray
+	SpawnPortals      SpawnPortalsArray
 	vision            Vision
 }
 
 type Playthrough struct {
 	Level
-	Id         uuid.UUID
-	Seed       Int
-	History    *[20000]PlayerInput
-	HistoryLen int
+	Id      uuid.UUID
+	Seed    Int
+	History *PlayerInputArray
 }
 
 type PlayerInput struct {
@@ -76,16 +72,15 @@ type PlayerInput struct {
 }
 
 type SpawnPortalParams struct {
-	Pos                 Pt       `yaml:"Pos"`
-	SpawnPortalCooldown Int      `yaml:"SpawnPortalCooldown"`
-	Waves               [10]Wave `yaml:"Waves"`
-	WavesLen            int      `yaml:"WavesLen"`
+	Pos                 Pt         `yaml:"Pos"`
+	SpawnPortalCooldown Int        `yaml:"SpawnPortalCooldown"`
+	Waves               WavesArray `yaml:"Waves"`
+	WavesLen            int        `yaml:"WavesLen"`
 }
 
 type Entities struct {
-	Obstacles             MatBool               `yaml:"Obstacles"`
-	SpawnPortalsParams    [30]SpawnPortalParams `yaml:"SpawnPortalsParams"`
-	SpawnPortalsParamsLen int                   `yaml:"SpawnPortalsParamsLen"`
+	Obstacles          MatBool                `yaml:"Obstacles"`
+	SpawnPortalsParams SpawnPortalParamsArray `yaml:"SpawnPortalsParams"`
 }
 
 type Level struct {
@@ -142,10 +137,10 @@ func NewWorld(seed Int, l Level) (w World) {
 	w.Seed = seed
 	w.RSeed(w.Seed)
 	w.Id = uuid.New()
-	for i := range l.SpawnPortalsParamsLen {
-		w.SpawnPortals[i] = NewSpawnPortal(w.RInt63(), l.SpawnPortalsParams[i], w.WorldParams)
+	for i := range l.SpawnPortalsParams.N {
+		w.SpawnPortals.Data[i] = NewSpawnPortal(w.RInt63(), l.SpawnPortalsParams.Data[i], w.WorldParams)
 	}
-	w.SpawnPortalsLen = l.SpawnPortalsParamsLen
+	w.SpawnPortals.N = l.SpawnPortalsParams.N
 	w.vision = NewVision()
 
 	// Params
@@ -171,7 +166,7 @@ func (w *World) SerializedPlaythrough() []byte {
 }
 
 func DeserializePlaythrough(data []byte) (p Playthrough) {
-	var historyBuf [20000]PlayerInput
+	var historyBuf PlayerInputArray
 	p.History = &historyBuf
 	buf := bytes.NewBuffer(Unzip(data))
 	var token int64
@@ -201,31 +196,31 @@ func (w *World) WorldPosToTile(pt Pt) Pt {
 func (w *World) computeVisibleTiles() {
 	// Compute which tiles are visible.
 	obstacles := w.Obstacles
-	for i := 0; i < w.EnemiesLen; i++ {
-		obstacles.Set(w.Enemies[i].Pos())
+	for i := range w.Enemies.N {
+		obstacles.Set(w.Enemies.Data[i].Pos())
 	}
 	w.VisibleTiles = w.vision.Compute(w.Player.Pos(), obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
-	for i := range w.EnemiesLen {
-		m.Set(w.Enemies[i].Pos())
+	for i := range w.Enemies.N {
+		m.Set(w.Enemies.Data[i].Pos())
 	}
 	return
 }
 
 func (w *World) VulnerableEnemyPositions() (m MatBool) {
-	for i := range w.EnemiesLen {
-		if w.Enemies[i].Vulnerable(w) {
-			m.Set(w.Enemies[i].Pos())
+	for i := range w.Enemies.N {
+		if w.Enemies.Data[i].Vulnerable(w) {
+			m.Set(w.Enemies.Data[i].Pos())
 		}
 	}
 	return
 }
 
 func (w *World) SpawnPortalPositions() (m MatBool) {
-	for i := range w.SpawnPortalsLen {
-		m.Set(w.SpawnPortals[i].pos)
+	for i := range w.SpawnPortals.N {
+		m.Set(w.SpawnPortals.Data[i].pos)
 	}
 	return
 }
@@ -235,8 +230,8 @@ func (w *World) Step(input PlayerInput) {
 		// Temporarily allow unrecorded steps to occur, required by AI
 		// simulations. But get ready to replace this with a different
 		// mechanism.
-		w.History[w.HistoryLen] = input
-		w.HistoryLen++
+		w.History.Data[w.History.N] = input
+		w.History.N++
 	}
 
 	// Reset the player's state at the beginning.
@@ -263,13 +258,13 @@ func (w *World) Step(input PlayerInput) {
 		w.EnemyMoveCooldown.Update()
 
 		// Step the enemies.
-		for i := range w.EnemiesLen {
-			w.Enemies[i].Step(w)
+		for i := range w.Enemies.N {
+			w.Enemies.Data[i].Step(w)
 		}
 
 		// Step SpawnPortalsParams.
-		for i := range w.SpawnPortalsLen {
-			w.SpawnPortals[i].Step(w)
+		for i := range w.SpawnPortals.N {
+			w.SpawnPortals.Data[i].Step(w)
 		}
 
 		if w.EnemyMoveCooldown.Ready() {
@@ -278,24 +273,24 @@ func (w *World) Step(input PlayerInput) {
 	}
 
 	// Cull dead enemies.
-	n := 0
-	for i := range w.EnemiesLen {
-		if w.Enemies[i].Alive() {
-			w.Enemies[n] = w.Enemies[i]
+	n := int64(0)
+	for i := range w.Enemies.N {
+		if w.Enemies.Data[i].Alive() {
+			w.Enemies.Data[n] = w.Enemies.Data[i]
 			n++
 		}
 	}
-	w.EnemiesLen = n
+	w.Enemies.N = n
 
 	// Cull dead SpawnPortals.
-	n = 0
-	for i := range w.SpawnPortalsLen {
-		if w.SpawnPortals[i].Health.IsPositive() {
-			w.SpawnPortals[n] = w.SpawnPortals[i]
+	n = int64(0)
+	for i := range w.SpawnPortals.N {
+		if w.SpawnPortals.Data[i].Health.IsPositive() {
+			w.SpawnPortals.Data[n] = w.SpawnPortals.Data[i]
 			n++
 		}
 	}
-	w.SpawnPortalsLen = n
+	w.SpawnPortals.N = n
 
 	w.TimeStep.Inc()
 	if w.TimeStep.Eq(I(math.MaxInt64)) {
@@ -309,8 +304,8 @@ func (w *World) SpawnAmmos() {
 	for {
 		// Count ammo available in the world now.
 		available := ZERO
-		for i := range w.AmmosLen {
-			available.Add(w.Ammos[i].Count)
+		for i := range w.Ammos.N {
+			available.Add(w.Ammos.Data[i].Count)
 		}
 
 		// Count total ammo.
@@ -324,12 +319,12 @@ func (w *World) SpawnAmmos() {
 		// Build matrix with positions occupied everywhere we don't want to
 		// spawn ammo.
 		occ := w.Obstacles
-		for i := range w.AmmosLen {
-			occ.Set(w.Ammos[i].Pos)
+		for i := range w.Ammos.N {
+			occ.Set(w.Ammos.Data[i].Pos)
 		}
 		occ.Set(w.Player.Pos())
-		for i := range w.EnemiesLen {
-			occ.Set(w.Enemies[i].Pos())
+		for i := range w.Enemies.N {
+			occ.Set(w.Enemies.Data[i].Pos())
 		}
 
 		// Spawn ammo.
@@ -337,19 +332,19 @@ func (w *World) SpawnAmmos() {
 			Pos:   occ.OccupyRandomPos(&w.Rand),
 			Count: I(3),
 		}
-		w.Ammos[w.AmmosLen] = ammo
-		w.AmmosLen++
+		w.Ammos.Data[w.Ammos.N] = ammo
+		w.Ammos.N++
 	}
 }
 
 func (w *World) AllEnemiesDead() bool {
-	for i := range w.EnemiesLen {
-		if w.Enemies[i].Alive() {
+	for i := range w.Enemies.N {
+		if w.Enemies.Data[i].Alive() {
 			return false
 		}
 	}
-	for i := range w.SpawnPortalsLen {
-		if w.SpawnPortals[i].Active() {
+	for i := range w.SpawnPortals.N {
+		if w.SpawnPortals.Data[i].Active() {
 			return false
 		}
 	}
@@ -379,7 +374,7 @@ func OldPt(pt oldworld.Pt) Pt {
 }
 
 func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
-	historyBuffer := [20000]PlayerInput{}
+	var historyBuffer PlayerInputArray
 	p.History = &historyBuffer
 	po := oldworld.DeserializePlaythrough(data)
 	// Entities
@@ -392,15 +387,15 @@ func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
 		}
 	}
 	for i := range po.SpawnPortalsParams {
-		p.SpawnPortalsParams[i].Pos = IPt(po.SpawnPortalsParams[i].Pos.X.ToInt(), po.SpawnPortalsParams[i].Pos.Y.ToInt())
-		p.SpawnPortalsParams[i].SpawnPortalCooldown = I(po.SpawnPortalsParams[i].SpawnPortalCooldown.ToInt())
+		p.SpawnPortalsParams.Data[i].Pos = IPt(po.SpawnPortalsParams[i].Pos.X.ToInt(), po.SpawnPortalsParams[i].Pos.Y.ToInt())
+		p.SpawnPortalsParams.Data[i].SpawnPortalCooldown = I(po.SpawnPortalsParams[i].SpawnPortalCooldown.ToInt())
 		for j := range po.SpawnPortalsParams[i].Waves {
-			p.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave = I(po.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave.ToInt())
-			p.SpawnPortalsParams[i].Waves[j].NHounds = I(po.SpawnPortalsParams[i].Waves[j].NHounds.ToInt())
+			p.SpawnPortalsParams.Data[i].Waves.Data[j].SecondsAfterLastWave = I(po.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave.ToInt())
+			p.SpawnPortalsParams.Data[i].Waves.Data[j].NHounds = I(po.SpawnPortalsParams[i].Waves[j].NHounds.ToInt())
 		}
-		p.SpawnPortalsParams[i].WavesLen = len(po.SpawnPortalsParams[i].Waves)
+		p.SpawnPortalsParams.Data[i].Waves.N = int64(len(po.SpawnPortalsParams[i].Waves))
 	}
-	p.SpawnPortalsParamsLen = len(po.SpawnPortalsParams)
+	p.SpawnPortalsParams.N = int64(len(po.SpawnPortalsParams))
 
 	// WorldParams
 	p.Boardgame = po.Boardgame
@@ -422,14 +417,14 @@ func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
 	p.Id = po.Id
 	p.Seed = I(po.Seed.ToInt())
 	for i := range po.History {
-		p.History[i].MousePt = OldPt(po.History[i].MousePt)
-		p.History[i].LeftButtonPressed = po.History[i].LeftButtonPressed
-		p.History[i].RightButtonPressed = po.History[i].RightButtonPressed
-		p.History[i].Move = po.History[i].Move
-		p.History[i].MovePt = OldPt(po.History[i].MovePt)
-		p.History[i].Shoot = po.History[i].Shoot
-		p.History[i].ShootPt = OldPt(po.History[i].ShootPt)
+		p.History.Data[i].MousePt = OldPt(po.History[i].MousePt)
+		p.History.Data[i].LeftButtonPressed = po.History[i].LeftButtonPressed
+		p.History.Data[i].RightButtonPressed = po.History[i].RightButtonPressed
+		p.History.Data[i].Move = po.History[i].Move
+		p.History.Data[i].MovePt = OldPt(po.History[i].MovePt)
+		p.History.Data[i].Shoot = po.History[i].Shoot
+		p.History.Data[i].ShootPt = OldPt(po.History[i].ShootPt)
 	}
-	p.HistoryLen = len(po.History)
+	p.History.N = int64(len(po.History))
 	return
 }
