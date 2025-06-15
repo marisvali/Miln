@@ -412,9 +412,9 @@ func ComputeSpriteMask(img *ebiten.Image) *ebiten.Image {
 	return mask
 }
 
-func Directions8() []Pt {
+func Directions8() [8]Pt {
 	// This order is needed so that straight lines get priority in pathfinding.
-	return []Pt{
+	return [8]Pt{
 		// left/right/up/down
 		{I(1).Negative(), I(0)},
 		{I(1), I(0)},

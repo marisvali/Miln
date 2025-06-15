@@ -235,18 +235,18 @@ func (e *Hound) MoveCooldownIdx() Int {
 func (e *Hound) State() string { return enemyStateName[e.state] }
 
 func (e *Hound) goToPlayer(w *World, m MatBool) {
-	path := FindPath(e.pos, w.Player.Pos(), m.Matrix, false)
-	if len(path) > 1 {
+	ComputePath(e.pos, w.Player.Pos(), m)
+	if Path.N > 1 {
 		if e.hitsPlayer {
 			// Move to the position either way and hit player if necessary.
-			e.pos = path[1]
-			if path[1].Eq(w.Player.Pos()) {
+			e.pos = Path.V[1]
+			if Path.V[1].Eq(w.Player.Pos()) {
 				w.Player.Hit()
 			}
 		} else {
 			// Move to the position only if not occupied by the player.
-			if !path[1].Eq(w.Player.Pos()) {
-				e.pos = path[1]
+			if !Path.V[1].Eq(w.Player.Pos()) {
+				e.pos = Path.V[1]
 			}
 		}
 	}
@@ -256,10 +256,11 @@ func (e *Hound) moveRandomly(w *World) {
 	m := getObstaclesAndEnemies(w)
 	// Try to move a few times before giving up.
 	for i := 0; i < 10; i++ {
-		path := FindPath(e.pos, e.randomTarget, m.Matrix, false)
-		if len(path) > 1 {
+		ComputePath(e.pos, e.randomTarget, m)
+
+		if Path.N > 1 {
 			// Can go towards the current random target.
-			e.pos = path[1]
+			e.pos = Path.V[1]
 			return
 		} else {
 			// For some reason we can't go towards the random target anymore.
