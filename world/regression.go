@@ -80,7 +80,8 @@ func (w *World) State() []byte {
 		Serialize(buf, w.Enemies.Data[i].Health())
 		Serialize(buf, w.Enemies.Data[i].Pos())
 	}
-	Serialize(buf, w.Obstacles.ToSlice())
+	arr := w.Obstacles.ToArray()
+	Serialize(buf, arr.V[:arr.N])
 	return buf.Bytes()
 }
 

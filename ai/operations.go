@@ -105,10 +105,10 @@ func NewTargetSeeker(world *World) (h TargetSeeker) {
 // Get all the positions that are visible from the positions indicated by the
 // "startPositions" matrix.
 func (h *TargetSeeker) computeVisiblePositions(startPositions MatBool) MatBool {
-	positions := startPositions.ToSlice()
+	positions := startPositions.ToArray()
 	allVisible := MatBool{}
-	for _, pos := range positions {
-		visible := h.vision.Compute(pos, h.obstacles)
+	for i := range positions.N {
+		visible := h.vision.Compute(positions.V[i], h.obstacles)
 		allVisible.Add(visible)
 	}
 	return allVisible
@@ -138,7 +138,7 @@ func (h *TargetSeeker) NumMovesUntilTargetVisible(startPos Pt, targets MatBool) 
 		// Check if any targets are visible from the current start positions.
 		visibleTargets := visiblePositions
 		visibleTargets.IntersectWith(targets)
-		if len(visibleTargets.ToSlice()) > 0 {
+		if visibleTargets.ToArray().N > 0 {
 			// A target is visible.
 			return iMove
 		}

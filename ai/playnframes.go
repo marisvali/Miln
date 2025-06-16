@@ -33,16 +33,18 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 		w.Step(NeutralInput())
 	}
 
+	var rankedActions ActionsArray
+
 	// Move on the map.
 	{
-		CurrentRankedActions(w)
+		ComputeRankedActions(w, &rankedActions)
 		w.Step(ActionToInput(rankedActions.V[0]))
 	}
 
 	// Fight until only 3 enemy is left.
 	for {
 		if frameIdx%20 == 0 {
-			CurrentRankedActions(w)
+			ComputeRankedActions(w, &rankedActions)
 			w.Step(ActionToInput(rankedActions.V[0]))
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
@@ -76,7 +78,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	// Move around without attacking.
 	for ; frameIdx < nFrames; frameIdx++ {
 		if frameIdx%20 == 0 {
-			CurrentRankedActions(w)
+			ComputeRankedActions(w, &rankedActions)
 			for i := range rankedActions.N {
 				if rankedActions.V[i].Move {
 					w.Step(ActionToInput(rankedActions.V[i]))
@@ -111,7 +113,7 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	// Fight until all enemies are killed.
 	for {
 		if frameIdx%20 == 0 {
-			CurrentRankedActions(w)
+			ComputeRankedActions(w, &rankedActions)
 			w.Step(ActionToInput(rankedActions.V[0]))
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {

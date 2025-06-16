@@ -16,13 +16,6 @@ type Action struct {
 	Rank    int64
 }
 
-type ActionsArray struct {
-	N int64
-	V [NRows * NCols * 2]Action
-}
-
-var rankedActions ActionsArray
-
 func ModelFitness(ranksOfPlayerActions []int64) (modelFitness int64) {
 	for i := 0; i < len(ranksOfPlayerActions); i++ {
 		diff := ranksOfPlayerActions[i] - 1
@@ -40,7 +33,12 @@ func ModelFitnessForPlaythrough(inputFile string) int64 {
 	return modelFitness
 }
 
-func CurrentRankedActions(world World) {
+type ActionsArray struct {
+	N int64
+	V [NRows * NCols * 2]Action
+}
+
+func ComputeRankedActions(world World, rankedActions *ActionsArray) {
 	rankedActions.N = 0
 
 	// Compute the fitness of every move action.
@@ -105,9 +103,9 @@ func (a Action) String() string {
 	}
 }
 
-func RankedActionsPerFrame(playthrough Playthrough, frameIdx int64) {
+func ComputeRankedActionsPerFrame(playthrough Playthrough, frameIdx int64, rankedActions *ActionsArray) {
 	world := GoToFrame(playthrough, frameIdx)
-	CurrentRankedActions(world)
+	ComputeRankedActions(world, rankedActions)
 }
 
 func InputToAction(input PlayerInput) (action Action) {
@@ -136,7 +134,7 @@ func ActionToInput(action Action) (input PlayerInput) {
 	return
 }
 
-func FindActionRank(action Action) int64 {
+func FindActionRank(action Action, rankedActions *ActionsArray) int64 {
 	for i := range rankedActions.N {
 		if action.Pos == rankedActions.V[i].Pos &&
 			action.Move == rankedActions.V[i].Move {
@@ -178,10 +176,11 @@ func DebugRank(framesWithActions []int64, decisionFrames []int64,
 }
 
 func GetRanksOfPlayerActions(playthrough Playthrough, framesWithActions []int64, decisionFrames []int64) (ranksOfPlayerActions []int64) {
+	var rankedActions ActionsArray
 	for actionIdx := range framesWithActions {
-		RankedActionsPerFrame(playthrough, decisionFrames[actionIdx])
+		ComputeRankedActionsPerFrame(playthrough, decisionFrames[actionIdx], &rankedActions)
 		playerAction := InputToAction(playthrough.History.Data[framesWithActions[actionIdx]])
-		rank := FindActionRank(playerAction)
+		rank := FindActionRank(playerAction, &rankedActions)
 		ranksOfPlayerActions = append(ranksOfPlayerActions, rank)
 	}
 	return

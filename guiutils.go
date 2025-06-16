@@ -99,7 +99,8 @@ func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 	if g.AutoAimAttack {
 		attackablePositions := g.world.VulnerableEnemyPositions()
 		attackablePositions.IntersectWith(g.world.VisibleTiles)
-		tilePos, dist := g.ClosestTileToMouse(attackablePositions.ToSlice())
+		pos := attackablePositions.ToArray()
+		tilePos, dist := g.ClosestTileToMouse(pos.V[:pos.N])
 		closeEnough := dist.Lt(g.BlockSize.Times(g.AutoAimAttackFactor).DivBy(I(100)))
 		attackOk := g.world.Player.OnMap && closeEnough
 		return attackOk, tilePos
@@ -117,8 +118,8 @@ func (g *Gui) GetAttackTarget() (valid bool, target Pt) {
 
 func (g *Gui) GetMoveTarget() (valid bool, target Pt) {
 	if g.AutoAimMove {
-		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToSlice()
-		tilePos, dist := g.ClosestTileToMouse(freePositions)
+		freePositions := g.world.Player.ComputeFreePositions(&g.world).ToArray()
+		tilePos, dist := g.ClosestTileToMouse(freePositions.V[:freePositions.N])
 		closeEnough := dist.Lt(g.BlockSize.Times(g.AutoAimMoveFactor).DivBy(I(100)))
 		return closeEnough, tilePos
 	} else {

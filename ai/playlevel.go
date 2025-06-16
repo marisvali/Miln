@@ -21,12 +21,13 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 		return frameIdx + RInt(I(r.MinNFramesBetweenActions), I(r.MaxNFramesBetweenActions)).ToInt()
 	}
 
+	var rankedActions ActionsArray
 	frameIdxOfNextMove := getFrameIdxOfNextMove(frameIdx)
 	for {
 		input := PlayerInput{}
 
 		if frameIdx == frameIdxOfNextMove {
-			CurrentRankedActions(world)
+			ComputeRankedActions(world, &rankedActions)
 
 			action := rankedActions.V[0]
 			// There is a random chance to degrade the quality of the

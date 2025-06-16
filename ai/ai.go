@@ -117,20 +117,20 @@ func GetPointsFromWhichPlayerCanAttack(w *World, freePts []Pt) (attackPts []Pt) 
 	return
 }
 
-func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
-	// minDist := I(math.MaxInt64)
-	// closestEnemy = nil
-	// for _, e := range w.Enemies {
-	// 	if CanAttackEnemy(w, e) {
-	// 		dist := e.Pos().Minus(w.Player.Pos()).SquaredLen()
-	// 		if dist.Lt(minDist) {
-	// 			minDist = dist
-	// 			closestEnemy = e
-	// 		}
-	// 	}
-	// }
-	return
-}
+// func ClosestAttackableEnemy(w *World) (closestEnemy Enemy) {
+// 	// minDist := I(math.MaxInt64)
+// 	// closestEnemy = nil
+// 	// for _, e := range w.Enemies {
+// 	// 	if CanAttackEnemy(w, e) {
+// 	// 		dist := e.Pos().Minus(w.Player.Pos()).SquaredLen()
+// 	// 		if dist.Lt(minDist) {
+// 	// 			minDist = dist
+// 	// 			closestEnemy = e
+// 	// 		}
+// 	// 	}
+// 	// }
+// 	return
+// }
 
 var MinFramesBetweenActions = 27
 var DistanceToDangerZone = 3
@@ -142,17 +142,17 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 	}
 
 	freePos := w.Player.ComputeFreePositions(w)
-	freePts := freePos.ToSlice()
+	freePts := freePos.ToArray()
 
 	// Compute the best point to move to, if we were to move.
 	input.Move = true
 
 	// At first, move to the tile that's furthest away from everyone.
-	input.MovePt = PointFurthestFromEnemies(w, freePts, w.Player.Pos())
+	input.MovePt = PointFurthestFromEnemies(w, freePts.V[:freePts.N], w.Player.Pos())
 
 	// Try to find the tile that's furthest from everyone, from which an
 	// enemy can be shot.
-	attackPts := GetPointsFromWhichPlayerCanAttack(w, freePts)
+	attackPts := GetPointsFromWhichPlayerCanAttack(w, freePts.V[:freePts.N])
 	maxPt := PointFurthestFromEnemies(w, attackPts, w.Player.Pos())
 	if !InDangerZone(w, maxPt) {
 		input.MovePt = maxPt
@@ -195,12 +195,12 @@ func (a *AI) Step(w *World) (input PlayerInput) {
 
 	// Compute the best target to shoot if we were to shoot.
 	// Shoot at the closest guy that isn't frozen.
-	if closestEnemy := ClosestAttackableEnemy(w); closestEnemy != nil {
-		input.Shoot = true
-		input.ShootPt = closestEnemy.Pos()
-	} else {
-		input.Shoot = false
-	}
+	// if closestEnemy := ClosestAttackableEnemy(w); closestEnemy != nil {
+	// 	input.Shoot = true
+	// 	input.ShootPt = closestEnemy.Pos()
+	// } else {
+	// 	input.Shoot = false
+	// }
 
 	// Don't shoot king when he's over a spawn portal, because he'll drop the
 	// key on a place that we can't reach.

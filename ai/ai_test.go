@@ -60,10 +60,11 @@ func TestAIPlayer(t *testing.T) {
 	}
 
 	// Start moving every 30 frames (0.5 sec).
+	var rankedActions ActionsArray
 	for {
 		input := PlayerInput{}
 		if frameIdx%30 == 0 {
-			CurrentRankedActions(world)
+			ComputeRankedActions(world, &rankedActions)
 			action := rankedActions.V[0]
 			input = ActionToInput(action)
 		}
@@ -83,7 +84,7 @@ func TestAIPlayer(t *testing.T) {
 
 	WriteFile("outputs/ai-play.mln013", world.SerializedPlaythrough())
 
-	// rankedActions := CurrentRankedActions(world, 100)
+	// rankedActions := ComputeRankedActions(world, 100)
 	//
 	// for _, inputFile := range inputFiles {
 	// 	modelFitness := ModelFitnessForPlaythrough(inputFile)

@@ -4,11 +4,31 @@ import (
 	. "github.com/marisvali/miln/gamelib"
 )
 
+type HoundState int
+
+const (
+	Searching HoundState = iota
+	PreparingToAttack
+	Attacking
+	Hit
+	Dead
+)
+
+var enemyStateName = map[HoundState]string{
+	Searching:         "Searching",
+	PreparingToAttack: "PreparingToAttack",
+	Attacking:         "Attacking",
+	Hit:               "Hit",
+	Dead:              "Dead",
+}
+
 type Hound struct {
 	Rand
-	EnemyBase
-	state                        EnemyState
-	previousState                EnemyState
+	pos                          Pt
+	health                       Int
+	maxHealth                    Int
+	state                        HoundState
+	previousState                HoundState
 	solvedFirstState             bool
 	moveCooldownMultiplier       Int
 	moveCooldownIdx              Int
@@ -38,147 +58,142 @@ func NewHound(seed Int, w WorldParams, pos Pt) Hound {
 	return g
 }
 
-func (g *Hound) Clone() Enemy {
-	ng := *g
-	return &ng
+func (h *Hound) Vulnerable(w *World) bool {
+	return h.state == Searching || h.state == PreparingToAttack || h.state == Attacking
 }
 
-func (g *Hound) Vulnerable(w *World) bool {
-	return g.state == Searching || g.state == PreparingToAttack || g.state == Attacking
-}
-
-func (g *Hound) Step(w *World) {
+func (h *Hound) Step(w *World) {
 	var justEnteredState bool
-	if !g.solvedFirstState {
+	if !h.solvedFirstState {
 		justEnteredState = true
-		g.solvedFirstState = true
+		h.solvedFirstState = true
 	} else {
-		justEnteredState = g.state != g.previousState
-		g.previousState = g.state
+		justEnteredState = h.state != h.previousState
+		h.previousState = h.state
 	}
 
-	switch g.state {
+	switch h.state {
 	case Searching:
-		g.searching(justEnteredState, w)
+		h.searching(justEnteredState, w)
 	case PreparingToAttack:
-		g.preparingToAttack(justEnteredState, w)
+		h.preparingToAttack(justEnteredState, w)
 	case Attacking:
-		g.attacking(justEnteredState, w)
+		h.attacking(justEnteredState, w)
 	case Hit:
-		g.hit(justEnteredState, w)
+		h.hit(justEnteredState, w)
 	case Dead:
-		g.dead(justEnteredState, w)
+		h.dead(justEnteredState, w)
 	}
 }
 
-func (g *Hound) searching(justEnteredState bool, w *World) {
+func (h *Hound) searching(justEnteredState bool, w *World) {
 	// Searching means moving around randomly. We only move once in a while,
 	// not at every frame. The interval at which we move is a number of frames.
 	// That number is computed like this:
-	// nFramesInInterval = g.moveCooldownMultiplier * w.EnemyMoveCooldown
+	// nFramesInInterval = h.moveCooldownMultiplier * w.EnemyMoveCooldown
 	// The way we wait for that interval is that every time the global counter
 	// is zero, we tick down our own counter.
 
 	// On entry, reset the "move" countdown and get a new random target to move
 	// towards.
 	if justEnteredState {
-		g.moveCooldownIdx = g.moveCooldownMultiplier
-		g.randomTarget = w.Obstacles.RandomUnoccupiedPos(&g.Rand)
+		h.moveCooldownIdx = h.moveCooldownMultiplier
+		h.randomTarget = w.Obstacles.RandomUnoccupiedPos(&h.Rand)
 	}
 
 	// React to being hit.
-	if g.beamJustHit(w) {
-		g.health.Dec()
-		if g.health.IsZero() {
-			g.state = Dead
+	if h.beamJustHit(w) {
+		h.health.Dec()
+		if h.health.IsZero() {
+			h.state = Dead
 			return
 		} else {
-			g.state = Hit
+			h.state = Hit
 			return
 		}
 	}
 
 	// If player is visible, prepare to attack.
-	if w.Player.OnMap && w.VisibleTiles.At(g.pos) {
-		g.state = PreparingToAttack
+	if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
+		h.state = PreparingToAttack
 		return
 	}
 
 	// Only move or reduce move tick down every w.EnemyMoveCooldown frames.
 	if w.EnemyMoveCooldown.Ready() {
-		g.moveCooldownIdx.Dec()
+		h.moveCooldownIdx.Dec()
 
-		if g.moveCooldownIdx.IsZero() {
-			g.moveRandomly(w)
+		if h.moveCooldownIdx.IsZero() {
+			h.moveRandomly(w)
 
 			// Reset the counter to when we move.
-			g.moveCooldownIdx = g.moveCooldownMultiplier
+			h.moveCooldownIdx = h.moveCooldownMultiplier
 		}
 	}
 }
 
-func (g *Hound) preparingToAttack(justEnteredState bool, w *World) {
+func (h *Hound) preparingToAttack(justEnteredState bool, w *World) {
 	// On entry, reset the "prepare to attack" countdown.
 	if justEnteredState {
-		g.preparingToAttackCooldownIdx = g.preparingToAttackCooldown
+		h.preparingToAttackCooldownIdx = h.preparingToAttackCooldown
 	}
 
 	// React to being hit.
-	if g.beamJustHit(w) {
-		g.health.Dec()
-		if g.health.IsZero() {
-			g.state = Dead
+	if h.beamJustHit(w) {
+		h.health.Dec()
+		if h.health.IsZero() {
+			h.state = Dead
 			return
 		} else {
-			g.state = Hit
+			h.state = Hit
 			return
 		}
 	}
 
 	// If player is no longer visible, go back to searching.
-	if !w.Player.OnMap || !w.VisibleTiles.At(g.pos) {
-		g.state = Searching
+	if !w.Player.OnMap || !w.VisibleTiles.At(h.pos) {
+		h.state = Searching
 		return
 	}
 
 	// Tick down counter to when we attack.
-	g.preparingToAttackCooldownIdx.Dec()
+	h.preparingToAttackCooldownIdx.Dec()
 
 	// If we have done waiting before attacking, attack.
-	if g.preparingToAttackCooldownIdx.IsZero() {
-		g.state = Attacking
+	if h.preparingToAttackCooldownIdx.IsZero() {
+		h.state = Attacking
 		return
 	}
 }
 
-func (g *Hound) attacking(justEnteredState bool, w *World) {
+func (h *Hound) attacking(justEnteredState bool, w *World) {
 	// Attacking means moving towards the player. We only move once in a while,
 	// not at every frame. The interval at which we move is a number of frames.
 	// That number is computed like this:
-	// nFramesInInterval = g.attackCooldownMultiplier * w.EnemyMoveCooldown
+	// nFramesInInterval = h.attackCooldownMultiplier * w.EnemyMoveCooldown
 	// The way we wait for that interval is that every time the global counter
 	// is zero, we tick down our own counter.
 
 	// On entry, reset the "attack" countdown.
 	if justEnteredState {
-		g.attackCooldownIdx = g.attackCooldownMultiplier
+		h.attackCooldownIdx = h.attackCooldownMultiplier
 	}
 
 	// React to being hit.
-	if g.beamJustHit(w) {
-		g.health.Dec()
-		if g.health.IsZero() {
-			g.state = Dead
+	if h.beamJustHit(w) {
+		h.health.Dec()
+		if h.health.IsZero() {
+			h.state = Dead
 			return
 		} else {
-			g.state = Hit
+			h.state = Hit
 			return
 		}
 	}
 
 	// If player is no longer visible, go back to searching.
-	if !w.Player.OnMap || !w.VisibleTiles.At(g.pos) {
-		g.state = Searching
+	if !w.Player.OnMap || !w.VisibleTiles.At(h.pos) {
+		h.state = Searching
 		return
 	}
 
@@ -186,87 +201,117 @@ func (g *Hound) attacking(justEnteredState bool, w *World) {
 	// frames.
 	if w.EnemyMoveCooldown.Ready() {
 		// Tick down counter to when we attack.
-		g.attackCooldownIdx.Dec()
+		h.attackCooldownIdx.Dec()
 
-		if g.attackCooldownIdx.IsZero() {
+		if h.attackCooldownIdx.IsZero() {
 			// Go to player.
-			g.goToPlayer(w, getObstaclesAndEnemies(w))
+			h.goToPlayer(w, getObstaclesAndEnemies(w))
 
 			// Reset the counter to when we attack.
-			g.attackCooldownIdx = g.attackCooldownMultiplier
+			h.attackCooldownIdx = h.attackCooldownMultiplier
 		}
 	}
 }
 
-func (g *Hound) hit(justEnteredState bool, w *World) {
+func (h *Hound) hit(justEnteredState bool, w *World) {
 	// On entry, reset the "we're hit" countdown.
 	if justEnteredState {
-		g.hitCooldownIdx = g.hitCooldown
+		h.hitCooldownIdx = h.hitCooldown
 	}
 
 	// Tick down counter to when we move.
-	g.hitCooldownIdx.Dec()
-	if g.hitCooldownIdx.IsZero() {
+	h.hitCooldownIdx.Dec()
+	if h.hitCooldownIdx.IsZero() {
 		// If player is visible, prepare to attack.
-		if w.Player.OnMap && w.VisibleTiles.At(g.pos) {
-			g.state = PreparingToAttack
+		if w.Player.OnMap && w.VisibleTiles.At(h.pos) {
+			h.state = PreparingToAttack
 			return
 		} else {
 			// If not, search.
-			g.state = Searching
+			h.state = Searching
 			return
 		}
 	}
 }
 
-func (g *Hound) dead(justEnteredState bool, w *World) {
+func (h *Hound) dead(justEnteredState bool, w *World) {
 	// Do nothing, this is an end state.
 	// We should get destroyed/cleaned-up by the world at some point.
 }
 
-func (e *Hound) MoveCooldownMultiplier() Int {
-	return e.moveCooldownMultiplier
+func (h *Hound) MoveCooldownMultiplier() Int {
+	return h.moveCooldownMultiplier
 }
 
-func (e *Hound) MoveCooldownIdx() Int {
-	return e.moveCooldownIdx
+func (h *Hound) MoveCooldownIdx() Int {
+	return h.moveCooldownIdx
 }
 
-func (e *Hound) State() string { return enemyStateName[e.state] }
+func (h *Hound) State() string { return enemyStateName[h.state] }
 
-func (e *Hound) goToPlayer(w *World, m MatBool) {
-	ComputePath(e.pos, w.Player.Pos(), m)
-	if Path.N > 1 {
-		if e.hitsPlayer {
+func (h *Hound) goToPlayer(w *World, m MatBool) {
+	path := ComputePath(h.pos, w.Player.Pos(), m)
+	if path.N > 1 {
+		if h.hitsPlayer {
 			// Move to the position either way and hit player if necessary.
-			e.pos = Path.V[1]
-			if Path.V[1].Eq(w.Player.Pos()) {
+			h.pos = path.V[1]
+			if path.V[1].Eq(w.Player.Pos()) {
 				w.Player.Hit()
 			}
 		} else {
 			// Move to the position only if not occupied by the player.
-			if !Path.V[1].Eq(w.Player.Pos()) {
-				e.pos = Path.V[1]
+			if !path.V[1].Eq(w.Player.Pos()) {
+				h.pos = path.V[1]
 			}
 		}
 	}
 }
 
-func (e *Hound) moveRandomly(w *World) {
+func (h *Hound) moveRandomly(w *World) {
 	m := getObstaclesAndEnemies(w)
 	// Try to move a few times before giving up.
 	for i := 0; i < 10; i++ {
-		ComputePath(e.pos, e.randomTarget, m)
+		path := ComputePath(h.pos, h.randomTarget, m)
 
-		if Path.N > 1 {
+		if path.N > 1 {
 			// Can go towards the current random target.
-			e.pos = Path.V[1]
+			h.pos = path.V[1]
 			return
 		} else {
 			// For some reason we can't go towards the random target anymore.
 			// Maybe we reached it. Maybe it became inaccessible because someone
 			// is blocking the way. Either way, get a new random target.
-			e.randomTarget = m.RandomUnoccupiedPos(&e.Rand)
+			h.randomTarget = m.RandomUnoccupiedPos(&h.Rand)
 		}
 	}
+}
+
+func (h *Hound) Pos() Pt {
+	return h.pos
+}
+
+func (h *Hound) Health() Int {
+	return h.health
+}
+
+func (h *Hound) MaxHealth() Int {
+	return h.maxHealth
+}
+
+func (h *Hound) Alive() bool {
+	return h.health.IsPositive()
+}
+
+func getObstaclesAndEnemies(w *World) (m MatBool) {
+	m = w.Obstacles
+	m.Add(w.EnemyPositions())
+	return
+}
+
+func (h *Hound) beamJustHit(w *World) bool {
+	if !w.Beam.Idx.Eq(w.BeamMax) { // the fact that this is required shows me
+		// I need to structure this stuff differently.
+		return false
+	}
+	return w.WorldPosToTile(w.Beam.End) == h.pos
 }

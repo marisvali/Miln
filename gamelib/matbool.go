@@ -86,46 +86,50 @@ func (m *MatBool) OccupyRandomPos(r *Rand) (p Pt) {
 // same value as the start point.
 // res.At(pt) == true if pt is connected to start
 // res.At(pt) == false if pt is NOT connected to start
-type posqueueArray struct {
-	N int64
-	V [NCols * NRows]Pt
-}
-
-var posqueue posqueueArray
 
 func (m MatBool) ConnectedPositions(start Pt) (res MatBool) {
+	type queueArray struct {
+		N int64
+		V [NCols * NRows]Pt
+	}
+	var queue queueArray
+
 	goodVal := m.Get(start)
-	posqueue.V[0] = start
-	posqueue.N = 1
+	queue.V[0] = start
+	queue.N = 1
 	res.Set(start)
 	i := int64(0)
 	dirs := Directions8()
-	for i < posqueue.N {
-		pt := posqueue.V[i]
+	for i < queue.N {
+		pt := queue.V[i]
 		i++
 		for _, d := range dirs {
 			newPt := pt.Plus(d)
 			if m.InBounds(newPt) && !res.At(newPt) && m.Get(newPt) == goodVal {
 				res.Set(newPt)
-				posqueue.V[posqueue.N] = newPt
-				posqueue.N++
+				queue.V[queue.N] = newPt
+				queue.N++
 			}
 		}
 	}
 	return
 }
 
-var MatBoolArray posqueueArray
+type MatArray struct {
+	N int64
+	V [NCols * NRows]Pt
+}
 
-func (m MatBool) ToSlice() []Pt {
-	MatBoolArray.N = 0
+func (m MatBool) ToArray() MatArray {
+	var array MatArray
+	array.N = 0
 	for i := range m.cells {
 		if m.cells[i] {
-			MatBoolArray.V[MatBoolArray.N] = IPt(i%NCols, i/NCols)
-			MatBoolArray.N++
+			array.V[array.N] = IPt(i%NCols, i/NCols)
+			array.N++
 		}
 	}
-	return MatBoolArray.V[:MatBoolArray.N]
+	return array
 }
 
 func (m *MatBool) FromSlice(s []Pt) {

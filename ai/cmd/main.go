@@ -8,13 +8,12 @@ import (
 	. "github.com/marisvali/miln/world"
 	_ "image/png"
 	"os"
-	"runtime/debug"
 )
 
 // As of 2025-06-04 it takes 2515.15s to run for 30 levels with
 // nPlaysPerLevel := 10. That's 42 min and is a problem.
 func main() {
-	debug.SetGCPercent(-1)
+	// debug.SetGCPercent(-1)
 	RSeed(I(0))
 	randomness := RandomnessInPlay{20, 40, 3, 1}
 	nPlaysPerLevel := 10

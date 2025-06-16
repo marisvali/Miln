@@ -2,27 +2,23 @@ package gamelib
 
 import "slices"
 
-const NDirs = 8
-
-type queueArray struct {
-	N int64
-	V [NCols * NRows]int64
-}
-
 type PathArray struct {
 	N int64
 	V [NCols * NRows]Pt
 }
 
-var neighbors [NCols * NRows * NDirs]int64
-var visited [NCols * NRows]bool
-var parents [NCols * NRows]int64
-var queue queueArray
+func ComputePath(startPt, endPt Pt, m MatBool) (path PathArray) {
+	const NDirs = 8
 
-var Path PathArray
+	type queueArray struct {
+		N int64
+		V [NCols * NRows]int64
+	}
 
-func ComputePath(startPt, endPt Pt, m MatBool) {
-	Path.N = 0
+	var neighbors [NCols * NRows * NDirs]int64
+	var visited [NCols * NRows]bool
+	var parents [NCols * NRows]int64
+	var queue queueArray
 
 	// Turn matrix into an array of ints.
 	dirs := Directions8()
@@ -69,13 +65,12 @@ func ComputePath(startPt, endPt Pt, m MatBool) {
 		if topEl == end {
 			// Compute path.
 			node := end
-			Path.N = 0
 			for node >= 0 {
-				Path.V[Path.N] = m.IndexToPt(I64(node))
-				Path.N++
+				path.V[path.N] = m.IndexToPt(I64(node))
+				path.N++
 				node = parents[node]
 			}
-			slices.Reverse(Path.V[0:Path.N])
+			slices.Reverse(path.V[0:path.N])
 			return
 		}
 
@@ -94,4 +89,5 @@ func ComputePath(startPt, endPt Pt, m MatBool) {
 		// pop the first element out of the queue
 		idx++
 	}
+	return
 }
