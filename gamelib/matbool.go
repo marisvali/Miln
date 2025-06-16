@@ -86,34 +86,46 @@ func (m *MatBool) OccupyRandomPos(r *Rand) (p Pt) {
 // same value as the start point.
 // res.At(pt) == true if pt is connected to start
 // res.At(pt) == false if pt is NOT connected to start
+type posqueueArray struct {
+	N int64
+	V [NCols * NRows]Pt
+}
+
+var posqueue posqueueArray
+
 func (m MatBool) ConnectedPositions(start Pt) (res MatBool) {
 	goodVal := m.Get(start)
-	queue := []Pt{}
-	queue = append(queue, start)
+	posqueue.V[0] = start
+	posqueue.N = 1
 	res.Set(start)
-	i := 0
+	i := int64(0)
 	dirs := Directions8()
-	for i < len(queue) {
-		pt := queue[i]
+	for i < posqueue.N {
+		pt := posqueue.V[i]
 		i++
 		for _, d := range dirs {
 			newPt := pt.Plus(d)
 			if m.InBounds(newPt) && !res.At(newPt) && m.Get(newPt) == goodVal {
 				res.Set(newPt)
-				queue = append(queue, newPt)
+				posqueue.V[posqueue.N] = newPt
+				posqueue.N++
 			}
 		}
 	}
 	return
 }
 
-func (m MatBool) ToSlice() (s []Pt) {
+var MatBoolArray posqueueArray
+
+func (m MatBool) ToSlice() []Pt {
+	MatBoolArray.N = 0
 	for i := range m.cells {
 		if m.cells[i] {
-			s = append(s, IPt(i%NCols, i/NCols))
+			MatBoolArray.V[MatBoolArray.N] = IPt(i%NCols, i/NCols)
+			MatBoolArray.N++
 		}
 	}
-	return
+	return MatBoolArray.V[:MatBoolArray.N]
 }
 
 func (m *MatBool) FromSlice(s []Pt) {
