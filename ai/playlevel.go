@@ -18,7 +18,7 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 
 	// Start moving every 30 frames (0.5 sec).
 	getFrameIdxOfNextMove := func(frameIdx int) int {
-		return frameIdx + RInt(I(r.MinNFramesBetweenActions), I(r.MaxNFramesBetweenActions)).ToInt()
+		return frameIdx + r.RInt(I(r.MinNFramesBetweenActions), I(r.MaxNFramesBetweenActions)).ToInt()
 	}
 
 	var rankedActions ActionsArray
@@ -33,7 +33,7 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 			// There is a random chance to degrade the quality of the
 			// action based on weights.
 			totalWeight := r.WeightOfRank1Action + r.WeightOfRank2Action
-			randomNumber := RInt(I(1), I(totalWeight)).ToInt()
+			randomNumber := r.RInt(I(1), I(totalWeight)).ToInt()
 			if randomNumber > r.WeightOfRank1Action {
 				action = rankedActions.V[1]
 			}
@@ -51,6 +51,7 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 }
 
 type RandomnessInPlay struct {
+	Rand
 	MinNFramesBetweenActions int
 	MaxNFramesBetweenActions int
 	WeightOfRank1Action      int
