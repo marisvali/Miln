@@ -71,7 +71,6 @@ func (w *World) State() []byte {
 	// current needs.
 
 	buf := new(bytes.Buffer)
-	Serialize(buf, int64(0))
 	Serialize(buf, w.Player.Health)
 	Serialize(buf, w.Player.Pos())
 	Serialize(buf, w.Enemies.N)
