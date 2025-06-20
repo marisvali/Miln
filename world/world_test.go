@@ -18,8 +18,8 @@ func TestWorld_Regression1(t *testing.T) {
 
 func RunPlaythrough(p Playthrough) {
 	w := NewWorld(p.Seed, p.Level)
-	for i := range p.History.N {
-		w.Step(p.History.Data[i])
+	for i := range p.History {
+		w.Step(p.History[i])
 	}
 }
 
@@ -52,35 +52,34 @@ func GetLargeWorld() World {
 
 	// Run the playthrough.
 	w := NewWorld(playthrough.Seed, playthrough.Level)
-	for i := range playthrough.History.N {
-		w.Step(playthrough.History.Data[i])
+	for i := range playthrough.History {
+		w.Step(playthrough.History[i])
 	}
 	return w
 }
 
 // Check how much time it takes to serialize a world (without compressing it).
 func BenchmarkSerializedPlaythrough_WithoutCompression(b *testing.B) {
-	// Initialize.
-	w := GetLargeWorld()
+	// Initialize, get large playthrough.
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run benchmark loop.
 	for b.Loop() {
-		// Serialize.
 		buf := new(bytes.Buffer)
 		Serialize(buf, int64(Version))
-		Serialize(buf, w.Playthrough)
+		Serialize(buf, p)
 	}
 }
 
 // Check how much time it takes to compress a serialized world.
 func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
-	// Initialize.
-	w := GetLargeWorld()
+	// Initialize, get large playthrough.
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Serialize the world to buf.
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
-	Serialize(buf, w.Playthrough)
+	Serialize(buf, p)
 
 	// Run benchmark loop.
 	for b.Loop() {
@@ -89,14 +88,14 @@ func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 }
 
 func BenchmarkWorldClone(b *testing.B) {
-	// Initialize.
-	w := GetLargeWorld()
+	// Initialize, get large playthrough.
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run benchmark loop.
-	res := int64(0)
+	res := 0
 	for b.Loop() {
-		w2 := w
-		res += w2.History.N
+		p2 := p
+		res += len(p2.History)
 	}
 }
 
@@ -105,8 +104,8 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 
 	// Run the playthrough halfway through.
 	w1 := NewWorld(playthrough.Seed, playthrough.Level)
-	for i := int64(0); i < playthrough.History.N/2; i++ {
-		w1.Step(playthrough.History.Data[i])
+	for i := 0; i < len(playthrough.History)/2; i++ {
+		w1.Step(playthrough.History[i])
 	}
 
 	w2 := w1
@@ -116,10 +115,10 @@ func TestWorld_PredictableRandomness(t *testing.T) {
 	// - its randomness is independent of global randomness
 	// - clones have the same randomness
 	noise := ZERO
-	for i := playthrough.History.N / 2; i < playthrough.History.N; i++ {
-		w1.Step(playthrough.History.Data[i])
+	for i := len(playthrough.History) / 2; i < len(playthrough.History); i++ {
+		w1.Step(playthrough.History[i])
 		noise.Add(RInt(I(0), I(10)))
-		w2.Step(playthrough.History.Data[i])
+		w2.Step(playthrough.History[i])
 	}
 
 	println(noise.ToInt64())

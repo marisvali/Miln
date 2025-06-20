@@ -7,6 +7,7 @@ import (
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/marisvali/miln/world/oldworld"
 	"math"
+	"slices"
 )
 
 type Beam struct {
@@ -38,9 +39,22 @@ type WorldObject interface {
 	State() string
 }
 
+type WorldInput struct {
+	Level
+	Seed    Int
+	History []PlayerInput
+}
+
+type Playthrough struct {
+	WorldInput
+	Id uuid.UUID
+}
+
 type World struct {
-	Playthrough
+	WorldDebugInfo
 	Rand
+	WorldParams
+	Obstacles         MatBool
 	Player            Player
 	Enemies           EnemiesArray
 	Beam              Beam
@@ -52,13 +66,6 @@ type World struct {
 	Ammos             AmmosArray
 	SpawnPortals      SpawnPortalsArray
 	vision            Vision
-}
-
-type Playthrough struct {
-	Level
-	Id      uuid.UUID
-	Seed    Int
-	History *PlayerInputArray
 }
 
 type PlayerInput struct {
@@ -133,10 +140,9 @@ func IsYamlLevel(filename string) bool {
 
 func NewWorld(seed Int, l Level) (w World) {
 	// Initialize values.
-	w.Level = l
-	w.Seed = seed
-	w.RSeed(w.Seed)
-	w.Id = uuid.New()
+	w.Obstacles = l.Obstacles
+	w.WorldParams = l.WorldParams
+	w.RSeed(seed)
 	for i := range l.SpawnPortalsParams.N {
 		w.SpawnPortals.Data[i] = NewSpawnPortal(w.RInt63(), l.SpawnPortalsParams.Data[i], w.WorldParams)
 	}
@@ -158,16 +164,20 @@ func NewWorld(seed Int, l Level) (w World) {
 	return
 }
 
-func (w *World) SerializedPlaythrough() []byte {
+func (p *Playthrough) Serialize() []byte {
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
-	Serialize(buf, w.Playthrough)
+	Serialize(buf, p)
 	return Zip(buf.Bytes())
 }
 
+func (p *Playthrough) Clone() Playthrough {
+	clone := *p
+	clone.History = slices.Clone(p.History)
+	return clone
+}
+
 func DeserializePlaythrough(data []byte) (p Playthrough) {
-	var historyBuf PlayerInputArray
-	p.History = &historyBuf
 	buf := bytes.NewBuffer(Unzip(data))
 	var token int64
 	Deserialize(buf, &token)
@@ -226,13 +236,7 @@ func (w *World) SpawnPortalPositions() (m MatBool) {
 }
 
 func (w *World) Step(input PlayerInput) {
-	if w.History != nil {
-		// Temporarily allow unrecorded steps to occur, required by AI
-		// simulations. But get ready to replace this with a different
-		// mechanism.
-		w.History.Data[w.History.N] = input
-		w.History.N++
-	}
+	w.StepDebug(input)
 
 	// Reset the player's state at the beginning.
 	// I don't want to put this inside the Player.Step because if I ever want
@@ -374,8 +378,6 @@ func OldPt(pt oldworld.Pt) Pt {
 }
 
 func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
-	var historyBuffer PlayerInputArray
-	p.History = &historyBuffer
 	po := oldworld.DeserializePlaythrough(data)
 	// Entities
 	for y := 0; y < po.Obstacles.Size().X.ToInt(); y++ {
@@ -416,15 +418,15 @@ func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
 	// Rest of Playthrough
 	p.Id = po.Id
 	p.Seed = I(po.Seed.ToInt())
+	p.History = make([]PlayerInput, len(po.History))
 	for i := range po.History {
-		p.History.Data[i].MousePt = OldPt(po.History[i].MousePt)
-		p.History.Data[i].LeftButtonPressed = po.History[i].LeftButtonPressed
-		p.History.Data[i].RightButtonPressed = po.History[i].RightButtonPressed
-		p.History.Data[i].Move = po.History[i].Move
-		p.History.Data[i].MovePt = OldPt(po.History[i].MovePt)
-		p.History.Data[i].Shoot = po.History[i].Shoot
-		p.History.Data[i].ShootPt = OldPt(po.History[i].ShootPt)
+		p.History[i].MousePt = OldPt(po.History[i].MousePt)
+		p.History[i].LeftButtonPressed = po.History[i].LeftButtonPressed
+		p.History[i].RightButtonPressed = po.History[i].RightButtonPressed
+		p.History[i].Move = po.History[i].Move
+		p.History[i].MovePt = OldPt(po.History[i].MovePt)
+		p.History[i].Shoot = po.History[i].Shoot
+		p.History[i].ShootPt = OldPt(po.History[i].ShootPt)
 	}
-	p.History.N = int64(len(po.History))
 	return
 }

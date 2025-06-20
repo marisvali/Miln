@@ -71,7 +71,7 @@ func (w *World) State() []byte {
 	// current needs.
 
 	buf := new(bytes.Buffer)
-	Serialize(buf, w.Seed.ToInt64())
+	Serialize(buf, int64(0))
 	Serialize(buf, w.Player.Health)
 	Serialize(buf, w.Player.Pos())
 	Serialize(buf, w.Enemies.N)
@@ -121,8 +121,8 @@ func RegressionId(p *Playthrough) string {
 	// Write the current state of the World to the hash.
 	hash.Write(w.State())
 
-	for i := range p.History.N {
-		w.Step(p.History.Data[i])
+	for i := range p.History {
+		w.Step(p.History[i])
 
 		// Write the current state of the World to the hash.
 		hash.Write(w.State())
