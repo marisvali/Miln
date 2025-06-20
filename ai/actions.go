@@ -89,7 +89,7 @@ func ComputeRankedActions(world World, rankedActions *ActionsArray) {
 func GoToFrame(playthrough Playthrough, frameIdx int64) World {
 	world := NewWorld(playthrough.Seed, playthrough.Level)
 	for i := int64(0); i < frameIdx; i++ {
-		input := playthrough.History.Data[i]
+		input := playthrough.History[i]
 		world.Step(input)
 	}
 	return world
@@ -150,7 +150,7 @@ func DebugRank(framesWithActions []int64, decisionFrames []int64,
 	fmt.Printf("decision frame: %d\n", decisionFrames[actionIdx])
 	println(ranksOfPlayerActions[actionIdx])
 	world := GoToFrame(playthrough, decisionFrames[actionIdx])
-	fmt.Printf("%+v\n", InputToAction(playthrough.History.Data[framesWithActions[actionIdx]]))
+	fmt.Printf("%+v\n", InputToAction(playthrough.History[framesWithActions[actionIdx]]))
 
 	println("debugging now")
 	println(FitnessOfAttackAction(world, IPt(7, 4)))
@@ -179,7 +179,7 @@ func GetRanksOfPlayerActions(playthrough Playthrough, framesWithActions []int64,
 	var rankedActions ActionsArray
 	for actionIdx := range framesWithActions {
 		ComputeRankedActionsPerFrame(playthrough, decisionFrames[actionIdx], &rankedActions)
-		playerAction := InputToAction(playthrough.History.Data[framesWithActions[actionIdx]])
+		playerAction := InputToAction(playthrough.History[framesWithActions[actionIdx]])
 		rank := FindActionRank(playerAction, &rankedActions)
 		ranksOfPlayerActions = append(ranksOfPlayerActions, rank)
 	}

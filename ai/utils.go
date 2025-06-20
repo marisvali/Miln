@@ -10,10 +10,10 @@ import (
 )
 
 func GetFramesWithActions(playthrough Playthrough) (framesWithActions []int64) {
-	for i := range playthrough.History.N {
-		input := playthrough.History.Data[i]
+	for i := range playthrough.History {
+		input := playthrough.History[i]
 		if input.Move || input.Shoot {
-			framesWithActions = append(framesWithActions, i)
+			framesWithActions = append(framesWithActions, int64(i))
 		}
 	}
 	return

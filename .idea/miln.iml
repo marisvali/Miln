@@ -7,7 +7,7 @@
           <option value="online" />
           <option value="nofixedlevels" />
           <option value="int_overflow_checks_disabled" />
-          <option value="world_debug_info_enabled" />
+          <option value="world_debug_info_disabled" />
         </array>
       </option>
     </buildTags>

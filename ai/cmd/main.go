@@ -36,7 +36,7 @@ func DoItAll() {
 			for i := 0; i < nPlaysPerLevel; i++ {
 				randomness.RSeed(I(i))
 				world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
-				WriteFile(fmt.Sprintf("outputs/ai-play-opt-%02d-%02d.mln016-opt", idx, i), world.SerializedPlaythrough())
+				// WriteFile(fmt.Sprintf("outputs/ai-play-opt-%02d-%02d.mln016-opt", idx, i), world.SerializedPlaythrough())
 				if world.Status() == Won {
 					totalHealth += world.Player.Health.ToInt()
 					fmt.Printf("win ")
