@@ -282,7 +282,6 @@ func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
 			if po.Obstacles.Get(oldworld.Pt{oldworld.I(x), oldworld.I(y)}) {
 				p.Obstacles.Set(IPt(x, y))
 			}
-
 		}
 	}
 	for i := range po.SpawnPortalsParams {

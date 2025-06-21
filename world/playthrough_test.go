@@ -3,8 +3,24 @@ package world
 import (
 	"bytes"
 	. "github.com/marisvali/miln/gamelib"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
+
+// Q: Is serialization at least self-consistent? If I serialize, deserialize
+// then serialize back, do I get the original thing? What about if I
+// deserialize, serialize and deserialize?
+func TestSerializationForSelfConsistency(t *testing.T) {
+	p1 := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
+	data1 := p1.Serialize()
+	p2 := DeserializePlaythrough(data1)
+	data2 := p2.Serialize()
+
+	// assert.Equal does a deep compare here and checks equality the way I want
+	// it checked. See reflect.DeepEqual().
+	assert.Equal(t, p1, p2)
+	assert.Equal(t, data1, data2)
+}
 
 // The benchmarks below are relevant mostly in relation to each other, to
 // answer the question: how long does playthrough serialization take and can it
