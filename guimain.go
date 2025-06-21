@@ -279,6 +279,7 @@ func (g *Gui) startLevel(seed Int, l Level) {
 	g.playthrough.Seed = seed
 	g.playthrough.Level = l
 	g.playthrough.Id = uuid.New()
+	g.playthrough.History = g.playthrough.History[:0]
 	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 	g.state = GameOngoing

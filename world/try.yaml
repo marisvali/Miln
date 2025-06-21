@@ -1,0 +1,16 @@
+- Pos: [20, 30]
+  SpawnPortalCooldown: 10
+  Waves:
+  - SecondsAfterLastWave: 0
+    NHounds: 2
+  - SecondsAfterLastWave: 0
+    NHounds: 3
+- Pos: [34, 54]
+  SpawnPortalCooldown: 10
+  Waves:
+  - SecondsAfterLastWave: 4
+    NHounds: 5
+  - SecondsAfterLastWave: 0
+    NHounds: 6
+  - SecondsAfterLastWave: 404
+    NHounds: 7

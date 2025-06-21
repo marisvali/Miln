@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	. "github.com/marisvali/miln/gamelib"
@@ -16,7 +17,9 @@ func (g *Gui) Update() error {
 	}
 	if g.folderWatcher2.FolderContentsChanged() {
 		// Reload world.
+		g.playthrough.Id = uuid.New()
 		g.playthrough.Level = GenerateLevel(g.FSys)
+		g.playthrough.History = g.playthrough.History[:0]
 		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 		g.updateWindowSize()
 	}
@@ -148,6 +151,8 @@ func (g *Gui) StartNextLevel() {
 }
 
 func (g *Gui) RestartLevel() {
+	g.playthrough.Id = uuid.New()
+	g.playthrough.History = g.playthrough.History[:0]
 	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 	g.state = GameOngoing
