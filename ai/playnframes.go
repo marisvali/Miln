@@ -24,13 +24,17 @@ import (
 // This works because the player moves each 20 frames which is quite fast.
 // The enemies must move at a reasonable speed and it helps if there are some
 // obstacles but not too many.
-func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
+func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) (p Playthrough) {
+	p.Seed = seed
+	p.Level = l
 	w := NewWorld(seed, l)
 
 	// Wait some period in the beginning.
 	frameIdx := 0
 	for ; frameIdx < 100; frameIdx++ {
-		w.Step(NeutralInput())
+		input := NeutralInput()
+		w.Step(input)
+		p.History = append(p.History, input)
 	}
 
 	var rankedActions ActionsArray
@@ -38,26 +42,33 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	// Move on the map.
 	{
 		ComputeRankedActions(w, &rankedActions)
-		w.Step(ActionToInput(rankedActions.V[0]))
+		input := ActionToInput(rankedActions.V[0])
+		w.Step(input)
+		p.History = append(p.History, input)
 	}
 
 	// Fight until only 3 enemy is left.
 	for {
 		if frameIdx%20 == 0 {
 			ComputeRankedActions(w, &rankedActions)
-			w.Step(ActionToInput(rankedActions.V[0]))
+			input := ActionToInput(rankedActions.V[0])
+			w.Step(input)
+			p.History = append(p.History, input)
+
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
-				return w
+				return
 			}
 			if w.Enemies.N == 3 {
 				break
 			}
 		} else {
-			w.Step(NeutralInput())
+			input := NeutralInput()
+			w.Step(input)
+			p.History = append(p.History, input)
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
-				return w
+				return
 			}
 		}
 		frameIdx++
@@ -65,10 +76,13 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 
 	// Wait until getting hit once.
 	for {
-		w.Step(NeutralInput())
+		input := NeutralInput()
+		w.Step(input)
+		p.History = append(p.History, input)
+
 		// After each world step, check if the game is over.
 		if w.Status() != Ongoing {
-			return w
+			return
 		}
 		if w.Player.JustHit {
 			break
@@ -81,29 +95,35 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 			ComputeRankedActions(w, &rankedActions)
 			for i := range rankedActions.N {
 				if rankedActions.V[i].Move {
-					w.Step(ActionToInput(rankedActions.V[i]))
+					input := ActionToInput(rankedActions.V[i])
+					w.Step(input)
+					p.History = append(p.History, input)
 					// After each world step, check if the game is over.
 					if w.Status() != Ongoing {
-						return w
+						return
 					}
 					break
 				}
 			}
 		} else {
-			w.Step(NeutralInput())
+			input := NeutralInput()
+			w.Step(input)
+			p.History = append(p.History, input)
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
-				return w
+				return
 			}
 		}
 	}
 
 	// Wait until getting hit once.
 	for {
-		w.Step(NeutralInput())
+		input := NeutralInput()
+		w.Step(input)
+		p.History = append(p.History, input)
 		// After each world step, check if the game is over.
 		if w.Status() != Ongoing {
-			return w
+			return
 		}
 		if w.Player.JustHit {
 			break
@@ -114,16 +134,20 @@ func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) World {
 	for {
 		if frameIdx%20 == 0 {
 			ComputeRankedActions(w, &rankedActions)
-			w.Step(ActionToInput(rankedActions.V[0]))
+			input := ActionToInput(rankedActions.V[0])
+			w.Step(input)
+			p.History = append(p.History, input)
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
-				return w
+				return
 			}
 		} else {
-			w.Step(NeutralInput())
+			input := NeutralInput()
+			w.Step(input)
+			p.History = append(p.History, input)
 			// After each world step, check if the game is over.
 			if w.Status() != Ongoing {
-				return w
+				return
 			}
 		}
 		frameIdx++

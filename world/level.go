@@ -15,7 +15,6 @@ type SpawnPortalParams struct {
 	Pos                 Pt         `yaml:"Pos"`
 	SpawnPortalCooldown Int        `yaml:"SpawnPortalCooldown"`
 	Waves               WavesArray `yaml:"Waves"`
-	WavesLen            int        `yaml:"WavesLen"`
 }
 
 type LevelYaml struct {

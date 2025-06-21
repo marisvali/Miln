@@ -36,7 +36,7 @@ func Test_LevelYaml(t *testing.T) {
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
 		sp.Waves.Data[0] = wave
-		sp.WavesLen++
+		sp.Waves.N++
 		sps.Data[i] = sp
 	}
 	l.SpawnPortalsParams = sps

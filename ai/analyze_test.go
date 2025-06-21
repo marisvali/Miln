@@ -160,8 +160,8 @@ func TestExtract(t *testing.T) {
 
 			playthrough := DeserializePlaythrough(ReadFile(dir + "/" + playthroughFiles[i]))
 			world := NewWorld(playthrough.Seed, playthrough.Level)
-			for j := range playthrough.History.N {
-				world.Step(playthrough.History.Data[j])
+			for j := range playthrough.History {
+				world.Step(playthrough.History[j])
 			}
 
 			// Playthrough	NEnemies	EnemySpeed	NObstacles	NFlames	PlayerHealth

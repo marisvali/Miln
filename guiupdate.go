@@ -102,6 +102,7 @@ func (g *Gui) UpdateGameOngoing() {
 
 	// input = g.ai.Step(&g.world)
 	g.world.Step(input)
+	g.playthrough.History = append(g.playthrough.History, input)
 	g.visWorld.Step(&g.world, input, g.GuiData)
 
 	if g.recordingFile != "" {

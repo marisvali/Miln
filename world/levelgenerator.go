@@ -117,7 +117,7 @@ func GenerateLevel(fsys FS) (l Level) {
 
 		// Build spawn portal using waves.
 		l.SpawnPortalsParams.Data[idx] = SpawnPortalParams{occ.OccupyRandomPos(&DefaultRand),
-			RInt(p.SpawnPortalCooldownMin, p.SpawnPortalCooldownMax), waves, len(portal.Waves)}
+			RInt(p.SpawnPortalCooldownMin, p.SpawnPortalCooldownMax), waves}
 	}
 	l.SpawnPortalsParams.N = int64(len(p.SpawnPortalDatas))
 	return
