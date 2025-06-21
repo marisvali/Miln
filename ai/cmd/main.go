@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	. "github.com/marisvali/miln/ai"
 	. "github.com/marisvali/miln/gamelib"
@@ -10,6 +9,27 @@ import (
 	"os"
 	"sync"
 )
+
+func DoIt(inputFile string, nPlaysPerLevel int, randomness RandomnessInPlay, idx int) (health float64) {
+	playthrough := DeserializePlaythroughFromOld(ReadFile(inputFile))
+	totalHealth := 0
+	// debug := idx == 13
+	debug := false
+	for i := 0; i < nPlaysPerLevel; i++ {
+		randomness.RSeed(I(i))
+		world := PlayLevel(playthrough.Level, playthrough.Seed, randomness, idx, i, debug)
+		// WriteFile(fmt.Sprintf("outputs/ai-play-opt-%02d-%02d.mln016-opt", idx, i), world.SerializedPlaythrough())
+		if world.Status() == Won {
+			totalHealth += world.Player.Health.ToInt()
+			fmt.Printf("win ")
+		} else {
+			fmt.Printf("loss ")
+		}
+	}
+	health = float64(totalHealth) / float64(nPlaysPerLevel)
+	fmt.Printf("health: %f\n", health)
+	return
+}
 
 func DoItAll() {
 	// debug.SetGCPercent(-1)
@@ -24,30 +44,12 @@ func DoItAll() {
 
 	healths := make([]float64, len(inputFiles))
 
-	consoleWriter := bufio.NewWriter(os.Stdout)
 	var wg sync.WaitGroup
 	for idx, inputFile := range inputFiles {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			Check(consoleWriter.Flush())
-			playthrough := DeserializePlaythroughFromOld(ReadFile(inputFile))
-			totalHealth := 0
-			for i := 0; i < nPlaysPerLevel; i++ {
-				randomness.RSeed(I(i))
-				world := PlayLevel(playthrough.Level, playthrough.Seed, randomness)
-				// WriteFile(fmt.Sprintf("outputs/ai-play-opt-%02d-%02d.mln016-opt", idx, i), world.SerializedPlaythrough())
-				if world.Status() == Won {
-					totalHealth += world.Player.Health.ToInt()
-					fmt.Printf("win ")
-				} else {
-					fmt.Printf("loss ")
-				}
-				Check(consoleWriter.Flush())
-			}
-			health := float64(totalHealth) / float64(nPlaysPerLevel)
-			fmt.Printf("health: %f\n", health)
-			healths[idx] = health
+			healths[idx] = DoIt(inputFile, nPlaysPerLevel, randomness, idx)
 		}()
 	}
 	wg.Wait()

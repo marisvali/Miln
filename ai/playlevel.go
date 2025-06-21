@@ -1,12 +1,13 @@
 package ai
 
 import (
+	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 	. "github.com/marisvali/miln/world"
 	_ "image/png"
 )
 
-func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
+func PlayLevel(l Level, seed Int, r RandomnessInPlay, levelIdx int, playIdx int, debug bool) World {
 	world := NewWorld(seed, l)
 
 	// Wait some period in the beginning.
@@ -23,6 +24,10 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 
 	var rankedActions ActionsArray
 	frameIdxOfNextMove := getFrameIdxOfNextMove(frameIdx)
+	debugFile := fmt.Sprintf("outputs/ai-debug-%02d-%02d", levelIdx, playIdx)
+	if debug {
+		DeleteFile(debugFile)
+	}
 	for {
 		input := PlayerInput{}
 
@@ -43,6 +48,22 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay) World {
 		}
 
 		world.Step(input)
+		if debug {
+			str := ""
+			if input.Move {
+				str += fmt.Sprintf("move  %02d %02d  ",
+					input.MovePt.X.ToInt(),
+					input.MovePt.X.ToInt())
+			} else if input.Shoot {
+				str += fmt.Sprintf("shoot %02d %02d  ",
+					input.ShootPt.X.ToInt(),
+					input.ShootPt.X.ToInt())
+			} else {
+				str += fmt.Sprintf("             ")
+			}
+			AppendToFile(debugFile, str)
+			AppendToFile(debugFile, world.StateStr()+"\n")
+		}
 		if world.Status() != Ongoing {
 			return world
 		}
