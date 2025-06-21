@@ -118,7 +118,7 @@ func Test_Func(t *testing.T) {
 }
 
 func Test_GeneratePracticeLevels(t *testing.T) {
-	workDir := "d:\\Miln\\stored\\experiment2\\ai-input"
+	workDir := "outputs"
 
 	// Generate practice data.
 	praticeDir := workDir + "\\practice-data"
@@ -141,8 +141,8 @@ func Test_GeneratePracticeLevels(t *testing.T) {
 
 	for paramIdx, params := range practiceParams {
 		levelS := fmt.Sprintf("practice-%02d", paramIdx+1)
-		SaveYAML(fmt.Sprintf("%s.mln013-params", levelS), params)
+		SaveYAML(fmt.Sprintf("%s.mln999-params", levelS), params)
 		l := GenerateLevelFromParams(params)
-		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln013-level", levelS))
+		l.SaveToYAML(RInt63(), fmt.Sprintf("%s.mln999-level", levelS))
 	}
 }
