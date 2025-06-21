@@ -95,6 +95,14 @@ func FileExists(fsys FS, name string) bool {
 	}
 }
 
+func AppendToFile(name string, str string) {
+	f, err := os.OpenFile(name, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	Check(err)
+	defer func(file *os.File) { Check(file.Close()) }(f)
+	_, err = f.WriteString(str)
+	Check(err)
+}
+
 func MakeDir(name string) {
 	err := os.MkdirAll(name, 0644)
 	Check(err)

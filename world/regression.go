@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	. "github.com/marisvali/miln/gamelib"
 )
 
@@ -82,6 +83,22 @@ func (w *World) State() []byte {
 	arr := w.Obstacles.ToArray()
 	Serialize(buf, arr.V[:arr.N])
 	return buf.Bytes()
+}
+
+func (w *World) StateStr() string {
+	var str string
+	str += fmt.Sprintf("%02d %02d %02d  ",
+		w.Player.Health.ToInt(),
+		w.Player.Pos().X.ToInt(),
+		w.Player.Pos().Y.ToInt())
+
+	for i := range w.Enemies.N {
+		str += fmt.Sprintf("%02d %02d %02d  ",
+			w.Enemies.Data[i].Health().ToInt(),
+			w.Enemies.Data[i].Pos().X.ToInt(),
+			w.Enemies.Data[i].Pos().Y.ToInt())
+	}
+	return str
 }
 
 // RegressionId returns a string which uniquely identifies the playthrough.
