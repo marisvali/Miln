@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	. "github.com/marisvali/miln/gamelib"
@@ -101,8 +100,7 @@ func (g *Gui) UpdateGameOngoing() {
 	}
 
 	// input = g.ai.Step(&g.world)
-	g.world.Step(input)
-	g.playthrough.History = append(g.playthrough.History, input)
+	Step(&g.playthrough, &g.world, input)
 	g.visWorld.Step(&g.world, input, g.GuiData)
 
 	if g.recordingFile != "" {
@@ -140,28 +138,13 @@ func (g *Gui) UserRequestedPlaybackPause() bool {
 }
 
 func (g *Gui) StartNewLevel() {
-	// Initialize playthrough.
-	g.playthrough.Seed = RInt(I(0), I(1000000))
-	g.playthrough.Level = GenerateLevel(g.FSys)
-	g.playthrough.Id = uuid.New()
-
-	// Create world from playthrough.
-	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
-
-	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
-	g.state = GameOngoing
+	seed := RInt(I(0), I(1000000))
+	level := GenerateLevel(g.FSys)
+	g.startLevel(seed, level)
 }
 
 func (g *Gui) StartNextLevel() {
-	// Initialize playthrough.
-	g.playthrough.Seed, g.playthrough.Level = g.GetCurrentFixedLevel()
-	g.playthrough.Id = uuid.New()
-
-	// Create world from playthrough.
-	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
-
-	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
-	g.state = GameOngoing
+	g.startLevel(g.GetCurrentFixedLevel())
 }
 
 func (g *Gui) RestartLevel() {

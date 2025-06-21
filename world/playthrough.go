@@ -46,3 +46,11 @@ func DeserializePlaythrough(data []byte) (p Playthrough) {
 	Deserialize(buf, &p)
 	return
 }
+
+// Step is just a utility function if you find yourself repeating the same
+// step operation many times, and you need to step a Playthrough and a World
+// at the same time.
+func Step(p *Playthrough, w *World, input PlayerInput) {
+	p.History = append(p.History, input)
+	w.Step(input)
+}
