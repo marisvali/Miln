@@ -1,54 +1,13 @@
 package world
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/google/uuid"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/marisvali/miln/world/oldworld"
 	"math"
-	"slices"
 )
 
-type Beam struct {
-	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
-	End Pt  // this is the point to where the beam ends
-}
-
 const Version = 999
-
-type WorldParams struct {
-	Boardgame                      bool `yaml:"Boardgame"`
-	UseAmmo                        bool `yaml:"UseAmmo"`
-	AmmoLimit                      Int  `yaml:"AmmoLimit"`
-	EnemyMoveCooldownDuration      Int  `yaml:"EnemyMoveCooldownDuration"`
-	EnemiesAggroWhenVisible        bool `yaml:"EnemiesAggroWhenVisible"`
-	SpawnPortalCooldownMin         Int  `yaml:"SpawnPortalCooldownMin"`
-	SpawnPortalCooldownMax         Int  `yaml:"SpawnPortalCooldownMax"`
-	HoundMaxHealth                 Int  `yaml:"HoundMaxHealth"`
-	HoundMoveCooldownMultiplier    Int  `yaml:"HoundMoveCooldownMultiplier"`
-	HoundPreparingToAttackCooldown Int  `yaml:"HoundPreparingToAttackCooldown"`
-	HoundAttackCooldownMultiplier  Int  `yaml:"HoundAttackCooldownMultiplier"`
-	HoundHitCooldownDuration       Int  `yaml:"HoundHitCooldownDuration"`
-	HoundHitsPlayer                bool `yaml:"HoundHitsPlayer"`
-	HoundAggroDistance             Int  `yaml:"HoundAggroDistance"`
-}
-
-type WorldObject interface {
-	Pos() Pt
-	State() string
-}
-
-type WorldInput struct {
-	Level
-	Seed    Int
-	History []PlayerInput
-}
-
-type Playthrough struct {
-	WorldInput
-	Id uuid.UUID
-}
 
 type World struct {
 	WorldDebugInfo
@@ -68,6 +27,33 @@ type World struct {
 	vision            Vision
 }
 
+type WorldParams struct {
+	Boardgame                      bool `yaml:"Boardgame"`
+	UseAmmo                        bool `yaml:"UseAmmo"`
+	AmmoLimit                      Int  `yaml:"AmmoLimit"`
+	EnemyMoveCooldownDuration      Int  `yaml:"EnemyMoveCooldownDuration"`
+	EnemiesAggroWhenVisible        bool `yaml:"EnemiesAggroWhenVisible"`
+	SpawnPortalCooldownMin         Int  `yaml:"SpawnPortalCooldownMin"`
+	SpawnPortalCooldownMax         Int  `yaml:"SpawnPortalCooldownMax"`
+	HoundMaxHealth                 Int  `yaml:"HoundMaxHealth"`
+	HoundMoveCooldownMultiplier    Int  `yaml:"HoundMoveCooldownMultiplier"`
+	HoundPreparingToAttackCooldown Int  `yaml:"HoundPreparingToAttackCooldown"`
+	HoundAttackCooldownMultiplier  Int  `yaml:"HoundAttackCooldownMultiplier"`
+	HoundHitCooldownDuration       Int  `yaml:"HoundHitCooldownDuration"`
+	HoundHitsPlayer                bool `yaml:"HoundHitsPlayer"`
+	HoundAggroDistance             Int  `yaml:"HoundAggroDistance"`
+}
+
+type Beam struct {
+	Idx Int // if this is greater than 0 it means the beam is active for Idx time steps
+	End Pt  // this is the point to where the beam ends
+}
+
+type WorldObject interface {
+	Pos() Pt
+	State() string
+}
+
 type PlayerInput struct {
 	MousePt            Pt
 	LeftButtonPressed  bool
@@ -76,66 +62,6 @@ type PlayerInput struct {
 	MovePt             Pt // tile-coordinates
 	Shoot              bool
 	ShootPt            Pt // tile-coordinates
-}
-
-type SpawnPortalParams struct {
-	Pos                 Pt         `yaml:"Pos"`
-	SpawnPortalCooldown Int        `yaml:"SpawnPortalCooldown"`
-	Waves               WavesArray `yaml:"Waves"`
-	WavesLen            int        `yaml:"WavesLen"`
-}
-
-type Entities struct {
-	Obstacles          MatBool                `yaml:"Obstacles"`
-	SpawnPortalsParams SpawnPortalParamsArray `yaml:"SpawnPortalsParams"`
-}
-
-type Level struct {
-	Entities    `yaml:"Entities"`
-	WorldParams `yaml:"WorldParams"`
-}
-
-type LevelYaml struct {
-	Version Int `yaml:"Version"`
-	Seed    Int `yaml:"Seed"`
-	Level   `yaml:"Level"`
-}
-
-type VersionYaml struct {
-	Version Int `yaml:"Version"`
-}
-
-func (l *Level) SaveToYAML(seed Int, filename string) {
-	var lYaml LevelYaml
-	lYaml.Version = I(Version)
-	lYaml.Seed = seed
-	lYaml.Level = *l
-	SaveYAML(filename, lYaml)
-}
-
-func LoadLevelFromYAML(fsys FS, filename string) (seed Int, l Level) {
-	var vYaml VersionYaml
-	LoadYAML(fsys, filename, &vYaml)
-	if vYaml.Version.ToInt64() != Version {
-		Check(fmt.Errorf("this code can't simulate this playthrough "+
-			"correctly - we are version %d and playthrough was generated "+
-			"with version %d",
-			Version, vYaml.Version.ToInt64()))
-	}
-
-	var lYaml LevelYaml
-	LoadYAML(fsys, filename, &lYaml)
-	return lYaml.Seed, lYaml.Level
-}
-
-func IsYamlLevel(filename string) bool {
-	b := ReadFile(filename)
-	versionS := "Version"
-	if len(b) <= len(versionS) {
-		return false
-	}
-	isYamlLevel := string(b[0:len(versionS)]) == versionS
-	return isYamlLevel
 }
 
 func NewWorld(seed Int, l Level) (w World) {
@@ -161,35 +87,6 @@ func NewWorld(seed Int, l Level) (w World) {
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
 	w.computeVisibleTiles()
-	return
-}
-
-func (p *Playthrough) Serialize() []byte {
-	buf := new(bytes.Buffer)
-	Serialize(buf, int64(Version))
-	Serialize(buf, p)
-	return Zip(buf.Bytes())
-}
-
-func (p *Playthrough) Clone() Playthrough {
-	clone := *p
-	clone.History = slices.Clone(p.History)
-	return clone
-}
-
-func DeserializePlaythrough(data []byte) (p Playthrough) {
-	buf := bytes.NewBuffer(Unzip(data))
-	var token int64
-	Deserialize(buf, &token)
-	// Add a temporary hardcoded rule between versions 13 and 16 as I know they
-	// are compatible.
-	if token != Version {
-		Check(fmt.Errorf("this code can't simulate this playthrough "+
-			"correctly - we are version %d and playthrough was generated "+
-			"with version %d",
-			Version, token))
-	}
-	Deserialize(buf, &p)
 	return
 }
 

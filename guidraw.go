@@ -423,7 +423,7 @@ func (g *Gui) DrawPlaybackBar(screen *ebiten.Image) {
 	// Playback bar cursor.
 	cursorWidth := float64(playbarHeight)
 	cursorHeight := float64(playbarHeight)
-	factor := g.frameIdx.ToFloat64() / float64(g.playthrough.History.N)
+	factor := g.frameIdx.ToFloat64() / float64(len(g.playthrough.History))
 	cursorX := factor*g.buttonPlaybackBar.Width().ToFloat64() - cursorWidth/2
 	DrawSprite(bar, g.imgPlaybackCursor, cursorX, 0, cursorWidth, cursorHeight)
 }

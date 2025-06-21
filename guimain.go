@@ -123,10 +123,9 @@ type Gui struct {
 }
 
 type uploadData struct {
-	user    string
-	version int64
-	id      uuid.UUID
-	world   *World
+	user        string
+	version     int64
+	playthrough *Playthrough
 }
 
 type GameState int64
@@ -191,13 +190,17 @@ func main() {
 		if IsYamlLevel(inputFile) {
 			// Play level loaded from YAML file.
 			g.playbackExecution = false
-			seed, level := LoadLevelFromYAML(
+
+			// Initialize playthrough.
+			g.playthrough.Seed, g.playthrough.Level = LoadLevelFromYAML(
 				os.DirFS(filepath.Dir(inputFile)).(FS),
 				filepath.Base(inputFile))
-			g.world = NewWorld(seed, level)
-			var historyBuf PlayerInputArray
-			g.world.History = &historyBuf
-			InitializeIdInDbHttp(g.username, Version, g.world.Id)
+			g.playthrough.Id = uuid.New()
+
+			// Create world from playthrough.
+			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+
+			InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 			g.state = GameOngoing
 		} else {
 			// Replay a playthrough loaded from a file.
@@ -210,29 +213,35 @@ func main() {
 		// Play pre-defined levels in order.
 		g.playbackExecution = false
 		if g.HasMoreFixedLevels() {
-			g.world = NewWorld(g.GetCurrentFixedLevel())
-			var historyBuf PlayerInputArray
-			g.world.History = &historyBuf
-			InitializeIdInDbHttp(g.username, Version, g.world.Id)
+			// Initialize playthrough.
+			g.playthrough.Seed, g.playthrough.Level = g.GetCurrentFixedLevel()
+			g.playthrough.Id = uuid.New()
+
+			// Create world from playthrough.
+			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+
+			InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 			g.state = GameOngoing
 		} else {
 			// Show a bogus, empty level, just so that the code that draws
 			// the interface can work as usual.
 			var l Level
 			g.world = NewWorld(I(0), l)
-			var historyBuf PlayerInputArray
-			g.world.History = &historyBuf
 			g.state = GameWon
 		}
 	} else {
 		// Play random level.
 		g.playbackExecution = false
-		seed := RInt(I(0), I(1000000))
-		level := GenerateLevel(g.FSys)
-		g.world = NewWorld(seed, level)
-		var historyBuf PlayerInputArray
-		g.world.History = &historyBuf
-		InitializeIdInDbHttp(g.username, Version, g.world.Id)
+
+		// Initialize playthrough.
+		g.playthrough.Seed = RInt(I(0), I(1000000))
+		g.playthrough.Level = GenerateLevel(g.FSys)
+		g.playthrough.Id = uuid.New()
+
+		// Create world from playthrough.
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+
+		InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 		g.state = GameOngoing
 	}
 

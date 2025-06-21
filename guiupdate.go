@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	. "github.com/marisvali/miln/gamelib"
@@ -16,8 +17,8 @@ func (g *Gui) Update() error {
 	}
 	if g.folderWatcher2.FolderContentsChanged() {
 		// Reload world.
-		level := GenerateLevel(g.FSys)
-		g.world = NewWorld(g.world.Seed, level)
+		g.playthrough.Level = GenerateLevel(g.FSys)
+		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
 		g.updateWindowSize()
 	}
 
@@ -104,7 +105,7 @@ func (g *Gui) UpdateGameOngoing() {
 	g.visWorld.Step(&g.world, input, g.GuiData)
 
 	if g.recordingFile != "" {
-		WriteFile(g.recordingFile, g.world.SerializedPlaythrough())
+		WriteFile(g.recordingFile, g.playthrough.Serialize())
 	}
 	if g.frameIdx.Mod(I(60)) == ZERO {
 		g.uploadCurrentWorld()
@@ -138,25 +139,33 @@ func (g *Gui) UserRequestedPlaybackPause() bool {
 }
 
 func (g *Gui) StartNewLevel() {
-	seed := RInt(I(0), I(1000000))
-	level := GenerateLevel(g.FSys)
-	g.world = NewWorld(seed, level)
-	// g.world = NewWorld(RInt(I(0), I(10000000)), RInt(I(55), I(70)))
-	// InitializeIdInDbSql(g.db, g.world.Id)
-	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	// Initialize playthrough.
+	g.playthrough.Seed = RInt(I(0), I(1000000))
+	g.playthrough.Level = GenerateLevel(g.FSys)
+	g.playthrough.Id = uuid.New()
+
+	// Create world from playthrough.
+	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+
+	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 	g.state = GameOngoing
 }
 
 func (g *Gui) StartNextLevel() {
-	g.world = NewWorld(g.GetCurrentFixedLevel())
-	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	// Initialize playthrough.
+	g.playthrough.Seed, g.playthrough.Level = g.GetCurrentFixedLevel()
+	g.playthrough.Id = uuid.New()
+
+	// Create world from playthrough.
+	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+
+	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 	g.state = GameOngoing
 }
 
 func (g *Gui) RestartLevel() {
-	g.world = NewWorld(g.world.Seed, g.world.Level)
-	// InitializeIdInDbSql(g.db, g.world.Id)
-	InitializeIdInDbHttp(g.username, Version, g.world.Id)
+	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
 	g.state = GameOngoing
 }
 
@@ -241,7 +250,7 @@ func (g *Gui) UpdateGameLost() {
 }
 
 func (g *Gui) UpdatePlayback() {
-	nFrames := I64(g.playthrough.History.N)
+	nFrames := I(len(g.playthrough.History))
 
 	if g.UserRequestedPlaybackPause() {
 		g.playbackPaused = !g.playbackPaused
@@ -301,7 +310,7 @@ func (g *Gui) UpdatePlayback() {
 
 		// Replay the world.
 		for i := 0; i < targetFrameIdx.ToInt(); i++ {
-			input := g.playthrough.History.Data[i]
+			input := g.playthrough.History[i]
 			g.world.Step(input)
 			g.visWorld.Step(&g.world, input, g.GuiData)
 		}
@@ -311,7 +320,7 @@ func (g *Gui) UpdatePlayback() {
 	}
 
 	// Get input from recording.
-	input := g.playthrough.History.Data[g.frameIdx.ToInt()]
+	input := g.playthrough.History[g.frameIdx.ToInt()]
 	// Remember cursor position in order to draw the virtual cursor during
 	// Draw().
 	g.mousePt = input.MousePt

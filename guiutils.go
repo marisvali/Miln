@@ -19,8 +19,7 @@ func (g *Gui) uploadCurrentWorld() {
 	// If the connection to the server drops for a few seconds, either due to
 	// the player's connection or the server not being available, it will
 	// interrupt the gameplay.
-	clone := g.world
-	g.uploadDataChannel <- uploadData{g.username, Version, g.world.Id, &clone}
+	g.uploadDataChannel <- uploadData{g.username, Version, g.playthrough.Clone()}
 }
 
 func UploadPlaythroughs(ch chan uploadData) {
@@ -30,7 +29,7 @@ func UploadPlaythroughs(ch chan uploadData) {
 		data := <-ch
 
 		// Upload the data.
-		UploadDataToDbHttp(data.user, data.version, data.id, data.world.SerializedPlaythrough())
+		UploadDataToDbHttp(data.user, data.version, data.playthrough.Id, data.playthrough.Serialize())
 	}
 }
 
