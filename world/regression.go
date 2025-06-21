@@ -77,8 +77,8 @@ func (w *World) State() []byte {
 	Serialize(buf, w.Enemies.N)
 	for i := range w.Enemies.N {
 		Serialize(buf, int64(0)) // leftover from previous serializing scheme
-		Serialize(buf, w.Enemies.Data[i].Health())
-		Serialize(buf, w.Enemies.Data[i].Pos())
+		Serialize(buf, w.Enemies.V[i].Health())
+		Serialize(buf, w.Enemies.V[i].Pos())
 	}
 	arr := w.Obstacles.ToArray()
 	Serialize(buf, arr.V[:arr.N])
@@ -94,9 +94,9 @@ func (w *World) StateStr() string {
 
 	for i := range w.Enemies.N {
 		str += fmt.Sprintf("%02d %02d %02d  ",
-			w.Enemies.Data[i].Health().ToInt(),
-			w.Enemies.Data[i].Pos().X.ToInt(),
-			w.Enemies.Data[i].Pos().Y.ToInt())
+			w.Enemies.V[i].Health().ToInt(),
+			w.Enemies.V[i].Pos().X.ToInt(),
+			w.Enemies.V[i].Pos().Y.ToInt())
 	}
 	return str
 }

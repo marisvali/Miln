@@ -65,12 +65,12 @@ func (p *Player) Step(w *World, input PlayerInput) {
 
 			// Collect ammos.
 			for i := int64(0); i < w.Ammos.N; {
-				if w.Ammos.Data[i].Pos == w.Player.pos {
-					w.Player.AmmoCount.Add(w.Ammos.Data[i].Count)
+				if w.Ammos.V[i].Pos == w.Player.pos {
+					w.Player.AmmoCount.Add(w.Ammos.V[i].Count)
 					if w.Player.AmmoCount.Gt(w.Player.AmmoLimit) {
 						w.Player.AmmoCount = w.Player.AmmoLimit
 					}
-					w.Ammos.Data[i] = w.Ammos.Data[w.Ammos.N-1]
+					w.Ammos.V[i] = w.Ammos.V[w.Ammos.N-1]
 					w.Ammos.N--
 				} else {
 					i++
@@ -85,7 +85,7 @@ func (p *Player) Step(w *World, input PlayerInput) {
 
 		nShotEnemies := 0
 		for i := range w.Enemies.N {
-			if w.Enemies.Data[i].Pos().Eq(input.ShootPt) {
+			if w.Enemies.V[i].Pos().Eq(input.ShootPt) {
 				nShotEnemies++
 			}
 		}

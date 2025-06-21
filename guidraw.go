@@ -107,19 +107,19 @@ func (g *Gui) DrawPlayRegion(screen *ebiten.Image) {
 	// Draw portals.
 	if g.DrawSpawnPortal {
 		for i := range g.world.SpawnPortals.N {
-			p := &g.world.SpawnPortals.Data[i]
+			p := &g.world.SpawnPortals.V[i]
 			g.DrawTile(screen, g.imgSpawnPortal, p.Pos())
 		}
 	}
 
 	// Draw ammo.
 	for i := range g.world.Ammos.N {
-		g.DrawTile(screen, g.imgAmmo, g.world.Ammos.Data[i].Pos)
+		g.DrawTile(screen, g.imgAmmo, g.world.Ammos.V[i].Pos)
 	}
 
 	// Draw enemy.
 	for i := range g.world.Enemies.N {
-		g.DrawEnemy(screen, &g.world.Enemies.Data[i])
+		g.DrawEnemy(screen, &g.world.Enemies.V[i])
 	}
 
 	// Draw all animations for world objects.

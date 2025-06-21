@@ -16,13 +16,13 @@ func ClosestEnemy(pt Pt, w *World) Hound {
 	minDist := I(math.MaxInt64)
 	minI := int64(-1)
 	for i := range w.Enemies.N {
-		dist := w.Enemies.Data[i].Pos().Minus(pt).SquaredLen()
+		dist := w.Enemies.V[i].Pos().Minus(pt).SquaredLen()
 		if dist.Lt(minDist) {
 			minDist = dist
 			minI = i
 		}
 	}
-	return w.Enemies.Data[minI]
+	return w.Enemies.V[minI]
 }
 
 // func CanAttackEnemy(w *World, e Enemy) bool {
@@ -34,7 +34,7 @@ func ClosestEnemy(pt Pt, w *World) Hound {
 
 func InDangerZone(w *World, pos Pt) bool {
 	for i := range w.Enemies.N {
-		if w.Enemies.Data[i].Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
+		if w.Enemies.V[i].Pos().Minus(pos).Len().Lt(I(DistanceToDangerZone)) {
 			return true
 		}
 	}

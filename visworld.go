@@ -87,10 +87,10 @@ func (v *VisWorld) UpdateWhichObjectsExist(w *World) {
 		objs = append(objs, &w.Player)
 	}
 	for i := range w.Enemies.N {
-		objs = append(objs, &w.Enemies.Data[i])
+		objs = append(objs, &w.Enemies.V[i])
 	}
 	for i := range w.SpawnPortals.N {
-		objs = append(objs, &w.SpawnPortals.Data[i])
+		objs = append(objs, &w.SpawnPortals.V[i])
 	}
 
 	// Create animations for objects that don't have them.

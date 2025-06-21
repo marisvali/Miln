@@ -67,9 +67,9 @@ func GenerateLevelFromParams(p Param) Level {
 		wave := Wave{}
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
-		sp.Waves.Data[0] = wave
+		sp.Waves.V[0] = wave
 		sp.Waves.N = 1
-		l.SpawnPortalsParams.Data[i] = sp
+		l.SpawnPortalsParams.V[i] = sp
 	}
 	l.SpawnPortalsParams.N = p.NEnemies.ToInt64()
 	return l

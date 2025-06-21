@@ -35,9 +35,9 @@ func Test_LevelYaml(t *testing.T) {
 		wave := Wave{}
 		wave.SecondsAfterLastWave = I(0)
 		wave.NHounds = I(1)
-		sp.Waves.Data[0] = wave
+		sp.Waves.V[0] = wave
 		sp.Waves.N++
-		sps.Data[i] = sp
+		sps.V[i] = sp
 	}
 	l.SpawnPortalsParams = sps
 	l.SpawnPortalsParams.N = 3
@@ -48,7 +48,7 @@ func Test_LevelYaml(t *testing.T) {
 	LoadYAML(fsys, filename, &l2)
 	DeleteFile(filename)
 	assert.Equal(t, l, l2)
-	l2.SpawnPortalsParams.Data[1].Waves.Data[0].SecondsAfterLastWave = I(99)
+	l2.SpawnPortalsParams.V[1].Waves.V[0].SecondsAfterLastWave = I(99)
 	assert.NotEqual(t, l, l2)
 
 	l2.SaveToYAML(I(10), filename)

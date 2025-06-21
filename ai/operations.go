@@ -61,7 +61,7 @@ func ValidAttack(world *World, pos Pt) bool {
 func NumMovesToAmmo(world *World, pos Pt) int {
 	ammos := MatBool{}
 	for i := range world.Ammos.N {
-		ammos.Set(world.Ammos.Data[i].Pos)
+		ammos.Set(world.Ammos.V[i].Pos)
 	}
 	if ammos.Get(pos) {
 		return 0
@@ -79,7 +79,7 @@ func NumMovesToEnemy(world *World, pos Pt) int {
 }
 func AmmoAtPos(world *World, pos Pt) bool {
 	for i := range world.Ammos.N {
-		if world.Ammos.Data[i].Pos == pos {
+		if world.Ammos.V[i].Pos == pos {
 			return true
 		}
 	}

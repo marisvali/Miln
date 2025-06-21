@@ -45,7 +45,7 @@ func WorldState(frameIdx int, w *World) {
 	pts = append(pts, w.Player.Pos())
 
 	for i := range w.Enemies.N {
-		pts = append(pts, w.Enemies.Data[i].Pos())
+		pts = append(pts, w.Enemies.V[i].Pos())
 	}
 
 	fmt.Printf("%04d  ", frameIdx)

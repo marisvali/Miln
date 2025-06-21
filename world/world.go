@@ -70,7 +70,7 @@ func NewWorld(seed Int, l Level) (w World) {
 	w.WorldParams = l.WorldParams
 	w.RSeed(seed)
 	for i := range l.SpawnPortalsParams.N {
-		w.SpawnPortals.Data[i] = NewSpawnPortal(w.RInt63(), l.SpawnPortalsParams.Data[i], w.WorldParams)
+		w.SpawnPortals.V[i] = NewSpawnPortal(w.RInt63(), l.SpawnPortalsParams.V[i], w.WorldParams)
 	}
 	w.SpawnPortals.N = l.SpawnPortalsParams.N
 	w.vision = NewVision()
@@ -104,22 +104,22 @@ func (w *World) computeVisibleTiles() {
 	// Compute which tiles are visible.
 	obstacles := w.Obstacles
 	for i := range w.Enemies.N {
-		obstacles.Set(w.Enemies.Data[i].Pos())
+		obstacles.Set(w.Enemies.V[i].Pos())
 	}
 	w.VisibleTiles = w.vision.Compute(w.Player.Pos(), obstacles)
 }
 
 func (w *World) EnemyPositions() (m MatBool) {
 	for i := range w.Enemies.N {
-		m.Set(w.Enemies.Data[i].Pos())
+		m.Set(w.Enemies.V[i].Pos())
 	}
 	return
 }
 
 func (w *World) VulnerableEnemyPositions() (m MatBool) {
 	for i := range w.Enemies.N {
-		if w.Enemies.Data[i].Vulnerable(w) {
-			m.Set(w.Enemies.Data[i].Pos())
+		if w.Enemies.V[i].Vulnerable(w) {
+			m.Set(w.Enemies.V[i].Pos())
 		}
 	}
 	return
@@ -127,7 +127,7 @@ func (w *World) VulnerableEnemyPositions() (m MatBool) {
 
 func (w *World) SpawnPortalPositions() (m MatBool) {
 	for i := range w.SpawnPortals.N {
-		m.Set(w.SpawnPortals.Data[i].pos)
+		m.Set(w.SpawnPortals.V[i].pos)
 	}
 	return
 }
@@ -160,12 +160,12 @@ func (w *World) Step(input PlayerInput) {
 
 		// Step the enemies.
 		for i := range w.Enemies.N {
-			w.Enemies.Data[i].Step(w)
+			w.Enemies.V[i].Step(w)
 		}
 
 		// Step SpawnPortalsParams.
 		for i := range w.SpawnPortals.N {
-			w.SpawnPortals.Data[i].Step(w)
+			w.SpawnPortals.V[i].Step(w)
 		}
 
 		if w.EnemyMoveCooldown.Ready() {
@@ -176,8 +176,8 @@ func (w *World) Step(input PlayerInput) {
 	// Cull dead enemies.
 	n := int64(0)
 	for i := range w.Enemies.N {
-		if w.Enemies.Data[i].Alive() {
-			w.Enemies.Data[n] = w.Enemies.Data[i]
+		if w.Enemies.V[i].Alive() {
+			w.Enemies.V[n] = w.Enemies.V[i]
 			n++
 		}
 	}
@@ -186,8 +186,8 @@ func (w *World) Step(input PlayerInput) {
 	// Cull dead SpawnPortals.
 	n = int64(0)
 	for i := range w.SpawnPortals.N {
-		if w.SpawnPortals.Data[i].Health.IsPositive() {
-			w.SpawnPortals.Data[n] = w.SpawnPortals.Data[i]
+		if w.SpawnPortals.V[i].Health.IsPositive() {
+			w.SpawnPortals.V[n] = w.SpawnPortals.V[i]
 			n++
 		}
 	}
@@ -206,7 +206,7 @@ func (w *World) SpawnAmmos() {
 		// Count ammo available in the world now.
 		available := ZERO
 		for i := range w.Ammos.N {
-			available.Add(w.Ammos.Data[i].Count)
+			available.Add(w.Ammos.V[i].Count)
 		}
 
 		// Count total ammo.
@@ -221,11 +221,11 @@ func (w *World) SpawnAmmos() {
 		// spawn ammo.
 		occ := w.Obstacles
 		for i := range w.Ammos.N {
-			occ.Set(w.Ammos.Data[i].Pos)
+			occ.Set(w.Ammos.V[i].Pos)
 		}
 		occ.Set(w.Player.Pos())
 		for i := range w.Enemies.N {
-			occ.Set(w.Enemies.Data[i].Pos())
+			occ.Set(w.Enemies.V[i].Pos())
 		}
 
 		// Spawn ammo.
@@ -233,19 +233,19 @@ func (w *World) SpawnAmmos() {
 			Pos:   occ.OccupyRandomPos(&w.Rand),
 			Count: I(3),
 		}
-		w.Ammos.Data[w.Ammos.N] = ammo
+		w.Ammos.V[w.Ammos.N] = ammo
 		w.Ammos.N++
 	}
 }
 
 func (w *World) AllEnemiesDead() bool {
 	for i := range w.Enemies.N {
-		if w.Enemies.Data[i].Alive() {
+		if w.Enemies.V[i].Alive() {
 			return false
 		}
 	}
 	for i := range w.SpawnPortals.N {
-		if w.SpawnPortals.Data[i].Active() {
+		if w.SpawnPortals.V[i].Active() {
 			return false
 		}
 	}
@@ -285,13 +285,13 @@ func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
 		}
 	}
 	for i := range po.SpawnPortalsParams {
-		p.SpawnPortalsParams.Data[i].Pos = IPt(po.SpawnPortalsParams[i].Pos.X.ToInt(), po.SpawnPortalsParams[i].Pos.Y.ToInt())
-		p.SpawnPortalsParams.Data[i].SpawnPortalCooldown = I(po.SpawnPortalsParams[i].SpawnPortalCooldown.ToInt())
+		p.SpawnPortalsParams.V[i].Pos = IPt(po.SpawnPortalsParams[i].Pos.X.ToInt(), po.SpawnPortalsParams[i].Pos.Y.ToInt())
+		p.SpawnPortalsParams.V[i].SpawnPortalCooldown = I(po.SpawnPortalsParams[i].SpawnPortalCooldown.ToInt())
 		for j := range po.SpawnPortalsParams[i].Waves {
-			p.SpawnPortalsParams.Data[i].Waves.Data[j].SecondsAfterLastWave = I(po.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave.ToInt())
-			p.SpawnPortalsParams.Data[i].Waves.Data[j].NHounds = I(po.SpawnPortalsParams[i].Waves[j].NHounds.ToInt())
+			p.SpawnPortalsParams.V[i].Waves.V[j].SecondsAfterLastWave = I(po.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave.ToInt())
+			p.SpawnPortalsParams.V[i].Waves.V[j].NHounds = I(po.SpawnPortalsParams[i].Waves[j].NHounds.ToInt())
 		}
-		p.SpawnPortalsParams.Data[i].Waves.N = int64(len(po.SpawnPortalsParams[i].Waves))
+		p.SpawnPortalsParams.V[i].Waves.N = int64(len(po.SpawnPortalsParams[i].Waves))
 	}
 	p.SpawnPortalsParams.N = int64(len(po.SpawnPortalsParams))
 

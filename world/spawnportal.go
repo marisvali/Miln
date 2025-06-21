@@ -37,7 +37,7 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 	waveStarts := [100]Int{}
 	startOfLastWave := ZERO
 	for i := range p.Waves.N {
-		framesAfterLastWave := p.Waves.Data[i].SecondsAfterLastWave.Times(I(60))
+		framesAfterLastWave := p.Waves.V[i].SecondsAfterLastWave.Times(I(60))
 		startOfThisWave := startOfLastWave.Plus(framesAfterLastWave)
 		waveStarts[i] = startOfThisWave
 		startOfLastWave = startOfThisWave
@@ -57,12 +57,12 @@ func (p *SpawnPortal) CurrentWave() *Wave {
 
 	if p.frameIdx.Geq(waveStarts[waveStartsLen-1]) {
 		// The last wave is active.
-		return &p.Waves.Data[waveStartsLen-1]
+		return &p.Waves.V[waveStartsLen-1]
 	}
 
 	for i := range waveStartsLen {
 		if p.frameIdx.Lt(waveStarts[i]) {
-			return &p.Waves.Data[i-1]
+			return &p.Waves.V[i-1]
 		}
 	}
 
@@ -88,7 +88,7 @@ func (p *SpawnPortal) Step(w *World) {
 	}
 
 	if wave.NHounds.IsPositive() {
-		w.Enemies.Data[w.Enemies.N] = NewHound(p.RInt63(), p.worldParams, p.pos)
+		w.Enemies.V[w.Enemies.N] = NewHound(p.RInt63(), p.worldParams, p.pos)
 		w.Enemies.N++
 		wave.NHounds.Dec()
 	}
@@ -98,7 +98,7 @@ func (p *SpawnPortal) Step(w *World) {
 
 func (p *SpawnPortal) Active() bool {
 	wave := p.CurrentWave()
-	if wave != &p.Waves.Data[p.Waves.N-1] {
+	if wave != &p.Waves.V[p.Waves.N-1] {
 		// We are not at the last wave yet.
 		return true
 	}
