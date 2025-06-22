@@ -11,7 +11,7 @@ import (
 // then serialize back, do I get the original thing? What about if I
 // deserialize, serialize and deserialize?
 func TestSerializationForSelfConsistency(t *testing.T) {
-	p1 := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
+	p1 := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 	data1 := p1.Serialize()
 	p2 := DeserializePlaythrough(data1)
 	data2 := p2.Serialize()
@@ -39,25 +39,31 @@ func TestSerializationForSelfConsistency(t *testing.T) {
 // it).
 func BenchmarkSerializedPlaythrough_WithoutCompression(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run benchmark loop.
 	for b.Loop() {
 		buf := new(bytes.Buffer)
 		Serialize(buf, int64(Version))
-		Serialize(buf, p)
+		Serialize(buf, p.Level)
+		Serialize(buf, p.Id)
+		Serialize(buf, p.Seed)
+		SerializeSlice(buf, p.History)
 	}
 }
 
 // Check how much time it takes to compress a serialized world.
 func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Serialize the world to buf.
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
-	Serialize(buf, p)
+	Serialize(buf, p.Level)
+	Serialize(buf, p.Id)
+	Serialize(buf, p.Seed)
+	SerializeSlice(buf, p.History)
 
 	// Run benchmark loop.
 	for b.Loop() {
@@ -67,7 +73,7 @@ func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 
 func BenchmarkPlaythroughClone(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythroughFromOld(ReadFile("playthroughs/large-playthrough.mln016"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
 
 	// Run benchmark loop.
 	res := 0

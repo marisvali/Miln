@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"github.com/alecthomas/binary"
 	. "github.com/marisvali/miln/gamelib"
 	"github.com/stretchr/testify/assert"
@@ -91,6 +92,44 @@ func TestSerializeSameDataDifferentNames_alecthomas(t *testing.T) {
 	err = binary.Unmarshal(buf, &s2Twin)
 	assert.NoError(t, err)
 	assert.Equal(t, s1Twin, s2Twin)
+}
+
+func TestDeseriaizingInSteps_alecthomas(t *testing.T) {
+	buf, err := binary.Marshal(s1)
+	assert.NoError(t, err)
+	var s2 S3
+	buf2 := bytes.NewBuffer(buf)
+	d1 := binary.NewDecoder(buf2)
+	err = d1.Decode(&s2.T)
+	assert.NoError(t, err)
+	d2 := binary.NewDecoder(buf2)
+	err = d2.Decode(&s2.V)
+	assert.NoError(t, err)
+	assert.Equal(t, s1, s2)
+}
+
+func TestStructWithArray1_alecthomas(t *testing.T) {
+	type SArr struct {
+		X [2]int64
+	}
+
+	var v1 SArr
+	buf, err := binary.Marshal(v1)
+	assert.NoError(t, err)
+
+	var v2 SArr
+	err = binary.Unmarshal(buf, &v2)
+	assert.NoError(t, err)
+	assert.Equal(t, v1, v2)
+}
+
+func TestStructWithArray2_alecthomas(t *testing.T) {
+	buf, err := binary.Marshal(s1Arr)
+	assert.NoError(t, err)
+	var s2Arr S3Arr
+	err = binary.Unmarshal(buf, &s2Arr)
+	assert.NoError(t, err)
+	assert.Equal(t, s1Arr, s2Arr)
 }
 
 // BenchmarkSerializeWorldData_alecthomas-12    	   86332	     13243 ns/op

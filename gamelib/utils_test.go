@@ -110,3 +110,123 @@ func TestSeralizationSliceOfSlice(t *testing.T) {
 	Deserialize(buf, &y)
 	assert.Equal(t, x, y)
 }
+
+func TestSeralizationArray(t *testing.T) {
+	var x [3]int64
+	x[0], x[1], x[2] = 3, 12, 9
+	buf := new(bytes.Buffer)
+	Serialize(buf, x)
+	var y [3]int64
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationArrayOfArray(t *testing.T) {
+	type T1 struct {
+		X [2]int64
+	}
+	type T2 struct {
+		X [2]T1
+		Y int64
+	}
+	var x T2
+	x.X[0].X[0] = 39
+	x.X[0].X[1] = 927
+	x.X[1].X[0] = 3333
+	x.X[1].X[1] = -3
+	x.Y = 931
+
+	buf := new(bytes.Buffer)
+	Serialize(buf, x)
+	var y T2
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationSameBytesDifferentTypeNames(t *testing.T) {
+	type Struct1 struct {
+		A1 Int
+		B1 Int
+	}
+	type Struct2 struct {
+		A2 Int
+		B2 Int
+	}
+	var x Struct1
+	x.A1 = I64(103)
+	x.B1 = I64(93772)
+	buf1 := new(bytes.Buffer)
+	Serialize(buf1, x)
+	var y Struct2
+	Deserialize(buf1, &y)
+	buf2 := new(bytes.Buffer)
+	Serialize(buf2, y)
+	var z Struct1
+	Deserialize(buf2, &z)
+	assert.Equal(t, x, z)
+}
+
+func TestSeralizationInSteps1(t *testing.T) {
+	type Struct struct {
+		A Int
+		B Int
+	}
+	var x Struct
+	x.A = I64(103)
+	x.B = I64(93772)
+	buf := new(bytes.Buffer)
+	Serialize(buf, x.A)
+	Serialize(buf, x.B)
+	var y Struct
+	Deserialize(buf, &y.A)
+	Deserialize(buf, &y.B)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationInSteps2(t *testing.T) {
+	type Struct struct {
+		A Int
+		B Int
+	}
+	var x Struct
+	x.A = I64(103)
+	x.B = I64(93772)
+	buf := new(bytes.Buffer)
+	Serialize(buf, x)
+	var y Struct
+	Deserialize(buf, &y.A)
+	Deserialize(buf, &y.B)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationInSteps3(t *testing.T) {
+	type Struct struct {
+		A Int
+		B Int
+	}
+	var x Struct
+	x.A = I64(103)
+	x.B = I64(93772)
+	buf := new(bytes.Buffer)
+	Serialize(buf, x.A)
+	Serialize(buf, x.B)
+	var y Struct
+	Deserialize(buf, &y)
+	assert.Equal(t, x, y)
+}
+
+func TestSeralizationPartial(t *testing.T) {
+	type Struct struct {
+		A Int
+		B Int
+	}
+	var x Struct
+	x.A = I64(103)
+	x.B = I64(93772)
+	buf := new(bytes.Buffer)
+	Serialize(buf, x.A)
+	Serialize(buf, x.B)
+	var y Struct
+	Deserialize(buf, &y.A)
+	assert.Equal(t, x.A, y.A)
+}

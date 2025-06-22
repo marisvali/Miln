@@ -3,7 +3,6 @@ package world
 import (
 	"fmt"
 	. "github.com/marisvali/miln/gamelib"
-	"github.com/marisvali/miln/world/oldworld"
 	"math"
 )
 
@@ -268,61 +267,4 @@ func (w *World) Status() WorldStatus {
 	} else {
 		return Ongoing
 	}
-}
-
-func OldPt(pt oldworld.Pt) Pt {
-	return IPt(pt.X.ToInt(), pt.Y.ToInt())
-}
-
-func DeserializePlaythroughFromOld(data []byte) (p Playthrough) {
-	po := oldworld.DeserializePlaythrough(data)
-	// Entities
-	for y := 0; y < po.Obstacles.Size().X.ToInt(); y++ {
-		for x := 0; x < po.Obstacles.Size().X.ToInt(); x++ {
-			if po.Obstacles.Get(oldworld.Pt{oldworld.I(x), oldworld.I(y)}) {
-				p.Obstacles.Set(IPt(x, y))
-			}
-		}
-	}
-	for i := range po.SpawnPortalsParams {
-		p.SpawnPortalsParams.V[i].Pos = IPt(po.SpawnPortalsParams[i].Pos.X.ToInt(), po.SpawnPortalsParams[i].Pos.Y.ToInt())
-		p.SpawnPortalsParams.V[i].SpawnPortalCooldown = I(po.SpawnPortalsParams[i].SpawnPortalCooldown.ToInt())
-		for j := range po.SpawnPortalsParams[i].Waves {
-			p.SpawnPortalsParams.V[i].Waves.V[j].SecondsAfterLastWave = I(po.SpawnPortalsParams[i].Waves[j].SecondsAfterLastWave.ToInt())
-			p.SpawnPortalsParams.V[i].Waves.V[j].NHounds = I(po.SpawnPortalsParams[i].Waves[j].NHounds.ToInt())
-		}
-		p.SpawnPortalsParams.V[i].Waves.N = int64(len(po.SpawnPortalsParams[i].Waves))
-	}
-	p.SpawnPortalsParams.N = int64(len(po.SpawnPortalsParams))
-
-	// WorldParams
-	p.Boardgame = po.Boardgame
-	p.UseAmmo = po.UseAmmo
-	p.AmmoLimit = I(po.AmmoLimit.ToInt())
-	p.EnemyMoveCooldownDuration = I(po.EnemyMoveCooldownDuration.ToInt())
-	p.EnemiesAggroWhenVisible = po.EnemiesAggroWhenVisible
-	p.SpawnPortalCooldownMin = I(po.SpawnPortalCooldownMin.ToInt())
-	p.SpawnPortalCooldownMax = I(po.SpawnPortalCooldownMax.ToInt())
-	p.HoundMaxHealth = I(po.HoundMaxHealth.ToInt())
-	p.HoundMoveCooldownMultiplier = I(po.HoundMoveCooldownMultiplier.ToInt())
-	p.HoundPreparingToAttackCooldown = I(po.HoundPreparingToAttackCooldown.ToInt())
-	p.HoundAttackCooldownMultiplier = I(po.HoundAttackCooldownMultiplier.ToInt())
-	p.HoundHitCooldownDuration = I(po.HoundHitCooldownDuration.ToInt())
-	p.HoundHitsPlayer = po.HoundHitsPlayer
-	p.HoundAggroDistance = I(po.HoundAggroDistance.ToInt())
-
-	// Rest of Playthrough
-	p.Id = po.Id
-	p.Seed = I(po.Seed.ToInt())
-	p.History = make([]PlayerInput, len(po.History))
-	for i := range po.History {
-		p.History[i].MousePt = OldPt(po.History[i].MousePt)
-		p.History[i].LeftButtonPressed = po.History[i].LeftButtonPressed
-		p.History[i].RightButtonPressed = po.History[i].RightButtonPressed
-		p.History[i].Move = po.History[i].Move
-		p.History[i].MovePt = OldPt(po.History[i].MovePt)
-		p.History[i].Shoot = po.History[i].Shoot
-		p.History[i].ShootPt = OldPt(po.History[i].ShootPt)
-	}
-	return
 }

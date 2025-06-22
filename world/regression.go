@@ -76,7 +76,6 @@ func (w *World) State() []byte {
 	Serialize(buf, w.Player.Pos())
 	Serialize(buf, w.Enemies.N)
 	for i := range w.Enemies.N {
-		Serialize(buf, int64(0)) // leftover from previous serializing scheme
 		Serialize(buf, w.Enemies.V[i].Health())
 		Serialize(buf, w.Enemies.V[i].Pos())
 	}

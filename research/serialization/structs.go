@@ -50,6 +50,30 @@ var s1Twin = S3Twin{
 	}},
 }
 
+type S1Arr struct {
+	X Int
+	Y [3]Int
+}
+
+type S2Arr struct {
+	Z [3]S1Arr
+	H bool
+}
+
+type S3Arr struct {
+	T S1Arr
+	V S2Arr
+}
+
+var s1Arr = S3Arr{
+	T: S1Arr{X: I(12), Y: [3]Int{I(93), I(1), I(4)}},
+	V: S2Arr{H: true, Z: [3]S1Arr{
+		{X: I(12), Y: [3]Int{I(93), I(1), I(4)}},
+		{X: I(12), Y: [3]Int{I(2), I(189), I(401)}},
+		{X: I(12), Y: [3]Int{I(333), I(221), I(400)}},
+	}},
+}
+
 type WaveData struct {
 	SecondsAfterLastWave Int
 	NHoundMin            Int

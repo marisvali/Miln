@@ -17,8 +17,8 @@ func (m *MatBool) Set(pos Pt) {
 }
 
 func (m *MatBool) SetAll() {
-	for i := range m.cells {
-		m.cells[i] = true
+	for i := range m.Cells {
+		m.Cells[i] = true
 	}
 }
 
@@ -27,40 +27,40 @@ func (m *MatBool) Clear(pos Pt) {
 }
 
 func (m *MatBool) ClearAll() {
-	for i := range m.cells {
-		m.cells[i] = false
+	for i := range m.Cells {
+		m.Cells[i] = false
 	}
 }
 
 // Add performs the union operation between the two sets represented by the
 // matrices.
 func (m *MatBool) Add(other MatBool) {
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] || other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] || other.Cells[i]
 	}
 }
 
 // Subtract performs the subtraction operation between the two sets represented
 // by the matrices. As in, what's true in other becomes false in m.
 func (m *MatBool) Subtract(other MatBool) {
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] && !other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] && !other.Cells[i]
 	}
 }
 
 // IntersectWith performs the intersection operation between the two sets
 // represented by the matrices.
 func (m *MatBool) IntersectWith(other MatBool) {
-	for i := range m.cells {
-		m.cells[i] = m.cells[i] && other.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = m.Cells[i] && other.Cells[i]
 	}
 }
 
 // Negate changes the matrix so that each position has the opposite value (true
 // becomes false, false becomes true).
 func (m *MatBool) Negate() {
-	for i := range m.cells {
-		m.cells[i] = !m.cells[i]
+	for i := range m.Cells {
+		m.Cells[i] = !m.Cells[i]
 	}
 	return
 }
@@ -123,8 +123,8 @@ type MatArray struct {
 func (m MatBool) ToArray() MatArray {
 	var array MatArray
 	array.N = 0
-	for i := range m.cells {
-		if m.cells[i] {
+	for i := range m.Cells {
+		if m.Cells[i] {
 			array.V[array.N] = IPt(i%NCols, i/NCols)
 			array.N++
 		}
@@ -142,7 +142,7 @@ func (m MatBool) MarshalYAML() ([]byte, error) {
 	var s string
 
 	for i := 0; i < NRows; i++ {
-		row := m.cells[NCols*i : NCols*(i+1)]
+		row := m.Cells[NCols*i : NCols*(i+1)]
 		var rowS string
 		for j := 0; j < len(row)-1; j++ {
 			if row[j] {
@@ -165,7 +165,7 @@ func (m *MatBool) UnmarshalYAML(b []byte) error {
 	s := string(b)
 
 	if strings.TrimSpace(s) == "empty" {
-		m.cells = [64]bool{}
+		m.Cells = [64]bool{}
 		return nil
 	}
 

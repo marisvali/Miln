@@ -1,50 +1,21 @@
 package gamelib
 
-import (
-	"bytes"
-	"encoding/gob"
-)
-
 const NRows = 8
 const NCols = 8
 
 type Matrix[T any] struct {
-	cells [64]T
-}
-
-func (m Matrix[T]) GobEncode() ([]byte, error) {
-	// Creating a new encoder/decoder every time can be slow for small
-	// structs. For a Matrix, it may be ok. But if you ever want to make it
-	// more efficient, the direction from the gob package implementers is to
-	// do something lightweight in your implementation of the interface. That
-	// can mean creating a static buffer and encoder, and resetting the buffer
-	// every time so as to not re-allocate buffer memory every time.
-	// Or, just make the private fields exportable and comment that no one else
-	// should use these fields.
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(m.cells); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func (m *Matrix[T]) GobDecode(b []byte) error {
-	// See GobEncode for tips on efficiency.
-	buf := bytes.NewBuffer(b)
-	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&m.cells); err != nil {
-		return err
-	}
-	return nil
+	// This is made public for the sake of serializing and deserializing
+	// using the encoding/binary package.
+	// Don't access it otherwise.
+	Cells [64]T
 }
 
 func (m *Matrix[T]) Set(pos Pt, val T) {
-	m.cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()] = val
+	m.Cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()] = val
 }
 
 func (m *Matrix[T]) Get(pos Pt) T {
-	return m.cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()]
+	return m.Cells[pos.Y.Times(I(NCols)).Plus(pos.X).ToInt64()]
 }
 
 func (m *Matrix[T]) InBounds(pt Pt) bool {

@@ -21,7 +21,10 @@ type Playthrough struct {
 func (p *Playthrough) Serialize() []byte {
 	buf := new(bytes.Buffer)
 	Serialize(buf, int64(Version))
-	Serialize(buf, p)
+	Serialize(buf, p.Level)
+	Serialize(buf, p.Id)
+	Serialize(buf, p.Seed)
+	SerializeSlice(buf, p.History)
 	return Zip(buf.Bytes())
 }
 
@@ -43,7 +46,10 @@ func DeserializePlaythrough(data []byte) (p Playthrough) {
 			"with version %d",
 			Version, token))
 	}
-	Deserialize(buf, &p)
+	Deserialize(buf, &p.Level)
+	Deserialize(buf, &p.Id)
+	Deserialize(buf, &p.Seed)
+	DeserializeSlice(buf, &p.History)
 	return
 }
 

@@ -4,7 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto/sha256"
-	"encoding/gob"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -208,15 +208,25 @@ func GetLatestRecordingFile(fsys FS) string {
 //
 
 func Serialize(w io.Writer, data any) {
-	enc := gob.NewEncoder(w)
-	err := enc.Encode(data)
+	err := binary.Write(w, binary.LittleEndian, data)
 	Check(err)
 }
 
 func Deserialize(r io.Reader, data any) {
-	dec := gob.NewDecoder(r)
-	err := dec.Decode(data)
+	err := binary.Read(r, binary.LittleEndian, data)
 	Check(err)
+}
+
+func SerializeSlice[T any](buf *bytes.Buffer, s []T) {
+	Serialize(buf, int64(len(s)))
+	Serialize(buf, s)
+}
+
+func DeserializeSlice[T any](buf *bytes.Buffer, s *[]T) {
+	var lenSlice int64
+	Deserialize(buf, &lenSlice)
+	*s = make([]T, lenSlice)
+	Deserialize(buf, *s)
 }
 
 type TimedFunction func()
