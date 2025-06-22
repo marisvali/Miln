@@ -5,11 +5,13 @@ go 1.22.0
 toolchain go1.22.10
 
 require (
+	github.com/alecthomas/binary v0.0.0-20231202071617-9b43cc962409
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/go-vgo/robotgo v0.110.5
 	github.com/goccy/go-yaml v1.17.1
 	github.com/google/uuid v1.6.0
 	github.com/hajimehoshi/ebiten/v2 v2.6.3
+	github.com/kelindar/binary v1.0.19
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/image v0.21.0
 )
