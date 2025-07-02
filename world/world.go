@@ -6,7 +6,23 @@ import (
 	"math"
 )
 
-const Version = 999
+// SimulationVersion is the version of the simulation currently implemented
+// by the World.
+// The simulation is an abstract mapping between input given by the player and
+// output received by the player. The input usually consists of mouse positions
+// and clicks. The output depends on the current design of the simulation but
+// can be things like, the position and health of the player and the enemies
+// and the visible regions the player can jump to.
+// The implementation is not relevant for the SimulationVersion. The
+// calculations to go from input to output can change. The exact structs for
+// the input and output can change (e.g. int64 changes to int32). As long as
+// the information is the same and the mapping is the same, the
+// SimulationVersion should remain the same.
+// The main purpose of SimulationVersion is to allow for refactoring and
+// regression tests. If the SimulationVersion doesn't change, a playthrough
+// that was recorded with the same SimulationVersion can be made to be replayed
+// with the current simulation code, even if everything else changed.
+const SimulationVersion = 999
 
 type World struct {
 	WorldDebugInfo
@@ -86,6 +102,19 @@ func NewWorld(seed Int, l Level) (w World) {
 	// be relevant now that the player doesn't start on the map. But, keep it
 	// in case things change again.
 	w.computeVisibleTiles()
+	return
+}
+
+// NewWorldFromPlaythrough checks if the Playthrough has the same simulation
+// version as the current code.
+func NewWorldFromPlaythrough(p Playthrough) (w World) {
+	if p.SimulationVersion.ToInt64() != SimulationVersion {
+		Check(fmt.Errorf("can't run this playthrough with the current "+
+			"simulation - we are at SimulationVersion %d and playthrough "+
+			"was generated with SimulationVersion version %d",
+			SimulationVersion, p.SimulationVersion.ToInt64()))
+	}
+	w = NewWorld(p.Seed, p.Level)
 	return
 }
 

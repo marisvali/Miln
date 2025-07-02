@@ -131,7 +131,7 @@ func RegressionId(p *Playthrough) string {
 	hash := sha256.New()
 
 	// Run the playthrough.
-	w := NewWorld(p.Seed, p.Level)
+	w := NewWorldFromPlaythrough(*p)
 
 	// Write the current state of the World to the hash.
 	hash.Write(w.State())

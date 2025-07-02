@@ -11,7 +11,7 @@ $password = "comeonthough";
 $dbname = "playfulp_miln";
 
 function LogInfo($message) {
-	// file_put_contents("./submit-playthrough.log", "INFO: " . $message . "\n", FILE_APPEND);
+// 	file_put_contents("./submit-playthrough.log", "INFO: " . $message . "\n", FILE_APPEND);
 }
 
 function LogError($message) {
@@ -31,8 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         
         $user = $_POST['user'];
         LogInfo("We got user: " . $user);
-        $version = $_POST['version'];
-        LogInfo("We got version: " . $version);
+        $release_version = $_POST['release_version'];
+        LogInfo("We got release_version: " . $release_version);
+        $simulation_version = $_POST['simulation_version'];
+        LogInfo("We got simulation_version: " . $simulation_version);
+        $input_version = $_POST['input_version'];
+        LogInfo("We got input_version: " . $input_version);
         $id = $_POST['id'];
         LogInfo("We got id: " . $id);
         if (isset($_FILES['playthrough'])) {
@@ -47,7 +51,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             $sql = "UPDATE playthroughs SET end_moment=now(), playthrough = '$fileContent' WHERE user = '$user' AND id = '$id'";
         } else {
-            $sql = "INSERT INTO playthroughs (start_moment, user, version, id) VALUES (now(), '$user', '$version', '$id')";
+            $sql = "INSERT INTO playthroughs(start_moment, user, release_version, simulation_version, input_version, id) " .
+            "VALUES (now(), '$user', '$release_version', '$simulation_version', '$input_version', '$id')";
         }
         
         try {

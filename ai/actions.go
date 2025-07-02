@@ -87,7 +87,7 @@ func ComputeRankedActions(world World, rankedActions *ActionsArray) {
 }
 
 func GoToFrame(playthrough Playthrough, frameIdx int64) World {
-	world := NewWorld(playthrough.Seed, playthrough.Level)
+	world := NewWorldFromPlaythrough(playthrough)
 	for i := int64(0); i < frameIdx; i++ {
 		input := playthrough.History[i]
 		world.Step(input)

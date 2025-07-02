@@ -5,7 +5,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	. "github.com/marisvali/miln/gamelib"
-	. "github.com/marisvali/miln/world"
 	_ "image/png"
 	"slices"
 	"strconv"
@@ -19,7 +18,12 @@ func (g *Gui) uploadCurrentWorld() {
 	// If the connection to the server drops for a few seconds, either due to
 	// the player's connection or the server not being available, it will
 	// interrupt the gameplay.
-	g.uploadDataChannel <- uploadData{g.username, Version, g.playthrough.Clone()}
+	g.uploadDataChannel <- uploadData{
+		g.username,
+		g.playthrough.ReleaseVersion.ToInt64(),
+		g.playthrough.SimulationVersion.ToInt64(),
+		g.playthrough.InputVersion.ToInt64(),
+		g.playthrough.Clone()}
 }
 
 func UploadPlaythroughs(ch chan uploadData) {
@@ -29,7 +33,12 @@ func UploadPlaythroughs(ch chan uploadData) {
 		data := <-ch
 
 		// Upload the data.
-		UploadDataToDbHttp(data.user, data.version, data.playthrough.Id, data.playthrough.Serialize())
+		UploadDataToDbHttp(data.user,
+			data.releaseVersion,
+			data.simulationVersion,
+			data.inputVersion,
+			data.playthrough.Id,
+			data.playthrough.Serialize())
 	}
 }
 

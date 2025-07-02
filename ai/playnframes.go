@@ -25,6 +25,9 @@ import (
 // The enemies must move at a reasonable speed and it helps if there are some
 // obstacles but not too many.
 func PlayLevelForAtLeastNFrames(l Level, seed Int, nFrames int) (p Playthrough) {
+	p.InputVersion = I(InputVersion)
+	p.SimulationVersion = I(SimulationVersion)
+	p.ReleaseVersion = I(0)
 	p.Seed = seed
 	p.Level = l
 	w := NewWorld(seed, l)

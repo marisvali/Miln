@@ -15,6 +15,39 @@ import (
 	"path/filepath"
 )
 
+// ReleaseVersion is the version of an executable built and given to someone
+// to play, either as a Windows executable or a .wasm on the browser. It is
+// meant as a unique label for the functionality that a user/player is presented
+// with.
+// ReleaseVersion is expected to change very often. Certainly every time a new
+// executable is built and sent to someone, it should be tagged with a unique
+// ReleaseVersion.
+// ReleaseVersion must change when SimulationVersion or InputVersion change.
+// But there are many reasons for ReleaseVersion to change when the simulation
+// stays the same and the input format stays the same:
+// - the executable uses randomly generated levels or fixed levels
+// - different fixed levels are included in the executable
+// - communication with the server is enabled or disabled
+// - graphics change
+// All of these changes can be handled by having a generic code that is compiled
+// once and depends on a configuration. I very intentionally do not do this.
+// The philosophy of this project is currently to release a different executable
+// for each variation. The reasons for this:
+// - Only the developer is truly comfortable editing the configuration file. If
+// the developer has to intervene, he might as well compile a version for the
+// user. If it's hard or annoying to compile and release a new version, then
+// that process should be improved instead of avoided.
+// - I want to keep track of things, who got what experience. The point of a
+// configuration is to be able to change things quickly and on the fly. But if
+// I want to keep track of things, I must remember to change the release version
+// every time I edit the configuration. So the ability to change configurations
+// easily is a liability more than a help. It's more helpful, for tracking
+// things, to have an unmodifiable binary for each variation.
+// - Currently the executables are small enough and I need few enough variations
+// that I can easily afford to generate an entire game release for each
+// variation (35mb for a Windows .exe and 25mb for a .wasm).
+const ReleaseVersion = 999
+
 //go:embed data/*
 var embeddedFiles embed.FS
 
@@ -123,9 +156,11 @@ type Gui struct {
 }
 
 type uploadData struct {
-	user        string
-	version     int64
-	playthrough *Playthrough
+	user              string
+	releaseVersion    int64
+	simulationVersion int64
+	inputVersion      int64
+	playthrough       *Playthrough
 }
 
 type GameState int64
@@ -142,6 +177,9 @@ func main() {
 	ebiten.SetWindowPosition(1000, 100)
 
 	var g Gui
+	g.playthrough.InputVersion = I(InputVersion)
+	g.playthrough.SimulationVersion = I(SimulationVersion)
+	g.playthrough.ReleaseVersion = I(ReleaseVersion)
 	g.username = getUsername()
 	// A channel size of 10 means the channel will buffer 10 inputs before it is
 	// full and it blocks. Hopefully, when uploading data, a size of 10 is
@@ -197,7 +235,7 @@ func main() {
 			// Replay a playthrough loaded from a file.
 			g.playbackExecution = true
 			g.playthrough = DeserializePlaythrough(ReadFile(inputFile))
-			g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+			g.world = NewWorldFromPlaythrough(g.playthrough)
 			g.state = Playback
 		}
 	} else if g.UsingFixedLevels() {
@@ -280,7 +318,11 @@ func (g *Gui) startLevel(seed Int, l Level) {
 	g.playthrough.Level = l
 	g.playthrough.Id = uuid.New()
 	g.playthrough.History = g.playthrough.History[:0]
-	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
-	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
+	g.world = NewWorldFromPlaythrough(g.playthrough)
+	InitializeIdInDbHttp(g.username,
+		g.playthrough.ReleaseVersion.ToInt64(),
+		g.playthrough.SimulationVersion.ToInt64(),
+		g.playthrough.InputVersion.ToInt64(),
+		g.playthrough.Id)
 	g.state = GameOngoing
 }

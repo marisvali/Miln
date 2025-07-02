@@ -159,7 +159,7 @@ func TestExtract(t *testing.T) {
 			LoadYAML(os.DirFS(dir).(FS), paramsFiles[i][2:], &params)
 
 			playthrough := DeserializePlaythrough(ReadFile(dir + "/" + playthroughFiles[i]))
-			world := NewWorld(playthrough.Seed, playthrough.Level)
+			world := NewWorldFromPlaythrough(playthrough)
 			for j := range playthrough.History {
 				world.Step(playthrough.History[j])
 			}

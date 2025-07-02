@@ -35,9 +35,9 @@ type SpawnPortalParams struct {
 }
 
 type LevelYaml struct {
-	Version Int `yaml:"Version"`
-	Seed    Int `yaml:"Seed"`
-	Level   `yaml:"Level"`
+	InputVersion Int `yaml:"InputVersion"`
+	Seed         Int `yaml:"Seed"`
+	Level        `yaml:"Level"`
 }
 
 // VersionYaml is used in order to load only the version part of a yaml which
@@ -47,12 +47,12 @@ type LevelYaml struct {
 // error that is due to the version not being right in the first place. I prefer
 // to have a clearer error that just tells me the versions don't match.
 type VersionYaml struct {
-	Version Int `yaml:"Version"`
+	InputVersion Int `yaml:"InputVersion"`
 }
 
 func (l *Level) SaveToYAML(seed Int, filename string) {
 	var lYaml LevelYaml
-	lYaml.Version = I(Version)
+	lYaml.InputVersion = I(InputVersion)
 	lYaml.Seed = seed
 	lYaml.Level = *l
 	SaveYAML(filename, lYaml)
@@ -61,11 +61,17 @@ func (l *Level) SaveToYAML(seed Int, filename string) {
 func LoadLevelFromYAML(fsys FS, filename string) (seed Int, l Level) {
 	var vYaml VersionYaml
 	LoadYAML(fsys, filename, &vYaml)
-	if vYaml.Version.ToInt64() != Version {
-		Check(fmt.Errorf("this code can't simulate this playthrough "+
-			"correctly - we are version %d and playthrough was generated "+
-			"with version %d",
-			Version, vYaml.Version.ToInt64()))
+	if vYaml.InputVersion.ToInt64() != InputVersion {
+		Check(fmt.Errorf("can't load this level as it was generated using "+
+			"InputVersion %d and we are at InputVersion %d - it is very "+
+			"likely that if we continued deserialization the info would be "+
+			"loaded wrong, but silently, because that's how .yaml loading "+
+			"works; if you feel confident that the level matches the exe "+
+			"that's trying to load it, change the InputVersion manually in"+
+			" the .yaml file; this can happen if the InputVersion changed but "+
+			"the Level stayed the same (currently this means that the "+
+			"PlayerInput structure changed but not the Level structure)",
+			vYaml.InputVersion.ToInt64(), InputVersion))
 	}
 
 	var lYaml LevelYaml
@@ -75,7 +81,7 @@ func LoadLevelFromYAML(fsys FS, filename string) (seed Int, l Level) {
 
 func IsYamlLevel(filename string) bool {
 	b := ReadFile(filename)
-	versionS := "Version"
+	versionS := "InputVersion"
 	if len(b) <= len(versionS) {
 		return false
 	}

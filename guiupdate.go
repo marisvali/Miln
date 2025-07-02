@@ -20,7 +20,7 @@ func (g *Gui) Update() error {
 		g.playthrough.Id = uuid.New()
 		g.playthrough.Level = GenerateLevel(g.FSys)
 		g.playthrough.History = g.playthrough.History[:0]
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+		g.world = NewWorldFromPlaythrough(g.playthrough)
 		g.updateWindowSize()
 	}
 
@@ -153,8 +153,12 @@ func (g *Gui) StartNextLevel() {
 func (g *Gui) RestartLevel() {
 	g.playthrough.Id = uuid.New()
 	g.playthrough.History = g.playthrough.History[:0]
-	g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
-	InitializeIdInDbHttp(g.username, Version, g.playthrough.Id)
+	g.world = NewWorldFromPlaythrough(g.playthrough)
+	InitializeIdInDbHttp(g.username,
+		g.playthrough.ReleaseVersion.ToInt64(),
+		g.playthrough.SimulationVersion.ToInt64(),
+		g.playthrough.InputVersion.ToInt64(),
+		g.playthrough.Id)
 	g.state = GameOngoing
 }
 
@@ -294,7 +298,7 @@ func (g *Gui) UpdatePlayback() {
 
 	if targetFrameIdx != g.frameIdx {
 		// Rewind.
-		g.world = NewWorld(g.playthrough.Seed, g.playthrough.Level)
+		g.world = NewWorldFromPlaythrough(g.playthrough)
 		g.visWorld = NewVisWorld(g.Animations)
 
 		// Replay the world.

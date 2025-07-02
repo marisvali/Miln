@@ -51,23 +51,35 @@ func makeHttpRequest(url string, fields map[string]string, files map[string][]by
 	return string(data)
 }
 
-func InitializeIdInDbHttp(user string, version int64, id uuid.UUID) {
+func InitializeIdInDbHttp(user string,
+	releaseVersion int64,
+	simulationVersion int64,
+	inputVersion int64,
+	id uuid.UUID) {
 	url := "https://playful-patterns.com/submit-playthrough.php"
 	makeHttpRequest(url,
 		map[string]string{
-			"user":    user,
-			"version": strconv.FormatInt(version, 10),
-			"id":      id.String()},
+			"user":               user,
+			"release_version":    strconv.FormatInt(releaseVersion, 10),
+			"simulation_version": strconv.FormatInt(simulationVersion, 10),
+			"input_version":      strconv.FormatInt(inputVersion, 10),
+			"id":                 id.String()},
 		map[string][]byte{})
 }
 
-func UploadDataToDbHttp(user string, version int64, id uuid.UUID, data []byte) {
+func UploadDataToDbHttp(user string,
+	releaseVersion int64,
+	simulationVersion int64,
+	inputVersion int64,
+	id uuid.UUID, data []byte) {
 	url := "https://playful-patterns.com/submit-playthrough.php"
 	makeHttpRequest(url,
 		map[string]string{
-			"user":    user,
-			"version": strconv.FormatInt(version, 10),
-			"id":      id.String()},
+			"user":               user,
+			"release_version":    strconv.FormatInt(releaseVersion, 10),
+			"simulation_version": strconv.FormatInt(simulationVersion, 10),
+			"input_version":      strconv.FormatInt(inputVersion, 10),
+			"id":                 id.String()},
 		map[string][]byte{"playthrough": data})
 }
 

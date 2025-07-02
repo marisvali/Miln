@@ -7,17 +7,17 @@ import (
 )
 
 func TestWorld_Regression1(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
-	expected := string(ReadFile("playthroughs/large-playthrough.mln016-hash"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
+	expected := string(ReadFile("playthroughs/large-playthrough.mln999-999-hash"))
 	actual := RegressionId(&playthrough)
 	println(actual)
 	assert.Equal(t, expected, actual)
 }
 
 func BenchmarkWorldSpeed(b *testing.B) {
-	p := DeserializePlaythrough(ReadFile("playthroughs/average-playthrough.mln016"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/average-playthrough.mln999-999"))
 	for b.Loop() {
-		w := NewWorld(p.Seed, p.Level)
+		w := NewWorldFromPlaythrough(p)
 		for i := range p.History {
 			w.Step(p.History[i])
 		}
@@ -25,10 +25,10 @@ func BenchmarkWorldSpeed(b *testing.B) {
 }
 
 func TestWorld_PredictableRandomness(t *testing.T) {
-	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln016"))
+	playthrough := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
 
 	// Run the playthrough halfway through.
-	w1 := NewWorld(playthrough.Seed, playthrough.Level)
+	w1 := NewWorldFromPlaythrough(playthrough)
 	for i := 0; i < len(playthrough.History)/2; i++ {
 		w1.Step(playthrough.History[i])
 	}
