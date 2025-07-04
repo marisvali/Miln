@@ -1,5 +1,5 @@
-InputVersion: 999
-Seed: 764317603502099823
+InputVersion: 17
+Seed: 6660944178036065648
 Level:
   WorldParams:
     Boardgame: false
@@ -17,46 +17,46 @@ Level:
     HoundHitsPlayer: true
     HoundAggroDistance: 0
   Obstacles:
-  - [X, ., ., ., ., ., ., .]
+  - [., ., ., ., X, ., ., .]
+  - [., X, ., ., X, X, ., X]
+  - [., ., ., X, ., X, ., .]
+  - [., X, ., ., X, ., ., .]
   - [., ., X, X, ., ., ., .]
-  - [., ., ., ., ., ., ., .]
-  - [., ., ., ., ., ., ., .]
-  - [., ., X, ., X, X, X, .]
-  - [., ., ., ., ., ., X, .]
-  - [., ., X, X, ., X, X, .]
-  - [., ., ., ., X, X, ., X]
+  - [., ., ., ., ., ., ., X]
+  - [., X, ., ., X, ., ., .]
+  - [., ., X, ., X, ., X, .]
   SpawnPortalsParams:
+  - Pos: [5, 7]
+    SpawnPortalCooldown: 100
+    Waves:
+    - SecondsAfterLastWave: 0
+      NHounds: 1
+  - Pos: [3, 3]
+    SpawnPortalCooldown: 100
+    Waves:
+    - SecondsAfterLastWave: 0
+      NHounds: 1
+  - Pos: [0, 7]
+    SpawnPortalCooldown: 100
+    Waves:
+    - SecondsAfterLastWave: 0
+      NHounds: 1
   - Pos: [2, 5]
     SpawnPortalCooldown: 100
     Waves:
     - SecondsAfterLastWave: 0
       NHounds: 1
-  - Pos: [1, 2]
+  - Pos: [2, 0]
     SpawnPortalCooldown: 100
     Waves:
     - SecondsAfterLastWave: 0
       NHounds: 1
-  - Pos: [4, 5]
+  - Pos: [0, 2]
     SpawnPortalCooldown: 100
     Waves:
     - SecondsAfterLastWave: 0
       NHounds: 1
-  - Pos: [7, 1]
-    SpawnPortalCooldown: 100
-    Waves:
-    - SecondsAfterLastWave: 0
-      NHounds: 1
-  - Pos: [0, 1]
-    SpawnPortalCooldown: 100
-    Waves:
-    - SecondsAfterLastWave: 0
-      NHounds: 1
-  - Pos: [4, 1]
-    SpawnPortalCooldown: 100
-    Waves:
-    - SecondsAfterLastWave: 0
-      NHounds: 1
-  - Pos: [1, 5]
+  - Pos: [7, 0]
     SpawnPortalCooldown: 100
     Waves:
     - SecondsAfterLastWave: 0

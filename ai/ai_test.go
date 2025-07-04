@@ -103,12 +103,12 @@ func TestGenerateLargePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	playthrough := PlayLevelForAtLeastNFrames(level, I(0), 18000)
 	fmt.Println(len(playthrough.History))
-	WriteFile("outputs/large-playthrough.mln999-999", playthrough.Serialize())
+	WriteFile("outputs/large-playthrough.mln17-17", playthrough.Serialize())
 }
 
 func TestGenerateAveragePlaythrough(t *testing.T) {
 	level := GenerateLevelFromParams(Param{I(5), I(90), I(8), I(4)})
 	playthrough := PlayLevelForAtLeastNFrames(level, I(0), 2000)
 	fmt.Println(len(playthrough.History))
-	WriteFile("outputs/average-playthrough.mln999-999", playthrough.Serialize())
+	WriteFile("outputs/average-playthrough.mln17-17", playthrough.Serialize())
 }

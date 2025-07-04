@@ -11,7 +11,7 @@ import (
 // then serialize back, do I get the original thing? What about if I
 // deserialize, serialize and deserialize?
 func TestSerializationForSelfConsistency(t *testing.T) {
-	p1 := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
+	p1 := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln17-17"))
 	data1 := p1.Serialize()
 	p2 := DeserializePlaythrough(data1)
 	data2 := p2.Serialize()
@@ -39,7 +39,7 @@ func TestSerializationForSelfConsistency(t *testing.T) {
 // it).
 func BenchmarkSerializedPlaythrough_WithoutCompression(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln17-17"))
 
 	// Run benchmark loop.
 	for b.Loop() {
@@ -57,7 +57,7 @@ func BenchmarkSerializedPlaythrough_WithoutCompression(b *testing.B) {
 // Check how much time it takes to compress a serialized world.
 func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln17-17"))
 
 	// Serialize the world to buf.
 	buf := new(bytes.Buffer)
@@ -77,7 +77,7 @@ func BenchmarkSerializedPlaythrough_Compression(b *testing.B) {
 
 func BenchmarkPlaythroughClone(b *testing.B) {
 	// Initialize, get large playthrough.
-	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln999-999"))
+	p := DeserializePlaythrough(ReadFile("playthroughs/large-playthrough.mln17-17"))
 
 	// Run benchmark loop.
 	res := 0
