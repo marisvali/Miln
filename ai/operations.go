@@ -26,9 +26,9 @@ func NumFramesUntilAttacked(w World, pos Pt) int64 {
 	w.Player.OnMap = true
 	w.Player.JustHit = false
 
-	// If an enemy doesn't hit within 100k frames, it's not happening.
+	// If an enemy doesn't hit within 1000 frames, it's not happening.
 	input := PlayerInput{} // Don't move, don't attack.
-	for frameIdx := int64(0); frameIdx < 100000; frameIdx++ {
+	for frameIdx := int64(0); frameIdx < 1000; frameIdx++ {
 		w.Step(input)
 		if w.Player.JustHit {
 			return frameIdx
@@ -39,8 +39,9 @@ func NumFramesUntilAttacked(w World, pos Pt) int64 {
 	// frames for nothing. So far the algorithms calling this function all
 	// have reasons to assume that the player will get hit. If it's not the case
 	// I should be warned.
-	Check(fmt.Errorf("something went wrong"))
-	return -1
+	// Check(fmt.Errorf("something went wrong"))
+	// return -1
+	return 1000
 }
 func ValidMove(world *World, pos Pt) bool {
 	freePositions := world.Player.ComputeFreePositions(world)

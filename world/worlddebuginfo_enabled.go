@@ -7,6 +7,6 @@ type WorldDebugInfo struct {
 }
 
 func (w *World) StepDebug(input PlayerInput) {
-	w.WorldDebugInfo.History.Data[w.WorldDebugInfo.History.N] = input
+	w.WorldDebugInfo.History.V[w.WorldDebugInfo.History.N] = input
 	w.WorldDebugInfo.History.N++
 }

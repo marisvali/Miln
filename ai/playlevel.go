@@ -29,6 +29,18 @@ func PlayLevel(l Level, seed Int, r RandomnessInPlay, levelIdx int, playIdx int,
 		DeleteFile(debugFile)
 	}
 	for {
+		// if frameIdx >= 18000 {
+		// 	// Ok, things went way too far, dump it all and see why we
+		// 	// got here.
+		// 	var p Playthrough
+		// 	p.SimulationVersion = I(SimulationVersion)
+		// 	p.InputVersion = I(InputVersion)
+		// 	p.Level = l
+		// 	p.Seed = seed
+		// 	p.History = world.WorldDebugInfo.History.V[:world.WorldDebugInfo.History.N]
+		// 	WriteFile("test.mln017-017", p.Serialize())
+		// 	panic("error")
+		// }
 		input := PlayerInput{}
 
 		if frameIdx == frameIdxOfNextMove {
